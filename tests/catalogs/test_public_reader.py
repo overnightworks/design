@@ -113,6 +113,16 @@ def test_parse_catalog_leaves_out_an_obsolete_entry():
         pytest.param(b'msgid "Gr\xfc\xdfe"\nmsgstr ""\n', r"^de\.po: the catalog is not valid UTF-8$", id="not UTF-8"),
         pytest.param(b'msgid "a"\nmsgstr "b\n', r"^de\.po:2: the string is not closed by a quote$", id="open string"),
         pytest.param(b'msgid "a"\nbogus "b"\n', r"^de\.po:2: Unknown or misformatted keyword$", id="invalid file"),
+        pytest.param(
+            b'msgid "a"\nmsgid_plural "b"\nmsgstr[0] "A"\nmsgstr[2] "C"\n',
+            r"^de\.po:1: the msgstr forms are not numbered from 0 without a gap$",
+            id="a gap between the msgstr forms",
+        ),
+        pytest.param(
+            b'msgid "a"\nmsgid_plural "b"\nmsgstr[1] "B"\n',
+            r"^de\.po:1: the msgstr forms are not numbered from 0 without a gap$",
+            id="msgstr forms not starting at 0",
+        ),
     ],
 )
 def test_parse_catalog_refuses_a_malformed_file_naming_the_file_and_the_line(content, message):
