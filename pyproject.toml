@@ -28,7 +28,7 @@ module-name = "design"
 testpaths = ["tests"]
 
 [tool.design-catalogs]
-include = ["src/design/*", "scripts/*"]
+source = "de"
 catalogs = "src/catalogs"
 typescript = "src/lib/words"
 python = "src/design/words.py"
