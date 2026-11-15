@@ -86,6 +86,21 @@ def test_parse_catalog_names_no_language_unless_the_header_does(content, languag
     assert parse_catalog(content.encode(), "x.po").language == language
 
 
+@pytest.mark.parametrize(
+    ("msgstr", "forms"),
+    [
+        pytest.param('msgstr[0] "Seat"\n', ("Seat",), id="one form"),
+        pytest.param('msgstr[0] "Seat"\nmsgstr[1] ""\n', ("Seat", ""), id="two forms, the last empty"),
+        pytest.param('msgstr[0] ""\nmsgstr[1] "b"\nmsgstr[2] ""\n', ("", "b", ""), id="three forms"),
+        pytest.param('msgstr[0] "a"\nmsgstr[1] "b"\nmsgstr[2] "c"\nmsgstr[3] "d"\n', ("a", "b", "c", "d"), id="four"),
+    ],
+)
+def test_parse_catalog_returns_exactly_the_msgstr_forms_the_file_writes(msgstr, forms):
+    content = f'msgid "Platz"\nmsgid_plural "Plätze"\n{msgstr}'.encode()
+
+    assert parse_catalog(content, "x.po").entries[0].msgstr == forms
+
+
 def test_parse_catalog_leaves_out_an_obsolete_entry():
     content = b'msgctxt "a.b"\nmsgid "Eins"\nmsgstr ""\n\n#~ msgctxt "gone.old"\n#~ msgid "x"\n#~ msgstr ""\n'
 
@@ -97,7 +112,7 @@ def test_parse_catalog_leaves_out_an_obsolete_entry():
     [
         pytest.param(b'msgid "Gr\xfc\xdfe"\nmsgstr ""\n', r"^de\.po: the catalog is not valid UTF-8$", id="not UTF-8"),
         pytest.param(b'msgid "a"\nmsgstr "b\n', r"^de\.po:2: the string is not closed by a quote$", id="open string"),
-        pytest.param(b'msgid "a"\nmsgstr[2] "b"\nmsgid_plural "c"\n', r"^de\.po:\d+: ", id="invalid file"),
+        pytest.param(b'msgid "a"\nbogus "b"\n', r"^de\.po:2: Unknown or misformatted keyword$", id="invalid file"),
     ],
 )
 def test_parse_catalog_refuses_a_malformed_file_naming_the_file_and_the_line(content, message):

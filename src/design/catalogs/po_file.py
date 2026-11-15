@@ -49,6 +49,12 @@ class _EveryEntry(Catalog):
     def __init__(self) -> None:
         super().__init__()
         self.entries: list[Message] = []
+        self.forms = 2
+
+    @property
+    def num_plurals(self) -> int:
+        """The forms of the entry being parsed: Babel allocates and bounds an entry's msgstr by this count."""
+        return self.forms
 
     def __setitem__(self, id, message: Message) -> None:  # noqa: A002 - Babel's parameter name
         self.entries.append(message)
@@ -58,11 +64,12 @@ class _WrittenFlagsParser(PoFileParser):
     """Babel's parser, which leaves an entry the flags its file wrote.
 
     Babel's message adds `python-brace-format` to every text with a gap, so a catalog written back would change
-    entries that were not touched.
+    entries that were not touched. It also keeps the msgstr forms an entry writes, not the count its language implies.
     """
 
     def _add_message(self) -> None:
         written = set(self.flags)
+        self.catalog.forms = max((index for index, _ in self.translations), default=0) + 1
         known = len(self.catalog.entries)
         super()._add_message()
         if len(self.catalog.entries) > known:
