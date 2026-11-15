@@ -24,6 +24,8 @@ export type Words = {
     readonly "account.logOut": string;
     readonly "agent.call": string;
     readonly "agent.calling": string;
+    readonly "agent.noAnswer": string;
+    readonly "agent.busy": string;
     readonly "agent.askToLeave": string;
     readonly "agent.callLabel": (gaps: { readonly name: string }) => string;
     readonly "agent.askToLeaveLabel": (gaps: { readonly name: string }) => string;
@@ -35,9 +37,23 @@ export type Words = {
     readonly "agent.tryAgain": string;
     readonly "hearing.agentMayHearMe": string;
     readonly "hearing.iWantToHearAgent": string;
+    readonly "hearing.agentMaySeeMe": string;
+    readonly "hearing.seeShort": string;
     readonly "hearing.agentHearsYou": (gaps: { readonly agent: string }) => string;
     readonly "hearing.agentHearsPerson": (gaps: { readonly agent: string; readonly name: string }) => string;
+    readonly "helperChat.send": string;
+    readonly "helperChat.thinking": (gaps: { readonly name: string }) => string;
+    readonly "helperChat.ranTool": (gaps: { readonly tool: string }) => string;
+    readonly "helperChat.loading": string;
+    readonly "helperChat.composerLabel": (gaps: { readonly name: string }) => string;
+    readonly "helperChat.listLabel": (gaps: { readonly name: string }) => string;
+    readonly "helperChat.speaker": (gaps: { readonly name: string }) => string;
+    readonly "helperChat.you": string;
     readonly "legalLinks.name": string;
+    readonly "turnState.notEnabled": string;
+    readonly "turnState.busy": string;
+    readonly "turnState.budgetSpent": string;
+    readonly "turnState.unavailable": string;
 };
 // prettier-ignore
 export const words: Words = {
@@ -62,6 +78,8 @@ export const words: Words = {
     "account.logOut": "Abmelden",
     "agent.call": "Rufen",
     "agent.calling": "Wird gerufen…",
+    "agent.noAnswer": "Keine Antwort",
+    "agent.busy": "Gerade beschäftigt",
     "agent.askToLeave": "Bitten zu gehen",
     "agent.callLabel": (gaps: { readonly name: string }) => gaps.name + " rufen",
     "agent.askToLeaveLabel": (gaps: { readonly name: string }) => gaps.name + " bitten zu gehen",
@@ -73,8 +91,22 @@ export const words: Words = {
     "agent.tryAgain": "Das hat nicht geklappt. Versuch es noch einmal.",
     "hearing.agentMayHearMe": "Agent darf mich hören",
     "hearing.iWantToHearAgent": "Ich will den Agenten hören",
+    "hearing.agentMaySeeMe": "Agent darf mich sehen",
+    "hearing.seeShort": "Sehen",
     "hearing.agentHearsYou": (gaps: { readonly agent: string }) => gaps.agent + " hört dich",
     "hearing.agentHearsPerson": (gaps: { readonly agent: string; readonly name: string }) => gaps.agent + " hört " + gaps.name,
+    "helperChat.send": "Senden",
+    "helperChat.thinking": (gaps: { readonly name: string }) => gaps.name + " denkt nach…",
+    "helperChat.ranTool": (gaps: { readonly tool: string }) => "Werkzeug benutzt: " + gaps.tool,
+    "helperChat.loading": "Chat wird geladen…",
+    "helperChat.composerLabel": (gaps: { readonly name: string }) => "Nachricht an " + gaps.name,
+    "helperChat.listLabel": (gaps: { readonly name: string }) => "Unterhaltung mit " + gaps.name,
+    "helperChat.speaker": (gaps: { readonly name: string }) => gaps.name + ":",
+    "helperChat.you": "Du",
     "legalLinks.name": "Rechtliches",
+    "turnState.notEnabled": "Nicht freigeschaltet",
+    "turnState.busy": "Gerade ausgelastet",
+    "turnState.budgetSpent": "Budget aufgebraucht",
+    "turnState.unavailable": "Gerade gestört",
 };
 export type Key = keyof Words;

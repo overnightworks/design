@@ -1,4 +1,5 @@
 import type { Snippet } from 'svelte';
+import type { TurnOutcome } from './turn-outcome.ts';
 import type { Words as KitWords } from './words/de.ts';
 
 /**
@@ -106,15 +107,41 @@ export interface SignInPageProps {
 	words: KitWords;
 }
 
-/** One row of the agent control. */
-export interface AgentRow {
+export type { TurnOutcome };
+
+/**
+ * The mark and the kit's word for a stated turn outcome, meant to sit beside an agent's name. Without an
+ * outcome it renders nothing. It holds no state and no timer: the app passes the last stated value and
+ * drops it when the agent's seat ends.
+ */
+export interface TurnStateProps {
+	outcome: TurnOutcome | undefined;
+	/** The kit's words in the page's language, from `loadKitWords`. */
+	words: KitWords;
+}
+
+/** How a call ended without a seat: the invitation ran out, the agent is busy, or its owner is away. */
+export type AgentControlOutcome = 'no-answer' | 'busy' | 'owner-absent';
+
+/**
+ * One row of the agent control. `inviting` is a call under way, `here` an agent in the place and
+ * `ended` a call that ended without a seat: the row shows its `outcome` in place of the waiting
+ * text for a few seconds, then draws like an `available` row until the app changes it.
+ */
+export type AgentRow = {
 	/** Opaque and minted by the app; the kit hands it back to `onCall` and `onSendAway`. */
 	key: string;
 	/** Shown as given. */
 	name: string;
-	/** `inviting` is a call under way, `here` an agent in the place. */
-	state: 'available' | 'inviting' | 'here';
-}
+} & (
+	| { state: 'available' | 'inviting' }
+	| {
+			state: 'here';
+			/** The stated reason the agent's turns at the place do not answer; absent shows nothing extra. */
+			turnState?: TurnOutcome;
+	  }
+	| { state: 'ended'; outcome: AgentControlOutcome }
+);
 
 /** Why a call or a send-away was refused; the same five reasons serve both actions. */
 export type AgentControlRefusal =
@@ -126,13 +153,22 @@ export type AgentControlRefusal =
 
 /**
  * The panel of rows with which a person calls an agent into a place and asks it to leave again:
- * each row leads with `AiMark`, then the name, then one action or the waiting text.
- * Trigger and popover stay with the app. The control holds no state of the call: the app sets
- * `rows` and `refusal` and clears them. Asking to leave takes effect at once, with no confirm step.
+ * each row leads with `AiMark`, then the name, then one action, the waiting text or the outcome of a
+ * call. Trigger and popover stay with the app. The control holds no state of the call: the app sets
+ * `rows` and `refusal` and clears them; its one timer only ends the display of an outcome. Asking to
+ * leave takes effect at once, with no confirm step.
  */
 export interface AgentControlProps {
-	/** An empty list draws only the empty sentence, and the refusal when one is set. */
+	/**
+	 * An empty list draws only the empty sentence, and the refusal when one is set. The sentence is
+	 * `agent.placeFull` when `full` is set, `agent.empty` otherwise.
+	 */
 	rows: readonly AgentRow[];
+	/**
+	 * The place holds no further agent. With no rows, the empty sentence says so instead of saying
+	 * that no agent is reachable. The app decides when the place is full; rows are drawn unchanged.
+	 */
+	full?: boolean;
 	/** Called with the row's key by the button of an `available` row. */
 	onCall: (key: string) => void;
 	/**
@@ -146,12 +182,14 @@ export interface AgentControlProps {
 	words: KitWords;
 }
 
-/** The two directions of an agent's hearing: the agent hears the person, or the person hears the agent. */
-export type HearingKind = 'hear' | 'listen';
+/** What the chip switches: the agent hears the person, the person hears the agent, or the agent sees the person. */
+export type HearingKind = 'hear' | 'listen' | 'see';
 
 /**
  * One chip with a switch for an agent's hearing, drawn on a video: `hear` is the agent hearing the
- * person ("Agent may hear me"), `listen` the person hearing the agent ("I want to hear the agent").
+ * person ("Agent may hear me"), `listen` the person hearing the agent ("I want to hear the agent"),
+ * `see` the agent seeing the person: its visible label is the short word "See" and its accessible name
+ * the full "Agent may see me".
  * The chip holds no state: it shows `on` and, when pressed, calls `onChange` with the negated value;
  * the app sets `on` again or leaves it. The on colour is the app's `--accent`; the glass and the ink
  * are the chip's own. Where the chips stand and what a switch does stay with the app.
@@ -164,6 +202,11 @@ export interface HearingSwitchProps {
 	onChange: (on: boolean) => void;
 	/** The kit's words in the page's language, from `loadKitWords`. */
 	words: KitWords;
+	/**
+	 * Draws only the 26 px track, the icon on its knob and the label visually hidden but still the
+	 * accessible name, for a tile too narrow for the chip. Off by default; the app decides when it applies.
+	 */
+	compact?: boolean;
 }
 
 /**
@@ -196,4 +239,80 @@ export type MarkedPart<Marker extends string> = string | { readonly marker: Mark
 export interface MarkedProps<Marker extends string> {
 	parts: readonly MarkedPart<Marker>[];
 	marked: { [Name in NoInfer<Marker>]: Snippet<[{ readonly text: string }]> };
+}
+
+/** Who wrote a message of a helper conversation: the person or the helper agent. */
+export type HelperRole = 'user' | 'assistant';
+
+/** One tool the helper ran during a turn: its name and the input it ran with. */
+export interface HelperToolCall {
+	readonly name: string;
+	readonly input: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * The part of a message that `HelperChat` renders. An app's own message type stays assignable to it
+ * and passes through `HelperChat` unchanged to the snippets.
+ */
+export interface HelperMessage {
+	readonly role: HelperRole;
+	/** Already shaped by the app; shown as written, with line breaks kept. */
+	readonly text: string;
+	readonly toolCalls?: readonly HelperToolCall[];
+}
+
+/** Whether the conversation's earlier messages are there: `loading` and `failed` show instead of the list. */
+export type HelperHistory =
+	| { readonly state: 'ready' }
+	| { readonly state: 'loading' }
+	| { readonly state: 'failed'; readonly failure: string };
+
+/**
+ * The conversation a person has with an app's helper agent, drawn from props alone: the messages with
+ * the helper's tool-call rows, the answer as it grows, the thinking line and the composer. The part holds
+ * no fetch, no store and no app data, rules or page layout. The app places its header and notice before it
+ * and owns the turn, the network and the scroll memory.
+ *
+ * The composer is controlled through `draft` and `onDraft`. Enter sends and Shift+Enter makes a new line;
+ * a plain Enter is always cancelled, also while a turn runs, while the draft is empty and while the chat is
+ * read-only, and nothing is sent during IME composition. `onComposerKeydown` runs first, and its
+ * `preventDefault()` stops the send. The part's own colours come from `design.css` tokens and the app's
+ * `--accent` and `--on-accent`.
+ */
+export interface HelperChatProps<Message extends HelperMessage> {
+	messages: readonly Message[];
+	/** A turn runs: the last helper message is the growing answer, and Send is off. */
+	running: boolean;
+	history: HelperHistory;
+	/** The helper's name, the gap in the thinking line and in the composer's label. */
+	helperName: string;
+	/** Shown while the conversation is empty. */
+	emptyHint: string;
+	placeholder: string;
+	/** The composer's text. */
+	draft: string;
+	/** Called with the field's text and its caret on every edit; the app sets `draft` again. */
+	onDraft: (draft: string, caret: number) => void;
+	/** Called with the trimmed draft, never empty, never while `running` or read-only. */
+	onSend: (text: string) => void;
+	/** Runs before the part handles the key; its `preventDefault()` stops the send. */
+	onComposerKeydown?: (event: KeyboardEvent) => void;
+	/** Present means read-only: a banner above the composer, and the composer disabled. */
+	readOnly?: Snippet;
+	/** The app's problem line, shown after the message it belongs to. */
+	problemLine?: Snippet<[{ readonly message: Message; readonly index: number }]>;
+	/** The target of a tool call, shown after its "ran tool" line. */
+	toolCallTarget?: Snippet<[{ readonly call: HelperToolCall; readonly message: Message }]>;
+	/** The title attribute of a tool-call row, such as the input as JSON. */
+	toolCallTitle?: (call: HelperToolCall) => string;
+	/** Inside the composer's box, above the field: a pick list. The box is `position: relative`. */
+	composerPopup?: Snippet;
+	/** Between the banner and the composer: a bar of tags. */
+	composerTop?: Snippet;
+	/** The message list's element, for the app's scroll memory. */
+	list?: HTMLElement;
+	/** Called when the message list scrolls. */
+	onListScroll?: () => void;
+	/** The kit's words in the page's language, from `loadKitWords`. */
+	words: KitWords;
 }

@@ -1,7 +1,7 @@
 # design
 
 The family look that overnightworks products share (tokens, fonts, two classes
-and eight Svelte components), for the engineers of those products.
+and nine Svelte components), for the engineers of those products.
 
 ## Quick start
 
@@ -12,7 +12,7 @@ Distribution is a GitHub release. It carries:
   `design-catalogs` ([Catalogs](#catalogs)) and the kit's Python words
   ([The kit's words](#the-kits-words));
 - `overnightworks-design-<version>.tgz`: the same stylesheet and fonts, plus the
-  components `SignInPage`, `AccountMenu`, `AgentControl`, `HearingSwitch`, `EarMark`, `LegalLinks`, `Marked` and `AiMark` and the
+  components `SignInPage`, `AccountMenu`, `AgentControl`, `HearingSwitch`, `EarMark`, `HelperChat`, `LegalLinks`, `TurnState`, `Marked` and `AiMark` and the
   kit's words per language ([The kit's words](#the-kits-words)). It is the
   only npm distribution, and `svelte` ^5.20 is its only, peer, dependency;
 - `design-<version>-tokens.txt`: the sorted custom-property names `design.css`
@@ -87,6 +87,20 @@ behaviour are documented in [`src/lib/types.ts`](src/lib/types.ts). Without
 `onSendAway` a row of an agent that is here shows its mark and name and no
 action; an app that lets people send agents away passes the handler.
 
+A call that ends without a seat shows briefly why on its row. The app passes the row as
+`state: 'ended'` with an `outcome` (`'no-answer'`, `'busy'` or `'owner-absent'`); the row shows
+the outcome in place of the waiting text, muted, with a small icon and no key. After four
+seconds, the same in every app, the row is drawn like an `available` row and its call key
+works as usual, until the app changes the row. The kit invents no reason: it shows the
+outcome the app passes. While a call is under way the app passes the row as `inviting`, so an
+ended outcome that repeats after a new call restarts the four seconds; the same ended outcome
+passed again with no state change in between shows nothing new.
+
+When the place holds no further agent, the app passes `full`; with no rows the panel then says
+so ("Hier ist kein Platz für einen weiteren Agenten.", the sentence of the `place-full` refusal)
+instead of the empty sentence. The kit does not decide when a place is full, and rows are drawn
+unchanged.
+
 ```svelte
 <AgentControl {rows} {onCall} {onSendAway} {refusal} words={kitWords} />
 ```
@@ -94,7 +108,10 @@ action; an app that lets people send agents away passes the handler.
 ## HearingSwitch
 
 One chip with a switch for an agent's hearing, drawn on a video: `kind="hear"` is
-"Agent may hear me", `kind="listen"` is "I want to hear the agent". It is controlled: it
+"Agent may hear me", `kind="listen"` is "I want to hear the agent", `kind="see"` is "Agent may see me"
+with the short word "See" as its visible label. `compact` shrinks any kind to its 26 px track, the
+icon on the knob and the label visually hidden but still the accessible name; the app decides
+when a tile is too narrow for the full chip. It is controlled: it
 shows `on` and, when pressed, calls `onChange` with the negated value, so the app sets `on`
 again or leaves it. The on colour is the app's `--accent`; the glass and the light ink are
 the chip's own, because the chip always sits on a video. Where the chips stand, their
@@ -119,6 +136,59 @@ in [`src/lib/types.ts`](src/lib/types.ts).
 
 ```svelte
 <EarMark agent="Mozart" person="Anna" words={kitWords} />
+```
+
+## TurnState
+
+The mark and the kit's word for the reason an agent's turns at a place do not answer, drawn beside
+the agent's name: `outcome` is `not_enabled`, `busy`, `budget_spent` or `unavailable`, the values
+the agents service states, and the part shows a small muted mark with the word in the page's
+language. With `undefined` it renders nothing. It holds no state and no timer: the app passes the
+last stated value and drops it when the agent's seat ends. A `here` row of `AgentControl` draws it
+from the row's optional `turnState`; where an app draws the name itself, as at a seat, it places
+`TurnState` beside the name. Props are documented in [`src/lib/types.ts`](src/lib/types.ts).
+
+```svelte
+<TurnState outcome="budget_spent" words={kitWords} />
+```
+
+## HelperChat
+
+The conversation a person has with an app's helper agent, drawn from props alone: the message
+list with the helper's tool-call rows, the answer as it grows, the thinking line and the
+composer. Each helper message leads with `AiMark`. The part holds no fetch, no store and no
+app data; the app owns the turn, the network, the header and notice before it, and the scroll
+memory. The messages sit in an `ol` with `role="list"` named by the kit word
+`helperChat.listLabel` with the helper's name, each one an `li` that begins with a visually hidden speaker line, the kit word
+`helperChat.speaker` with `helperChat.you` for the person's messages and `helperName` for the
+helper's, also on a message without a bubble; the list has no live region, so
+the thinking line's `role="status"` is the only announcement, and the scrolling element has no
+role. Message text arrives already shaped and is shown as written. The composer is
+controlled through `draft` and `onDraft(draft, caret)`: Enter sends the trimmed draft and
+Shift+Enter makes a new line; a plain Enter is always cancelled (also while a turn runs, while
+the draft is empty and while read-only), nothing is sent during IME composition, and
+`onComposerKeydown` runs first, so its `preventDefault()` keeps a keystroke from sending. The
+app places its own pieces through props and snippets: `problemLine`, `toolCallTarget`,
+`toolCallTitle`, `composerPopup` (inside the composer's box, which is `position: relative`),
+`composerTop`, `readOnly` (a banner that also disables the composer), `history` (`loading` and
+`failed` show instead of the list), `list` and `onListScroll`. The part is generic over the
+app's message type, which reaches the snippets unchanged. It uses `design.css` tokens and the
+app's `--accent` and `--on-accent`; the other visual values are its own. Props and behaviour
+are documented in [`src/lib/types.ts`](src/lib/types.ts).
+
+```svelte
+<HelperChat
+  {messages}
+  {running}
+  history={{ state: 'ready' }}
+  helperName="Mozart"
+  emptyHint="Ask Mozart about your song."
+  placeholder="Ask for a rewrite…"
+  {draft}
+  onDraft={(text) => (draft = text)}
+  onSend={send}
+  words={kitWords}
+/>
 ```
 
 ## Marked
@@ -280,9 +350,9 @@ The shape of the catalogs and the rules `--check` holds are in
 
 ## The kit's words
 
-The words of `SignInPage`, `AccountMenu`, `AgentControl`, `HearingSwitch`, `EarMark` and `LegalLinks` come from the
+The words of `SignInPage`, `AccountMenu`, `AgentControl`, `HearingSwitch`, `EarMark`, `HelperChat`, `LegalLinks` and `TurnState` come from the
 kit's own catalogs, which the kit builds with `design-catalogs` like an app. Each of the
-six takes them as the required prop `words: KitWords`, holds no default and reads no
+seven takes them as the required prop `words: KitWords`, holds no default and reads no
 language itself, so a page cannot show one language on another's page; the
 examples above get `kitWords` from the `load` below. To override one word, pass a
 spread typed as `KitWords`: `words={{ ...kitWords, "account.logOut": "Exit" }}`. The

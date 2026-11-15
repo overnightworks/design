@@ -8,19 +8,23 @@ import {
 	HearingSwitch,
 	LegalLinks,
 	SignInPage,
+	TurnState,
 	loadKitWords,
+	type AgentControlOutcome,
 	type AgentRow,
 	type HearingKind,
 	type KitLanguage,
 	type KitWords,
 	type SignInState,
-	type ThemeChoice
+	type ThemeChoice,
+	type TurnOutcome
 } from 'overnightworks-design';
+import HelperChatStub from './HelperChatStub.svelte';
 import MarkedSentence from './MarkedSentence.svelte';
 
 declare global {
 	interface Window {
-		/** Every report the menu, the agent control, the hearing switch or the sign-in page made, in order. */
+		/** Every report the menu, the agent control, the hearing switch, the helper chat's stub app or the sign-in page made, in order. */
 		reports: string[];
 	}
 }
@@ -80,12 +84,26 @@ const agentRows: AgentRow[] = [
 	{ key: 'key-leonardo', name: 'Leonardo da Vinci, the long-named painter and inventor', state: 'here' }
 ];
 
+/** The variants that end Mozart's call, by the outcome the page passes. */
+const endedVariants: Record<string, AgentControlOutcome> = {
+	'ended-no-answer': 'no-answer',
+	'ended-busy': 'busy',
+	'ended-owner-absent': 'owner-absent'
+};
+
+function rowsOfVariant(variant: string): AgentRow[] {
+	if (variant === 'empty' || variant === 'empty-full') return [];
+	const outcome = endedVariants[variant];
+	return outcome ? [{ key: 'key-mozart', name: 'Mozart', state: 'ended', outcome }, ...agentRows.slice(1)] : agentRows;
+}
+
 function mountAgentControl(variant: string, words: KitWords): void {
 	window.reports = [];
 	mount(AgentControl, {
 		target: document.body,
 		props: {
-			rows: variant === 'empty' ? [] : agentRows,
+			rows: rowsOfVariant(variant),
+			full: variant === 'empty-full',
 			refusal: variant === 'refusal' ? 'owner-absent' : undefined,
 			onCall: (key: string) => void window.reports.push(`call:${key}`),
 			onSendAway: (key: string) => void window.reports.push(`leave:${key}`),
@@ -95,29 +113,46 @@ function mountAgentControl(variant: string, words: KitWords): void {
 }
 
 /**
- * Both chips on a stand-in for the video they always sit on, held by the app as a controlled switch is:
- * `off` starts them off, `ignore` is an app that never takes the change.
+ * The chips on a stand-in for the video they always sit on, held by the app as a controlled switch is. The
+ * variant is a comma-separated list: `off` starts them off, `ignore` is an app that never takes the change,
+ * `see` adds the see chip after the two others, and `narrow` shows a compact see chip beside the hearing
+ * chip in a stage too narrow for both in full. `hear`, `listen` and `see` pick the chips shown (in that order,
+ * `reverse` flips the DOM order), `compact` shows every chip compact, and `row` sets them side by side with no
+ * gap instead of stacked.
  */
 function mountHearingSwitches(variant: string, words: KitWords): void {
 	window.reports = [];
-	const held = new SvelteMap<HearingKind, boolean>([
-		['hear', variant !== 'off'],
-		['listen', variant !== 'off']
-	]);
+	const flags = new Set(variant.split(','));
+	const chosen = (['hear', 'listen', 'see'] as const).filter((kind) => flags.has(kind));
+	const shown: HearingKind[] =
+		flags.has('hear') || flags.has('listen')
+			? chosen
+			: flags.has('narrow')
+				? ['see', 'hear']
+				: flags.has('see')
+					? ['hear', 'listen', 'see']
+					: ['hear', 'listen'];
+	const kinds = flags.has('reverse') ? [...shown].reverse() : shown;
+	const held = new SvelteMap<HearingKind, boolean>(kinds.map((kind) => [kind, !flags.has('off')]));
 	const stage = document.createElement('div');
-	stage.className = 'hearing-stage';
+	stage.className = flags.has('narrow')
+		? 'hearing-stage hearing-stage-narrow'
+		: flags.has('row')
+			? 'hearing-stage hearing-stage-row'
+			: 'hearing-stage';
 	document.body.append(stage);
-	for (const kind of ['hear', 'listen'] as const satisfies HearingKind[]) {
+	for (const kind of kinds) {
 		mount(HearingSwitch, {
 			target: stage,
 			props: {
 				kind,
+				compact: flags.has('compact') || (flags.has('narrow') && kind === 'see'),
 				get on() {
 					return held.get(kind)!;
 				},
 				onChange(on: boolean) {
 					window.reports.push(`${kind}:${on}`);
-					if (variant !== 'ignore') held.set(kind, on);
+					if (!flags.has('ignore')) held.set(kind, on);
 				},
 				words
 			}
@@ -142,6 +177,41 @@ function mountEarMarks(variant: string, words: KitWords): void {
 				: ['Mozart'];
 	for (const agent of agents) {
 		mount(EarMark, { target: stage, props: { agent, person: variant === 'two' ? 'Anna' : undefined, words } });
+	}
+}
+
+/**
+ * The turn-state part: `alone` stacks the four outcomes and an unstated one, `here` shows it in the here
+ * row of an agent control beside a short and a long agent name.
+ */
+function mountTurnState(variant: string, words: KitWords): void {
+	const outcomes: (TurnOutcome | undefined)[] = ['not_enabled', 'busy', 'budget_spent', 'unavailable', undefined];
+	if (variant === 'here') {
+		const narrowStage = document.createElement('div');
+		narrowStage.className = 'turn-stage-narrow';
+		document.body.append(narrowStage);
+		mount(AgentControl, {
+			target: narrowStage,
+			props: {
+				rows: [
+					{ key: 'key-mozart', name: 'Mozart', state: 'here', turnState: 'busy' },
+					{ key: 'key-leonardo', name: 'Leonardo da Vinci, the long-named painter and inventor', state: 'here', turnState: 'unavailable' },
+					{ key: 'key-bach', name: 'Bach', state: 'here' }
+				],
+				onCall: () => {},
+				onSendAway: () => {},
+				words
+			}
+		});
+		return;
+	}
+	const stage = document.createElement('div');
+	stage.className = 'turn-stage';
+	document.body.append(stage);
+	for (const outcome of outcomes) {
+		const row = document.createElement('div');
+		stage.append(row);
+		mount(TurnState, { target: row, props: { outcome, words } });
 	}
 }
 
@@ -175,6 +245,14 @@ if (query.has('words')) {
 	});
 } else if (query.has('marked')) {
 	mount(MarkedSentence, { target: document.body });
+} else if (query.has('helper')) {
+	window.reports = [];
+	mount(HelperChatStub, {
+		target: document.body,
+		props: { variant: query.get('helper') ?? '', words: await loadKitWords(pageLanguage) }
+	});
+} else if (query.has('turn')) {
+	mountTurnState(query.get('turn') ?? '', await loadKitWords(pageLanguage));
 } else if (query.has('ear')) {
 	mountEarMarks(query.get('ear') ?? '', await loadKitWords(pageLanguage));
 } else if (query.has('hearing')) {
