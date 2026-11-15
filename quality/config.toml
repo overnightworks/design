@@ -37,3 +37,8 @@ reason = "tests the packed npm tarball, not a module of src/design"
 path = "tests/test_turn_outcome_generator.py"
 rule = "test-layout"
 reason = "tests scripts/generate_turn_outcome.py, not a module of src/design"
+
+[[layout.allow]]
+path = "tests/catalogs/test_public_reader.py"
+rule = "test-layout"
+reason = "pins the public functions of the package, which live in two modules of src/design/catalogs"
