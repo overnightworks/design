@@ -3,6 +3,6 @@ agent = "Claude 2ab3c824-e7b3-4185-a1b8-67280a5edb9a"
 role = "builder"
 base = "a012a1e29165b5787b9878d281383f4c69832810"
 branch = "claude/issue-248-read-catalogs"
-scope = ["README.md", "src/design/catalogs/__init__.py", "src/design/catalogs/catalog.py", "src/design/catalogs/po_file.py", "tests/catalogs/test_read_catalogs.py"]
+scope = ["README.md", "src/design/catalogs/__init__.py", "src/design/catalogs/catalog.py", "src/design/catalogs/declaration.py", "src/design/catalogs/po_file.py", "tests/catalogs/test_public_reader.py", "tests/catalogs/test_read_catalogs.py"]
 opened_commit = "4d30e4f9dcb21266b22bc782508afaa1995a15ed"
 whole_reason = "One public reader over the existing strict parse, with its record type, README section and contract test."
