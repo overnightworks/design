@@ -23,7 +23,7 @@ flowchart LR
   design -- release.yml --> release
   release -- wheel, pinned by URL and hash --> py
   release -- tarball, pinned by URL --> kit
-  release -- wheel with the extra catalogs, pinned the same way --> build[app build runs design-catalogs on its catalogs]
+  release -- wheel with the extra catalogs (or po to only read PO files), pinned the same way --> build[app build runs design-catalogs on its catalogs]
   py -- copies design.css and fonts under a versioned path --> kc
 ```
 
@@ -83,7 +83,7 @@ flowchart TB
   `--check` fails on a broken catalog or a module that is stale. The optional table
   `[tool.design-catalogs]` in the `pyproject.toml` of the shipped unit's directory
   (the root for an app of one unit) names the source language and the paths. It is
-  in the wheel only, behind the extra `catalogs` (Babel), and runs at build time,
+  in the wheel only, behind the extra `catalogs` (which requires the extra `po`, Babel), and runs at build time,
   never in a server or a browser.
 - **The kit's words** (`src/catalogs`): the catalogs are the one source of two
   outputs, `src/lib/words` for the tarball and `src/design/words.py` for the wheel,
@@ -210,7 +210,7 @@ cover them.
   wheel in its build.
 - Babel as a plain dependency of the wheel: its locale data would reach every
   Python server that takes the wheel only for `design.css`, so Babel stays behind
-  the extra `catalogs`.
+  the extra `po`, which the extra `catalogs` requires.
 - Babel's catalog update, and a hash of the source text, for freshness: the update
   matches entries by text across keys and drops plural categories the source lacks,
   and a hash records what a translation's `msgid` already holds, readably. A
