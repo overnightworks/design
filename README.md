@@ -348,6 +348,28 @@ frontend/src/lib/words/
 The shape of the catalogs and the rules `--check` holds are in
 [Languages](docs/languages.md).
 
+### Reading catalogs from Python
+
+`design.catalogs` has two pure functions beside the command, for a tool that
+reads catalogs exactly as `design-catalogs` does. They take text and bytes and
+touch no file: the caller reads the files. `parse_catalog` needs Babel, the
+extra `catalogs`; `catalog_directory` does not.
+
+- `catalog_directory(pyproject_text: str | None) -> PurePosixPath` takes the
+  text of a `pyproject.toml`, or `None` where there is none, and returns the
+  catalogs directory it declares, relative to that file's directory. Without
+  the table, or without a file, it returns the default directory. Text that is
+  not TOML, or a table the command refuses, raises `DeclarationError`.
+- `parse_catalog(content: bytes, name: str) -> ParsedCatalog` applies the
+  command's strict parse to the bytes of one `.po` file: strict UTF-8, closed
+  strings and Babel's invalid-file errors. `ParsedCatalog.language` is the
+  header's `Language`, or `None`, and `ParsedCatalog.entries` holds every
+  entry in file order as a `CatalogEntry`: `msgctxt`, `msgid`, `msgid_plural`
+  (or `None`), `msgstr` (one string per form, empty ones included) and
+  `fuzzy`. The header and obsolete (`#~`) entries are not entries. A malformed
+  file raises `CatalogFileError`, whose message names `name` and, where known,
+  the line.
+
 ## The kit's words
 
 The words of `SignInPage`, `AccountMenu`, `AgentControl`, `HearingSwitch`, `EarMark`, `HelperChat`, `LegalLinks` and `TurnState` come from the
