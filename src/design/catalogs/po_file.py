@@ -10,7 +10,9 @@ from babel.messages.pofile import PoFileError, PoFileParser, generate_po
 from babel.plural import _PythonCompiler
 
 from design.catalogs.catalog import (
+    CatalogEntry,
     LanguageTag,
+    ParsedCatalog,
     PluralBranch,
     PluralCategories,
     PluralCategory,
@@ -67,16 +69,12 @@ class _WrittenFlagsParser(PoFileParser):
             self.catalog.entries[-1].flags = written
 
 
-def _require_closed_strings(path: Path, content: bytes) -> None:
+def _require_closed_strings(name: str, content: bytes) -> None:
     """Babel cuts the last character off a string whose closing quote is missing, so no error would show."""
     for number, line in enumerate(content.splitlines(), start=1):
         stripped = line.strip()
         if stripped.startswith((b"msg", b'"')) and not STRING_LINE.fullmatch(stripped):
-            raise CatalogFileError(f"{path}:{number}: the string is not closed by a quote")
-
-
-def _first_form(value: str | tuple[str, ...]) -> str:
-    return value if isinstance(value, str) else value[0]
+            raise CatalogFileError(f"{name}:{number}: the string is not closed by a quote")
 
 
 def _header_language(header: str) -> str | None:
@@ -90,46 +88,74 @@ def _header_language(header: str) -> str | None:
     )
 
 
-def _parse(path: Path, *, ignore_obsolete: bool) -> tuple[str, _EveryEntry]:
-    """The text of a catalog file and its entries, the header first where it has one."""
+def _parse_bytes(content: bytes, name: str, *, ignore_obsolete: bool) -> tuple[str, _EveryEntry]:
+    """The text of a catalog file's bytes and its entries, the header first where it has one.
+
+    `name` is the file in a message.
+    """
     catalog = _EveryEntry()
     try:
-        content = path.read_bytes()
         text = content.decode("utf-8")
-        _require_closed_strings(path, content)
+        _require_closed_strings(name, content)
         _WrittenFlagsParser(catalog, ignore_obsolete=ignore_obsolete, abort_invalid=True).parse(BytesIO(content))
-    except FileNotFoundError:
-        raise CatalogFileError(f"{path}: the source catalog is missing; {TABLE} source names its language") from None
     except UnicodeDecodeError:
-        raise CatalogFileError(f"{path}: the catalog is not valid UTF-8") from None
+        raise CatalogFileError(f"{name}: the catalog is not valid UTF-8") from None
     except PoFileError as error:
         problem = error.args[0].removesuffix(f" on {error.lineno}")
-        raise CatalogFileError(f"{path}:{error.lineno + 1}: {problem}") from error
+        raise CatalogFileError(f"{name}:{error.lineno + 1}: {problem}") from error
     return text, catalog
+
+
+def _parse(path: Path, *, ignore_obsolete: bool) -> tuple[str, _EveryEntry]:
+    """The text of a catalog file and its entries, the header first where it has one."""
+    try:
+        content = path.read_bytes()
+    except FileNotFoundError:
+        raise CatalogFileError(f"{path}: the source catalog is missing; {TABLE} source names its language") from None
+    return _parse_bytes(content, str(path), ignore_obsolete=ignore_obsolete)
 
 
 def _holds_header(entries: list[Message]) -> bool:
     return bool(entries) and entries[0].context is None and not entries[0].id
 
 
-def read_catalog(path: Path) -> RawCatalog:
-    _, catalog = _parse(path, ignore_obsolete=True)
+def _forms(value: str | tuple[str, ...]) -> tuple[str, ...]:
+    return (value,) if isinstance(value, str) else tuple(value)
+
+
+def _entry(message: Message) -> CatalogEntry:
+    msgid, *plural = _forms(message.id)
+    return CatalogEntry(
+        message.context, msgid, plural[0] if plural else None, _forms(message.string), fuzzy=bool(message.fuzzy)
+    )
+
+
+def _parsed(catalog: _EveryEntry) -> ParsedCatalog:
     entries = catalog.entries
     language = None
     if _holds_header(entries):
         language = _header_language(str(entries[0].string))
         entries = entries[1:]
+    return ParsedCatalog(language, tuple(map(_entry, entries)))
+
+
+def parse_catalog(content: bytes, name: str) -> ParsedCatalog:
+    """The strict parse of a catalog file's bytes: the language of its header and every entry in file order.
+
+    The file is parsed as design-catalogs parses it: strict UTF-8, closed strings and Babel's invalid-file errors; an
+    obsolete (`#~`) entry is left out. A malformed file raises `CatalogFileError`, whose message names `name` and,
+    where known, the line. Nothing is read from disk.
+    """
+    return _parsed(_parse_bytes(content, name, ignore_obsolete=True)[1])
+
+
+def read_catalog(path: Path) -> RawCatalog:
+    parsed = _parsed(_parse(path, ignore_obsolete=True)[1])
     return RawCatalog(
-        language,
+        parsed.language,
         tuple(
-            RawEntry(
-                message.context,
-                _first_form(message.id),
-                _first_form(message.string),
-                message.fuzzy,
-                plural=not isinstance(message.id, str),
-            )
-            for message in entries
+            RawEntry(entry.msgctxt, entry.msgid, entry.msgstr[0], entry.fuzzy, plural=entry.msgid_plural is not None)
+            for entry in parsed.entries
         ),
     )
 

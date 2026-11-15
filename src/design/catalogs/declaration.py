@@ -3,7 +3,7 @@
 import os
 import tomllib
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
 from design.catalogs.catalog import LanguageTag
@@ -111,14 +111,28 @@ def _check_filesystem(root: Path, declaration: Declaration) -> None:
             raise DeclarationError(f"{TABLE} {key}: {problem}")
 
 
+def _declaration_of_text(text: str, name: str) -> Declaration:
+    """The declaration of the text of a pyproject.toml; `name` is the file in a message."""
+    try:
+        return declaration_from(tomllib.loads(text))
+    except tomllib.TOMLDecodeError as error:
+        raise DeclarationError(f"{name} is not valid TOML: {error}") from error
+
+
+def catalog_directory(pyproject_text: str | None) -> PurePosixPath:
+    """The catalogs directory a pyproject.toml declares, relative to its directory; the default without a table.
+
+    `pyproject_text` is the text of the file, or None where there is none. Nothing is read from disk.
+    """
+    declaration = DEFAULT if pyproject_text is None else _declaration_of_text(pyproject_text, PYPROJECT)
+    return PurePosixPath(declaration.catalogs.as_posix())
+
+
 def read_declaration(root: Path) -> Declaration:
     """The declaration of the pyproject.toml in `root`; the default where there is none."""
     path = root / PYPROJECT
     if not path.is_file():
         return DEFAULT
-    try:
-        declaration = declaration_from(tomllib.loads(path.read_text(encoding="utf-8")))
-    except tomllib.TOMLDecodeError as error:
-        raise DeclarationError(f"{path} is not valid TOML: {error}") from error
+    declaration = _declaration_of_text(path.read_text(encoding="utf-8"), str(path))
     _check_filesystem(root, declaration)
     return declaration

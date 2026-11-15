@@ -259,6 +259,25 @@ def _piece_problems(text: str, source_text: str | None = None, *, family: bool =
 
 
 @dataclass(frozen=True)
+class CatalogEntry:
+    """One entry of a catalog file with every form it holds; `msgstr` has one string per form, empty ones included."""
+
+    msgctxt: str | None
+    msgid: str
+    msgid_plural: str | None
+    msgstr: tuple[str, ...]
+    fuzzy: bool
+
+
+@dataclass(frozen=True)
+class ParsedCatalog:
+    """A catalog file as the strict parse reads it: the language its header names (None when none) and its entries."""
+
+    language: str | None
+    entries: tuple[CatalogEntry, ...]
+
+
+@dataclass(frozen=True)
 class RawEntry:
     """One entry as the catalog file holds it, before any check."""
 
