@@ -3,6 +3,6 @@ agent = "Claude 2ab3c824-e7b3-4185-a1b8-67280a5edb9a"
 role = "builder"
 base = "25102ef8dfe464e3a53d39bfc0d035a7ede89b88"
 branch = "claude/issue-189-agent-control-refusal-alone"
-scope = ["docs/stylesheet.md", "src/lib/AgentControl.svelte", "src/lib/AgentControl.test.ts", "src/lib/types.ts"]
+scope = ["docs/stylesheet.md", "src/lib/AgentControl.svelte", "src/lib/AgentControl.test.ts", "src/lib/types.ts", "tests/e2e/agent-control.spec.ts", "tests/e2e/main.ts"]
 opened_commit = "f096d3358bdbc32fa6e066f1acfe8f0aada473d7"
 whole_reason = "One component behaviour with its test, its interface docstring and its stylesheet sentence."
