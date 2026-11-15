@@ -2,7 +2,7 @@
 
 import re
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 from babel import Locale, UnknownLocaleError
 from babel.messages.catalog import Catalog, Message
@@ -39,41 +39,54 @@ class CatalogFileError(Exception):
     """A catalog file that cannot be read; the message names the file and, when known, the line."""
 
 
+class _ReadEntry(NamedTuple):
+    """An entry as Babel built it and every msgstr form its file wrote, one per index up to the highest."""
+
+    message: Message
+    msgstr: tuple[str, ...]
+
+
 class _EveryEntry(Catalog):
     """A catalog that keeps every entry in file order.
 
     Babel's own catalog merges entries with the same msgctxt and msgid, and treats an empty msgid
     as the header, so a duplicate or an empty entry would never reach a check.
+
+    Bounded, a plural entry holds Babel's default two forms and a higher index is refused, as the generator reads.
+    Otherwise it holds as many as its highest index writes.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, bounded: bool) -> None:
         super().__init__()
-        self.entries: list[Message] = []
-        self.forms = 2
+        self.entries: list[_ReadEntry] = []
+        self.bounded = bounded
+        self.being_read: tuple[str, ...] = ()
 
     @property
     def num_plurals(self) -> int:
-        """The forms of the entry being parsed: Babel allocates and bounds an entry's msgstr by this count."""
-        return self.forms
+        """The forms Babel allocates and bounds an entry's msgstr by."""
+        return super().num_plurals if self.bounded else len(self.being_read)
 
     def __setitem__(self, id, message: Message) -> None:  # noqa: A002 - Babel's parameter name
-        self.entries.append(message)
+        self.entries.append(_ReadEntry(message, self.being_read))
 
 
 class _WrittenFlagsParser(PoFileParser):
-    """Babel's parser, which leaves an entry the flags its file wrote.
+    """Babel's parser, which leaves an entry the flags its file wrote and records every msgstr form it wrote.
 
     Babel's message adds `python-brace-format` to every text with a gap, so a catalog written back would change
-    entries that were not touched. It also keeps the msgstr forms an entry writes, not the count its language implies.
+    entries that were not touched. Its singular entry keeps one msgstr form and its plural entry as many as the
+    catalog's plural count.
     """
 
     def _add_message(self) -> None:
         written = set(self.flags)
-        self.catalog.forms = max(index for index, _ in self.translations) + 1
+        by_index = {index: text.denormalize() for index, text in self.translations}
+        self.catalog.being_read = tuple(by_index.get(index, "") for index in range(max(by_index) + 1))
         known = len(self.catalog.entries)
         super()._add_message()
         if len(self.catalog.entries) > known:
-            self.catalog.entries[-1].flags = written
+            self.catalog.entries[-1].message.flags = written
 
 
 def _require_closed_strings(name: str, content: bytes) -> None:
@@ -95,12 +108,12 @@ def _header_language(header: str) -> str | None:
     )
 
 
-def _parse_bytes(content: bytes, name: str, *, ignore_obsolete: bool) -> tuple[str, _EveryEntry]:
+def _parse_bytes(content: bytes, name: str, *, ignore_obsolete: bool, bounded: bool = True) -> tuple[str, _EveryEntry]:
     """The text of a catalog file's bytes and its entries, the header first where it has one.
 
     `name` is the file in a message.
     """
-    catalog = _EveryEntry()
+    catalog = _EveryEntry(bounded=bounded)
     try:
         text = content.decode("utf-8")
         _require_closed_strings(name, content)
@@ -122,47 +135,52 @@ def _parse(path: Path, *, ignore_obsolete: bool) -> tuple[str, _EveryEntry]:
     return _parse_bytes(content, str(path), ignore_obsolete=ignore_obsolete)
 
 
-def _holds_header(entries: list[Message]) -> bool:
-    return bool(entries) and entries[0].context is None and not entries[0].id
+def _holds_header(entries: list[_ReadEntry]) -> bool:
+    return bool(entries) and entries[0].message.context is None and not entries[0].message.id
 
 
 def _forms(value: str | tuple[str, ...]) -> tuple[str, ...]:
     return (value,) if isinstance(value, str) else tuple(value)
 
 
-def _entry(message: Message) -> CatalogEntry:
+def _entry(entry: _ReadEntry) -> CatalogEntry:
+    message = entry.message
     msgid, *plural = _forms(message.id)
-    return CatalogEntry(
-        message.context, msgid, plural[0] if plural else None, _forms(message.string), fuzzy=bool(message.fuzzy)
-    )
+    return CatalogEntry(message.context, msgid, plural[0] if plural else None, entry.msgstr, fuzzy=bool(message.fuzzy))
 
 
-def _parsed(catalog: _EveryEntry) -> ParsedCatalog:
+def _body(catalog: _EveryEntry) -> tuple[str | None, list[_ReadEntry]]:
+    """The language the header names, where there is one, and the entries below it."""
     entries = catalog.entries
-    language = None
-    if _holds_header(entries):
-        language = _header_language(str(entries[0].string))
-        entries = entries[1:]
-    return ParsedCatalog(language, tuple(map(_entry, entries)))
+    if not _holds_header(entries):
+        return None, entries
+    return _header_language(str(entries[0].message.string)), entries[1:]
 
 
 def parse_catalog(content: bytes, name: str) -> ParsedCatalog:
     """The strict parse of a catalog file's bytes: the language of its header and every entry in file order.
 
     The file is parsed as design-catalogs parses it: strict UTF-8, closed strings and Babel's invalid-file errors; an
-    obsolete (`#~`) entry is left out. A malformed file raises `CatalogFileError`, whose message names `name` and,
-    where known, the line. Nothing is read from disk.
+    obsolete (`#~`) entry is left out. Every msgstr form an entry writes is returned, however many. A malformed file
+    raises `CatalogFileError`, whose message names `name` and, where known, the line. Nothing is read from disk.
     """
-    return _parsed(_parse_bytes(content, name, ignore_obsolete=True)[1])
+    language, entries = _body(_parse_bytes(content, name, ignore_obsolete=True, bounded=False)[1])
+    return ParsedCatalog(language, tuple(map(_entry, entries)))
 
 
 def read_catalog(path: Path) -> RawCatalog:
-    parsed = _parsed(_parse(path, ignore_obsolete=True)[1])
+    language, entries = _body(_parse(path, ignore_obsolete=True)[1])
     return RawCatalog(
-        parsed.language,
+        language,
         tuple(
-            RawEntry(entry.msgctxt, entry.msgid, entry.msgstr[0], entry.fuzzy, plural=entry.msgid_plural is not None)
-            for entry in parsed.entries
+            RawEntry(
+                entry.message.context,
+                _forms(entry.message.id)[0],
+                _forms(entry.message.string)[0],
+                bool(entry.message.fuzzy),
+                plural=not isinstance(entry.message.id, str),
+            )
+            for entry in entries
         ),
     )
 
@@ -280,7 +298,7 @@ def write_synced(path: Path, entries: tuple[RawEntry, ...]) -> None:
     """
     text, parsed = _parse(path, ignore_obsolete=False)
     has_header = _holds_header(parsed.entries)
-    held = {message.context: message for message in parsed.entries[has_header:]}
+    held = {entry.message.context: entry.message for entry in parsed.entries[has_header:]}
     catalog = Catalog()
     for raw in entries:
         message = held.get(raw.context) or Message(raw.text, context=raw.context)

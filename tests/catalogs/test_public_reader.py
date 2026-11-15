@@ -12,7 +12,7 @@ from design.catalogs import (
     parse_catalog,
 )
 from design.catalogs.declaration import DEFAULT
-from design.catalogs.po_file import read_catalog
+from design.catalogs.po_file import read_catalog, write_synced
 
 PLURAL = 'msgctxt "table.seats"\nmsgid "Platz"\nmsgid_plural "Plätze"\nmsgstr[0] "Seat"\nmsgstr[1] ""\n'
 
@@ -102,10 +102,28 @@ def test_parse_catalog_returns_exactly_the_msgstr_forms_the_file_writes(msgstr, 
     assert parse_catalog(content, "x.po").entries[0].msgstr == forms
 
 
-def test_parse_catalog_leaves_out_an_obsolete_entry():
-    content = b'msgctxt "a.b"\nmsgid "Eins"\nmsgstr ""\n\n#~ msgctxt "gone.old"\n#~ msgid "x"\n#~ msgstr ""\n'
-
-    assert [entry.msgctxt for entry in parse_catalog(content, "x.po").entries] == ["a.b"]
+@pytest.mark.parametrize(
+    ("content", "kept"),
+    [
+        pytest.param(
+            'msgctxt "a.b"\nmsgid "Eins"\nmsgstr ""\n\n#~ msgctxt "gone.old"\n#~ msgid "x"\n#~ msgstr ""\n',
+            "Eins",
+            id="obsolete entry",
+        ),
+        pytest.param(
+            'msgid "a"\nmsgstr ""\n\n#~ msgid "b"\n#~ msgstr[0] ""\n#~ msgstr[1] "Geheim"\n',
+            "a",
+            id="obsolete entry with a second msgstr form",
+        ),
+        pytest.param(
+            'msgid "a"\nmsgstr ""\n\n#~ msgid "b"\n#~ msgid_plural "c"\n#~ msgstr[2] "Geheim"\n',
+            "a",
+            id="obsolete plural entry with a third msgstr form",
+        ),
+    ],
+)
+def test_parse_catalog_leaves_out_an_obsolete_entry(content, kept):
+    assert [entry.msgid for entry in parse_catalog(content.encode(), "x.po").entries] == [kept]
 
 
 @pytest.mark.parametrize(
@@ -125,9 +143,12 @@ def test_parse_catalog_refuses_a_malformed_file_naming_the_file_and_the_line(con
     ("content", "plural", "msgstr"),
     [
         pytest.param(
-            'msgid "a"\nmsgstr[0] ""\nmsgstr[1] "Geheim"\n', None, ("",), id="singular entry with a second msgstr form"
+            'msgid "a"\nmsgstr[0] ""\nmsgstr[1] "Geheim"\n',
+            None,
+            ("", "Geheim"),
+            id="singular entry with a second msgstr form",
         ),
-        pytest.param('msgid "a"\nmsgstr[1] "B"\n', None, ("B",), id="singular entry with only msgstr[1]"),
+        pytest.param('msgid "a"\nmsgstr[1] "B"\n', None, ("", "B"), id="singular entry with only msgstr[1]"),
         pytest.param(
             'msgid "a"\nmsgid_plural "b"\nmsgstr[1] "B"\n', "b", ("", "B"), id="plural entry with only msgstr[1]"
         ),
@@ -139,16 +160,10 @@ def test_parse_catalog_refuses_a_malformed_file_naming_the_file_and_the_line(con
         ),
     ],
 )
-def test_parse_catalog_accepts_an_entry_with_unusual_msgstr_forms(content, plural, msgstr):
+def test_parse_catalog_returns_the_msgstr_forms_an_entry_writes(content, plural, msgstr):
     entry = parse_catalog(content.encode(), "de.po").entries[0]
 
     assert (entry.msgid_plural, entry.msgstr) == (plural, msgstr)
-
-
-def test_parse_catalog_leaves_out_an_obsolete_entry_with_unusual_msgstr_forms():
-    content = b'msgid "a"\nmsgstr ""\n\n#~ msgid "b"\n#~ msgstr[0] ""\n#~ msgstr[1] "Geheim"\n'
-
-    assert [entry.msgid for entry in parse_catalog(content, "de.po").entries] == ["a"]
 
 
 def test_the_generators_path_reading_accepts_a_singular_entry_with_a_second_msgstr_form(tmp_path):
@@ -158,6 +173,33 @@ def test_the_generators_path_reading_accepts_a_singular_entry_with_a_second_msgs
     (entry,) = read_catalog(path).entries
 
     assert (entry.translation, entry.plural) == ("", False)
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        pytest.param('msgid "a"\nmsgid_plural "b"\nmsgstr[0] "A"\nmsgstr[2] "C"\n', id="plural entry with a gap"),
+        pytest.param(
+            'msgid "a"\nmsgid_plural "b"\nmsgstr[0] "A"\nmsgstr[1] "B"\nmsgstr[2] "C"\n', id="plural entry, three forms"
+        ),
+        pytest.param('#~ msgid "a"\n#~ msgid_plural "b"\n#~ msgstr[2] "C"\n', id="obsolete plural entry"),
+    ],
+)
+@pytest.mark.parametrize(
+    "reading",
+    [
+        pytest.param(read_catalog, id="read_catalog"),
+        pytest.param(lambda path: write_synced(path, ()), id="write_synced"),
+    ],
+)
+def test_the_generators_path_reading_refuses_a_plural_entry_with_a_msgstr_form_beyond_the_second(
+    tmp_path, content, reading
+):
+    path = tmp_path / "en.po"
+    path.write_text(content, encoding="utf-8")
+
+    with pytest.raises(CatalogFileError, match=r"en\.po:"):
+        reading(path)
 
 
 def test_the_package_exports_the_readers_and_their_records_alone():
