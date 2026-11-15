@@ -12,6 +12,7 @@ from design.catalogs import (
     parse_catalog,
 )
 from design.catalogs.declaration import DEFAULT
+from design.catalogs.po_file import read_catalog
 
 PLURAL = 'msgctxt "table.seats"\nmsgid "Platz"\nmsgid_plural "Plätze"\nmsgstr[0] "Seat"\nmsgstr[1] ""\n'
 
@@ -113,26 +114,50 @@ def test_parse_catalog_leaves_out_an_obsolete_entry():
         pytest.param(b'msgid "Gr\xfc\xdfe"\nmsgstr ""\n', r"^de\.po: the catalog is not valid UTF-8$", id="not UTF-8"),
         pytest.param(b'msgid "a"\nmsgstr "b\n', r"^de\.po:2: the string is not closed by a quote$", id="open string"),
         pytest.param(b'msgid "a"\nbogus "b"\n', r"^de\.po:2: Unknown or misformatted keyword$", id="invalid file"),
-        pytest.param(
-            b'msgid "a"\nmsgid_plural "b"\nmsgstr[0] "A"\nmsgstr[2] "C"\n',
-            r"^de\.po:1: the msgstr forms are not numbered from 0 without a gap$",
-            id="a gap between the msgstr forms",
-        ),
-        pytest.param(
-            b'msgid "a"\nmsgid_plural "b"\nmsgstr[1] "B"\n',
-            r"^de\.po:1: the msgstr forms are not numbered from 0 without a gap$",
-            id="msgstr forms not starting at 0",
-        ),
-        pytest.param(
-            b'msgid "a"\nmsgstr[0] ""\nmsgstr[1] "Geheim"\n',
-            r"^de\.po:1: the entry has several msgstr forms but no msgid_plural$",
-            id="several msgstr forms on an entry without msgid_plural",
-        ),
     ],
 )
 def test_parse_catalog_refuses_a_malformed_file_naming_the_file_and_the_line(content, message):
     with pytest.raises(CatalogFileError, match=message):
         parse_catalog(content, "de.po")
+
+
+@pytest.mark.parametrize(
+    ("content", "plural", "msgstr"),
+    [
+        pytest.param(
+            'msgid "a"\nmsgstr[0] ""\nmsgstr[1] "Geheim"\n', None, ("",), id="singular entry with a second msgstr form"
+        ),
+        pytest.param('msgid "a"\nmsgstr[1] "B"\n', None, ("B",), id="singular entry with only msgstr[1]"),
+        pytest.param(
+            'msgid "a"\nmsgid_plural "b"\nmsgstr[1] "B"\n', "b", ("", "B"), id="plural entry with only msgstr[1]"
+        ),
+        pytest.param(
+            'msgid "a"\nmsgid_plural "b"\nmsgstr[0] "A"\nmsgstr[2] "C"\n',
+            "b",
+            ("A", "", "C"),
+            id="plural entry with a gap between its msgstr forms",
+        ),
+    ],
+)
+def test_parse_catalog_accepts_an_entry_with_unusual_msgstr_forms(content, plural, msgstr):
+    entry = parse_catalog(content.encode(), "de.po").entries[0]
+
+    assert (entry.msgid_plural, entry.msgstr) == (plural, msgstr)
+
+
+def test_parse_catalog_leaves_out_an_obsolete_entry_with_unusual_msgstr_forms():
+    content = b'msgid "a"\nmsgstr ""\n\n#~ msgid "b"\n#~ msgstr[0] ""\n#~ msgstr[1] "Geheim"\n'
+
+    assert [entry.msgid for entry in parse_catalog(content, "de.po").entries] == ["a"]
+
+
+def test_the_generators_path_reading_accepts_a_singular_entry_with_a_second_msgstr_form(tmp_path):
+    path = tmp_path / "en.po"
+    path.write_text('msgctxt "a.b"\nmsgid "a"\nmsgstr[0] ""\nmsgstr[1] "Geheim"\n', encoding="utf-8")
+
+    (entry,) = read_catalog(path).entries
+
+    assert (entry.translation, entry.plural) == ("", False)
 
 
 def test_the_package_exports_the_readers_and_their_records_alone():
