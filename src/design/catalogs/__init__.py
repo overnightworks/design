@@ -21,11 +21,11 @@ __all__ = [
     "parse_catalog",
 ]
 
-NEEDS_BABEL = frozenset({"CatalogFileError", "parse_catalog"})
+_NEEDS_BABEL = frozenset({"CatalogFileError", "parse_catalog"})
 
 
 def __getattr__(name: str) -> object:
-    if name not in NEEDS_BABEL:
+    if name not in _NEEDS_BABEL:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
     from design.catalogs import po_file
 

@@ -131,6 +131,6 @@ def test_the_package_exports_the_readers_and_their_records_alone():
     }
 
 
-def test_the_package_has_no_attribute_beyond_its_exports():
+def test_the_package_raises_attribute_error_naming_an_unknown_name():
     with pytest.raises(AttributeError, match="no_such_name"):
         design.catalogs.no_such_name  # noqa: B018 - the attribute access is the call under test
