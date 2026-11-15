@@ -198,7 +198,7 @@ def test_wheel_installs_the_declared_commands_and_offers_the_declared_extras(ins
     declared = tomllib.loads((REPOSITORY / "pyproject.toml").read_text())["project"]
 
     assert dict(entry_points["console_scripts"]) == declared["scripts"]
-    assert metadata.get_all("Provides-Extra") == list(declared["optional-dependencies"])
+    assert sorted(metadata.get_all("Provides-Extra")) == sorted(declared["optional-dependencies"])
     shipped = metadata.get_all("Requires-Dist")
     for extra, requirements in declared["optional-dependencies"].items():
         for requirement in requirements:

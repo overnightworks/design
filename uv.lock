@@ -117,11 +117,14 @@ wheels = [
 
 [[package]]
 name = "overnightworks-design"
-version = "0.35.0"
+version = "0.36.0"
 source = { editable = "." }
 
 [package.optional-dependencies]
 catalogs = [
+    { name = "babel" },
+]
+po = [
     { name = "babel" },
 ]
 
@@ -134,8 +137,11 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "babel", marker = "extra == 'catalogs'", specifier = ">=2.18,<3" }]
-provides-extras = ["catalogs"]
+requires-dist = [
+    { name = "babel", marker = "extra == 'po'", specifier = ">=2.18,<3" },
+    { name = "overnightworks-design", extras = ["po"], marker = "extra == 'catalogs'" },
+]
+provides-extras = ["po", "catalogs"]
 
 [package.metadata.requires-dev]
 dev = [

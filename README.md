@@ -221,9 +221,10 @@ default value no call reaches: a branch an app that measures with istanbul count
 
 `design-catalogs` turns an app's gettext catalogs into typed modules, so that a
 further language means adding a catalog file, not changing code. It is in the
-wheel only, and it needs Babel, which only the extra `catalogs` installs: an app
-that takes the wheel for `design.css` gets no Babel. An app pins the wheel with
-the extra in its dev group, by release URL and sha256, which the release notes
+wheel only, and it needs Babel, which only the extras install: `catalogs` is
+the one an app that runs the generator takes, and it requires `po`, the extra
+that carries the Babel bound. An app that takes the wheel for `design.css` gets
+no Babel. An app pins the wheel with the extra `catalogs` in its dev group, by release URL and sha256, which the release notes
 give:
 
 ```toml
@@ -353,7 +354,8 @@ The shape of the catalogs and the rules `--check` holds are in
 `design.catalogs` has two pure functions beside the command, for a tool that
 reads catalogs exactly as `design-catalogs` does. They take text and bytes and
 touch no file: the caller reads the files. `parse_catalog` needs Babel, the
-extra `catalogs`; `catalog_directory` does not.
+extra `po`, which a tool that only reads PO files takes without adopting the
+generator; `catalog_directory` does not.
 
 - `catalog_directory(pyproject_text: str | None) -> PurePosixPath` takes the
   text of a `pyproject.toml`, or `None` where there is none, and returns the
