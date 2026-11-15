@@ -265,5 +265,20 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			await expect(page.getByRole('button')).toHaveCount(0);
 			await expect(page.getByRole('list')).toHaveCount(0);
 		});
+
+		for (const [variant, key] of [
+			['empty-refusal', 'agent.ownerAbsent'],
+			['empty-place-full', 'agent.placeFull']
+		] as const) {
+			test(`draws only the ${variant} refusal, once, when no agent is listed`, async ({ page }) => {
+				await routeTo(page.context(), outDir);
+				await page.goto(`${origin}/?agents=${variant}`);
+				await expect(page.getByRole('alert')).toHaveText(en[key]);
+				await expect(page.getByText(en[key])).toHaveCount(1);
+				await expect(page.getByText(en['agent.empty'])).toHaveCount(0);
+				await expect(page.getByRole('button')).toHaveCount(0);
+				await expect(page.getByRole('list')).toHaveCount(0);
+			});
+		}
 	});
 }

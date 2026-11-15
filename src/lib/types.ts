@@ -160,8 +160,8 @@ export type AgentControlRefusal =
  */
 export interface AgentControlProps {
 	/**
-	 * An empty list draws only the empty sentence, and the refusal when one is set. The sentence is
-	 * `agent.placeFull` when `full` is set, `agent.empty` otherwise.
+	 * An empty list draws only the empty sentence, or only the refusal when one is set. The sentence
+	 * is `agent.placeFull` when `full` is set, `agent.empty` otherwise.
 	 */
 	rows: readonly AgentRow[];
 	/**

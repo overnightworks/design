@@ -309,12 +309,16 @@ describe('empty face', () => {
 		expect(control.querySelector('ul, li, button, [role="alert"]')).toBeNull();
 	});
 
-	it('draws the empty sentence and the refusal when both apply', async () => {
-		const control = await render({ rows: [], refusal: 'agent-unavailable' });
-		expect(control.querySelector('[role="alert"]')?.textContent?.trim()).toBe(
-			en['agent.agentUnavailable']
-		);
-		expect(control.textContent).toContain(en['agent.empty']);
+	it.each<[AgentControlRefusal, keyof typeof en]>([
+		['not-allowed', 'agent.notAllowed'],
+		['owner-absent', 'agent.ownerAbsent'],
+		['place-full', 'agent.placeFull'],
+		['agent-unavailable', 'agent.agentUnavailable'],
+		['try-again', 'agent.tryAgain']
+	])('draws only the %s refusal when there are no rows', async (refusal, key) => {
+		const control = await render({ rows: [], refusal, full: true });
+		expect(control.textContent?.trim()).toBe(en[key]);
+		expect(control.textContent).not.toContain(en['agent.empty']);
 		expect(control.querySelector('ul, li, button')).toBeNull();
 	});
 

@@ -63,7 +63,9 @@
 		</div>
 	{/if}
 	{#if rows.length === 0}
-		<p class="empty">{words[full ? 'agent.placeFull' : 'agent.empty']}</p>
+		{#if !refusal}
+			<p class="empty">{words[full ? 'agent.placeFull' : 'agent.empty']}</p>
+		{/if}
 	{:else}
 		<ul>
 			{#each rows as row (row.key)}
