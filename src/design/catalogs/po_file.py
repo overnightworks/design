@@ -72,6 +72,8 @@ class _WrittenFlagsParser(PoFileParser):
         indices = {index for index, _ in self.translations}
         if indices != set(range(len(indices))):
             self._invalid_pofile("", self.offset, "the msgstr forms are not numbered from 0 without a gap")
+        if len(indices) > 1 and len(self.messages) == 1:
+            self._invalid_pofile("", self.offset, "the entry has several msgstr forms but no msgid_plural")
         self.catalog.forms = len(indices)
         known = len(self.catalog.entries)
         super()._add_message()

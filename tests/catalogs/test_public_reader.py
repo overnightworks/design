@@ -123,6 +123,11 @@ def test_parse_catalog_leaves_out_an_obsolete_entry():
             r"^de\.po:1: the msgstr forms are not numbered from 0 without a gap$",
             id="msgstr forms not starting at 0",
         ),
+        pytest.param(
+            b'msgid "a"\nmsgstr[0] ""\nmsgstr[1] "Geheim"\n',
+            r"^de\.po:1: the entry has several msgstr forms but no msgid_plural$",
+            id="several msgstr forms on an entry without msgid_plural",
+        ),
     ],
 )
 def test_parse_catalog_refuses_a_malformed_file_naming_the_file_and_the_line(content, message):
