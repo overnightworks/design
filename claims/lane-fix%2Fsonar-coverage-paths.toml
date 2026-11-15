@@ -1,0 +1,7 @@
+claim_id = "1b7c219510434ad4bd563e3c7a2c65f3"
+agent = "Claude 2ab3c824-e7b3-4185-a1b8-67280a5edb9a"
+role = "builder"
+base = "80d72208daf9a6d6d46ab186f6c8d901ccd362f3"
+branch = "fix/sonar-coverage-paths"
+scope = [".github/workflows/ci.yml", "AGENTS.md", "pyproject.toml"]
+opened_commit = "aa4d27b9c489dafd79137d00fe4d955ca77005ad"
