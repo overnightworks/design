@@ -1,0 +1,8 @@
+claim_id = "76d7d9f334504c118c10997a908d3ebd"
+agent = "Claude 2ab3c824-e7b3-4185-a1b8-67280a5edb9a"
+role = "builder"
+base = "f33c50faf75a88b524d370593b0d0b27b59a471a"
+branch = "claude/issue-252-po-extra"
+scope = ["README.md", "docs/ARCHITECTURE.md", "package.json", "pyproject.toml", "src/design/catalogs/__init__.py", "tests/test_wheel.py", "uv.lock"]
+opened_commit = "3807e4ef0abb37e5d4c11a553aff7a89e9c7392c"
+whole_reason = "One packaging extra with the docs that name it and the version bump that releases it."
