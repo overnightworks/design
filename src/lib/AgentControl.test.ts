@@ -319,9 +319,6 @@ describe('empty face', () => {
 		const control = await render({ rows: [], refusal, full: true });
 		expect(control.textContent?.trim()).toBe(en[key]);
 		expect(control.textContent).not.toContain(en['agent.empty']);
-		expect(control.textContent?.split(en['agent.placeFull']).length).toBe(
-			refusal === 'place-full' ? 2 : 1
-		);
 		expect(control.querySelector('ul, li, button')).toBeNull();
 	});
 

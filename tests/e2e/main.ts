@@ -11,6 +11,7 @@ import {
 	TurnState,
 	loadKitWords,
 	type AgentControlOutcome,
+	type AgentControlRefusal,
 	type AgentRow,
 	type HearingKind,
 	type KitLanguage,
@@ -92,9 +93,14 @@ const endedVariants: Record<string, AgentControlOutcome> = {
 };
 
 function rowsOfVariant(variant: string): AgentRow[] {
-	if (variant === 'empty' || variant === 'empty-full') return [];
+	if (variant.startsWith('empty')) return [];
 	const outcome = endedVariants[variant];
 	return outcome ? [{ key: 'key-mozart', name: 'Mozart', state: 'ended', outcome }, ...agentRows.slice(1)] : agentRows;
+}
+
+function refusalOfVariant(variant: string): AgentControlRefusal | undefined {
+	if (variant === 'refusal' || variant === 'empty-refusal') return 'owner-absent';
+	return variant === 'empty-place-full' ? 'place-full' : undefined;
 }
 
 function mountAgentControl(variant: string, words: KitWords): void {
@@ -103,8 +109,8 @@ function mountAgentControl(variant: string, words: KitWords): void {
 		target: document.body,
 		props: {
 			rows: rowsOfVariant(variant),
-			full: variant === 'empty-full',
-			refusal: variant === 'refusal' ? 'owner-absent' : undefined,
+			full: variant === 'empty-full' || variant === 'empty-place-full',
+			refusal: refusalOfVariant(variant),
 			onCall: (key: string) => void window.reports.push(`call:${key}`),
 			onSendAway: (key: string) => void window.reports.push(`leave:${key}`),
 			words
