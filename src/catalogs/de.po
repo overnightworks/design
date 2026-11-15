@@ -87,6 +87,14 @@ msgctxt "agent.calling"
 msgid "Wird gerufen…"
 msgstr ""
 
+msgctxt "agent.noAnswer"
+msgid "Keine Antwort"
+msgstr ""
+
+msgctxt "agent.busy"
+msgid "Gerade beschäftigt"
+msgstr ""
+
 msgctxt "agent.askToLeave"
 msgid "Bitten zu gehen"
 msgstr ""
@@ -131,6 +139,14 @@ msgctxt "hearing.iWantToHearAgent"
 msgid "Ich will den Agenten hören"
 msgstr ""
 
+msgctxt "hearing.agentMaySeeMe"
+msgid "Agent darf mich sehen"
+msgstr ""
+
+msgctxt "hearing.seeShort"
+msgid "Sehen"
+msgstr ""
+
 msgctxt "hearing.agentHearsYou"
 msgid "{agent} hört dich"
 msgstr ""
@@ -139,6 +155,54 @@ msgctxt "hearing.agentHearsPerson"
 msgid "{agent} hört {name}"
 msgstr ""
 
+msgctxt "helperChat.send"
+msgid "Senden"
+msgstr ""
+
+msgctxt "helperChat.thinking"
+msgid "{name} denkt nach…"
+msgstr ""
+
+msgctxt "helperChat.ranTool"
+msgid "Werkzeug benutzt: {tool}"
+msgstr ""
+
+msgctxt "helperChat.loading"
+msgid "Chat wird geladen…"
+msgstr ""
+
+msgctxt "helperChat.composerLabel"
+msgid "Nachricht an {name}"
+msgstr ""
+
+msgctxt "helperChat.listLabel"
+msgid "Unterhaltung mit {name}"
+msgstr ""
+
+msgctxt "helperChat.speaker"
+msgid "{name}:"
+msgstr ""
+
+msgctxt "helperChat.you"
+msgid "Du"
+msgstr ""
+
 msgctxt "legalLinks.name"
 msgid "Rechtliches"
+msgstr ""
+
+msgctxt "turnState.notEnabled"
+msgid "Nicht freigeschaltet"
+msgstr ""
+
+msgctxt "turnState.busy"
+msgid "Gerade ausgelastet"
+msgstr ""
+
+msgctxt "turnState.budgetSpent"
+msgid "Budget aufgebraucht"
+msgstr ""
+
+msgctxt "turnState.unavailable"
+msgid "Gerade gestört"
 msgstr ""

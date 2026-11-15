@@ -3,12 +3,13 @@
 ## 1. Context and Scope
 
 design is the family look that overnightworks products share: one stylesheet,
-its fonts and eight Svelte components, and the generator that turns an app's
+its fonts and nine Svelte components, and the generator that turns an app's
 translation catalogs into modules. It runs no service. Outside it: the
 product apps that load the stylesheet (and, for SvelteKit apps, the components),
 the Keycloak themes and the legal pages, which take the wheel's stylesheet and fonts through the
 repository that builds them, the GitHub release that distributes it, and the shared quality gate that checks every pull request and every release.
 Page layout and product-specific JavaScript stay in the products.
+`TurnOutcome` is generated from agents' release wheel, pinned by url and sha256 in `scripts/agents_vocabulary_pin.toml`; CI fails when regenerating it changes the type.
 
 ```mermaid
 flowchart LR
@@ -35,7 +36,7 @@ get identical CSS and fonts. The components exist only in the tarball.
 flowchart TB
   subgraph source[src]
     css[design/static: design.css and fonts]
-    comp[lib: SignInPage, AccountMenu, AgentControl, HearingSwitch, EarMark, LegalLinks, Marked, AiMark and types]
+    comp[lib: SignInPage, AccountMenu, AgentControl, HearingSwitch, EarMark, HelperChat, LegalLinks, TurnState, Marked, AiMark and types]
     gen[design/catalogs: the catalog generator]
     cat[catalogs: the kit's words, de source and en]
   end
@@ -55,16 +56,24 @@ flowchart TB
   and both render `LegalLinks`. `AgentControl` is the panel of rows with which a
   person calls an agent and asks it to leave; each row leads with `AiMark`, the
   "AI" pill before an agent's name, which takes no props. The app owns the
-  trigger and the popover, and the control holds no state of the call.
-  `HearingSwitch` is one controlled chip with a switch for an agent's hearing; it
+  trigger and the popover, and the control holds no state of the call beyond the one
+  timer per row that ends the display of an outcome after a fixed duration.
+  `HearingSwitch` is one controlled chip with a switch for an agent's hearing or sight
+  (`hear`, `listen`, `see`), in full or `compact`; it
   takes its on colour from the app's `--accent`, and the app owns where the chips
-  stand and what a switch does. `EarMark` is the round ear with the agent's name in a pill
+  stand and what a switch does. `TurnState` is the muted mark with the kit's word for a stated turn outcome
+  that sits beside an agent's name; it renders nothing without an outcome and holds no state,
+  and `AgentControl`'s `here` row draws it from the row's `turnState`. `EarMark` is the round ear with the agent's name in a pill
   that shows an agent hears a person; it takes its ring from `--accent`, holds no state,
-  and the app owns when it shows, where it stands and how several stack. `Marked`
+  and the app owns when it shows, where it stands and how several stack. `HelperChat` renders a
+  helper conversation from props alone, generic over the app's message type, with `AiMark`
+  leading each helper message; the app owns the turn and the network, the data behind its
+  mentions, the scroll memory and everything it places through the part's snippets, and the
+  part takes `--accent` and `--on-accent` from the app. `Marked`
   renders the list of parts that `design-catalogs` generates for a marked sentence:
   one snippet per marker name chooses the element, and the component adds no
   element, white space, words or styles. `SignInPage`, `AccountMenu`,
-  `AgentControl`, `HearingSwitch`, `EarMark` and `LegalLinks` take the kit's words as the required prop
+  `AgentControl`, `HearingSwitch`, `EarMark`, `HelperChat`, `LegalLinks` and `TurnState` take the kit's words as the required prop
   `words`, which the app loads with `loadKitWords` for its page's language; no
   component holds an English default or reads a language. Each prop's meaning is a docstring in
   [`src/lib/types.ts`](../src/lib/types.ts).

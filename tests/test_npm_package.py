@@ -59,6 +59,8 @@ COMPONENT_FILES = {
     "svelte-dist/kitWords.d.ts",
     "svelte-dist/types.js",
     "svelte-dist/types.d.ts",
+    "svelte-dist/turn-outcome.js",
+    "svelte-dist/turn-outcome.d.ts",
     "svelte-dist/AccountMenu.svelte",
     "svelte-dist/AccountMenu.svelte.d.ts",
     "svelte-dist/AgentControl.svelte",
@@ -69,8 +71,12 @@ COMPONENT_FILES = {
     "svelte-dist/EarMark.svelte.d.ts",
     "svelte-dist/HearingSwitch.svelte",
     "svelte-dist/HearingSwitch.svelte.d.ts",
+    "svelte-dist/HelperChat.svelte",
+    "svelte-dist/HelperChat.svelte.d.ts",
     "svelte-dist/LegalLinks.svelte",
     "svelte-dist/LegalLinks.svelte.d.ts",
+    "svelte-dist/TurnState.svelte",
+    "svelte-dist/TurnState.svelte.d.ts",
     "svelte-dist/Marked.svelte",
     "svelte-dist/Marked.svelte.d.ts",
     "svelte-dist/SignInPage.svelte",
@@ -367,7 +373,12 @@ COMPONENT_PROPS = {
     "AgentControl": "{ rows: [], onCall: (key: string) => void key",
     "HearingSwitch": "{ kind: 'hear', on: true, onChange: (on: boolean) => void on",
     "EarMark": "{ agent: 'Mozart'",
+    "HelperChat": (
+        "{ messages: [], running: false, history: { state: 'ready' }, helperName: 'M', emptyHint: '', placeholder: '', "
+        "draft: '', onDraft: (draft: string, caret: number) => void caret, onSend: (text: string) => void text"
+    ),
     "LegalLinks": "{ links: []",
+    "TurnState": "{ outcome: undefined",
 }
 
 
@@ -389,7 +400,16 @@ def test_a_consumer_passes_the_kit_words_to_each_component_and_fails_its_type_ch
 
 
 @pytest.mark.parametrize(
-    "removed", ["AccountMenuWords", "SignInPageWords", "AgentControlWords", "HearingSwitchWords", "EarMarkWords"]
+    "removed",
+    [
+        "AccountMenuWords",
+        "SignInPageWords",
+        "AgentControlWords",
+        "HearingSwitchWords",
+        "EarMarkWords",
+        "HelperChatWords",
+        "TurnStateWords",
+    ],
 )
 def test_the_package_root_exports_no_per_component_words_type(consumer, removed):
     consumer.check(
@@ -456,8 +476,8 @@ def test_a_consumer_imports_the_agent_control_with_its_types_from_the_package_ro
     consumer,
 ):
     consumer.check(
-        f"import {{ AgentControl, type AgentControlProps, type AgentControlRefusal, type AgentRow, "
-        f"type KitWords }} from '{consumer.name}';\n"
+        f"import {{ AgentControl, type AgentControlOutcome, type AgentControlProps, type AgentControlRefusal, "
+        f"type AgentRow, type KitWords }} from '{consumer.name}';\n"
         "export const component: typeof AgentControl = AgentControl;\n"
         "declare const words: KitWords;\n"
         "const common = { onCall: (key: string) => void key, onSendAway: (key: string) => void key, words };\n"
@@ -465,17 +485,28 @@ def test_a_consumer_imports_the_agent_control_with_its_types_from_the_package_ro
         "  { key: 'k1', name: 'Mozart', state: 'available' },\n"
         "  { key: 'k2', name: 'Bach', state: 'inviting' },\n"
         "  { key: 'k3', name: 'Leonardo', state: 'here' },\n"
+        "  { key: 'k4', name: 'Bach', state: 'ended', outcome: 'busy' },\n"
         "];\n"
         "export const plain: AgentControlProps = { ...common, rows };\n"
         "export const withoutSendAway: AgentControlProps = { onCall: (key: string) => void key, rows, words };\n"
+        "export const fullPlace: AgentControlProps = { ...common, rows: [], full: true };\n"
+        "// @ts-expect-error full is a boolean\n"
+        "export const fullWord: AgentControlProps = { ...common, rows, full: 'yes' };\n"
         "export const refused: AgentControlProps = { ...common, rows, refusal: 'place-full' };\n"
         "export const reasons: AgentControlRefusal[] = [\n"
         "  'not-allowed', 'owner-absent', 'place-full', 'agent-unavailable', 'try-again',\n"
         "];\n"
         "// @ts-expect-error a refusal outside the five reasons\n"
         "export const unknownRefusal: AgentControlProps = { ...common, rows, refusal: 'sorry' };\n"
-        "// @ts-expect-error a state outside the three\n"
+        "export const outcomes: AgentControlOutcome[] = ['no-answer', 'busy', 'owner-absent'];\n"
+        "// @ts-expect-error a state outside the four\n"
         "export const unknownState: AgentRow = { key: 'k', name: 'N', state: 'gone' };\n"
+        "// @ts-expect-error an ended row names its outcome\n"
+        "export const unnamedOutcome: AgentRow = { key: 'k', name: 'N', state: 'ended' };\n"
+        "// @ts-expect-error an outcome outside the three\n"
+        "export const unknownOutcome: AgentRow = { key: 'k', name: 'N', state: 'ended', outcome: 'gone' };\n"
+        "// @ts-expect-error only an ended row has an outcome\n"
+        "export const strayOutcome: AgentRow = { key: 'k', name: 'N', state: 'here', outcome: 'busy' };\n"
         "// @ts-expect-error the rows are required\n"
         "export const noRows: AgentControlProps = { ...common };\n"
     )
@@ -513,6 +544,35 @@ def test_a_consumer_imports_the_ear_mark_with_its_types_from_the_package_root(co
         "export const nameless: EarMarkProps = { words };\n"
         "// @ts-expect-error the person's name is a string or absent\n"
         "export const wrongPerson: EarMarkProps = { agent: 'Mozart', person: 1, words };\n"
+    )
+
+
+def test_a_consumer_imports_the_helper_chat_with_its_types_from_the_package_root(consumer):
+    consumer.check(
+        f"import {{ HelperChat, type HelperChatProps, type HelperHistory, type HelperMessage, type HelperRole, "
+        f"type HelperToolCall, type KitWords }} from '{consumer.name}';\n"
+        "export const component: typeof HelperChat = HelperChat;\n"
+        "declare const words: KitWords;\n"
+        "const common = { messages: [], running: false, history: { state: 'ready' }, helperName: 'M', emptyHint: '', "
+        "placeholder: '', draft: '', onDraft: (draft: string, caret: number) => void caret, "
+        "onSend: (text: string) => void text, words } as const;\n"
+        "export const props: HelperChatProps<HelperMessage> = { ...common };\n"
+        "export const roles: HelperRole[] = ['user', 'assistant'];\n"
+        "export const call: HelperToolCall = { name: 'rewrite', input: { line: 3 } };\n"
+        "export const histories: HelperHistory[] = [{ state: 'ready' }, { state: 'loading' }, "
+        "{ state: 'failed', failure: 'x' }];\n"
+        "interface AppMessage extends HelperMessage { readonly id: string }\n"
+        "export const own: HelperChatProps<AppMessage> = "
+        "{ ...common, messages: [{ role: 'user', text: 't', id: 'a' }] };\n"
+        "// @ts-expect-error a role outside the two\n"
+        "export const unknownRole: HelperMessage = { role: 'system', text: 't' };\n"
+        "// @ts-expect-error a failed history names its failure\n"
+        "export const nameless: HelperHistory = { state: 'failed' };\n"
+        "// @ts-expect-error the composer is controlled: the draft is required\n"
+        "export const uncontrolled: HelperChatProps<HelperMessage> = "
+        "{ ...common, draft: undefined };\n"
+        "// @ts-expect-error a send reports the trimmed text as a string\n"
+        "export const wrongSend: HelperChatProps<HelperMessage> = { ...common, onSend: (text: number) => void text };\n"
     )
 
 
