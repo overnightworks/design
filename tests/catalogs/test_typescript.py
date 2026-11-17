@@ -72,7 +72,7 @@ def test_render_translation_checks_the_gaps_of_a_translation_with_gaps_in_both_d
         '    "chat.greeting": (gaps: { readonly name: string }) => "Cześć " + gaps.name,\n'
         "} satisfies Words;\n"
         "// A translation that leaves out a gap of its source fails here.\n"
-        "({} as Words) satisfies typeof translated;\n"
+        "({}) as Words satisfies typeof translated;\n"
         "export const words: Words = translated;\n"
     )
 
@@ -472,7 +472,7 @@ def test_render_translation_gives_a_marked_text_its_own_explicit_type_and_checks
 
     assert f'    "home.note": ["Tylko ", {{ marker: "strong", text: "wazne" }}] as {PARTS},\n' in module
     assert "} satisfies Words;\n" in module
-    assert "({} as Words) satisfies typeof translated;\n" in module
+    assert "({}) as Words satisfies typeof translated;\n" in module
 
 
 def evaluated(evaluate, source_catalog, call, **texts):
