@@ -10,15 +10,11 @@
 - `uv run --frozen ruff check .` and `uv run --frozen ruff format --check .`: Python lint; both must pass.
 - `quality check`: the shared static check. Run it at the release `.github/workflows/ci.yml` pins.
 - `pnpm run test:consumer`: the Playwright consumers, a probe stack. Run it only through `probe-run`, as the global contract's section "Machine load and local runs" says; the consumers serve a routed origin and bind no host port, so lanes may drive in parallel.
-- `gh workflow run release.yml -R overnightworks/design -f version=X.Y.Z`: the operator's release dispatch. `main` must carry X.Y.Z in `pyproject.toml` and `package.json`.
+- `gh workflow run release.yml -R overnightworks/design -f version=X.Y.Z`: the release dispatch, an agent's step once the version pull request has landed with its review and CI green. `main` must carry X.Y.Z in `pyproject.toml` and `package.json`.
 
 ## Rules
 
-- After the operator's release run, the head replaces GitHub's generated release notes, below the hashes, with the version's notes: what changed, the breaking changes and the upgrade steps.
-
-## Owners
-
-- The operator dispatches every release.
+- After the release run, the head replaces GitHub's generated release notes, below the hashes, with the version's notes: what changed, the breaking changes and the upgrade steps.
 
 ## Documents
 
