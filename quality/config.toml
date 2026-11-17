@@ -50,3 +50,7 @@ until = 2027-01-31
 date = 2026-11-17
 item = "overnightworks/quality#879"
 reason = "picomatch 4.0.7, the latest release, has no fix; a dev and build dependency through fdir and tinyglobby of vite, vitest and svelte-check, never shipped in the package"
+
+[[root.allow]]
+entry = "pnpm-workspace.yaml"
+reason = "pnpm 12 reads overrides and patchedDependencies from it at the root"

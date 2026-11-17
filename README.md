@@ -25,10 +25,12 @@ hash, which the release notes give:
 https://github.com/overnightworks/design/releases/download/v<version>/overnightworks_design-<version>-py3-none-any.whl#sha256=<sha256>
 ```
 
-A SvelteKit app pins the tarball by URL. pnpm writes the tarball's `sha512-`
-integrity into the lockfile only when it downloads the tarball, not on a store
-hit, and a frozen install enforces it; compare the lockfile's value with the
-one at the top of the release notes, or enter that one:
+A SvelteKit app pins the tarball by URL. The lockfile entry carries the
+tarball's `sha512-` integrity: pnpm 12 refuses an entry without it at every
+install, frozen or not (`ERR_PNPM_MISSING_TARBALL_INTEGRITY`), and fails on a
+mismatch ([pnpm 11.4.0](https://github.com/pnpm/pnpm/releases/tag/v11.4.0)).
+Compare the lockfile's value with the one at the top of the release notes, or
+enter that one:
 
 ```
 https://github.com/overnightworks/design/releases/download/v<version>/overnightworks-design-<version>.tgz
