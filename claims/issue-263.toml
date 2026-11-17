@@ -3,6 +3,6 @@ agent = "Claude 2ab3c824-e7b3-4185-a1b8-67280a5edb9a"
 role = "builder"
 base = "ed8081863bf46e2ab251d94152cfd2873dce2d34"
 branch = "claude/issue-263-quality-gate-current-release"
-scope = [".github/workflows/ci.yml", ".github/workflows/code-scanning.yml", ".github/workflows/release.yml", "scripts/agents_vocabulary_pin.toml"]
+scope = [".github/workflows/ci.yml", ".github/workflows/code-scanning.yml", ".github/workflows/release.yml", "scripts/agents_vocabulary_pin.toml", "src/lib/turn-outcome.ts"]
 opened_commit = "a3485b40f6bb1b156d281465c1c6afe10a94b580"
 whole_reason = "One pin move across the three workflows that call quality, plus the vocabulary pin beside it."
