@@ -1,7 +1,0 @@
-claim_id = "427af6eff10b4ef69abb85f3a5b31a70"
-agent = "Claude 2ab3c824-e7b3-4185-a1b8-67280a5edb9a"
-role = "builder"
-base = "ed8081863bf46e2ab251d94152cfd2873dce2d34"
-branch = "claude/issue-257-gap-set-check-prettier-form"
-scope = ["src/design/catalogs/typescript.py", "src/lib/words/en.ts", "tests/catalogs/test_typescript.py"]
-opened_commit = "b75fa94e30d413f92fee02bbc1608cb5820b2bf5"
