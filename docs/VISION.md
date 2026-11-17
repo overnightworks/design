@@ -24,6 +24,13 @@ familiar.
   signing out and the legal links.
 - Let each app keep its own colour and words while the shared parts stay shared.
 - Keep every app's words, and the shared parts' words, in one place per language, and catch a missing or outdated translation before it ships, so that a further language means adding its texts, not changing the app's code.
+- Keep a person's choice of light or dark with their account, like their
+  language, so it holds in every app after sign-in; before sign-in every page
+  follows the device.
+- Let anyone open one page and see every shared part in each of its states,
+  both themes and every language, as the newest release ships it.
+- Make every shared part work by keyboard and screen reader and stay readable
+  in both themes.
 - Carry one change to every app: an app takes the new version when its builders
   choose, and a breaking change is announced openly.
 
