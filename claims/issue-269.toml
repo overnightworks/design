@@ -1,8 +1,0 @@
-claim_id = "5a60f7548f0e4c32bacea7390ee1aa56"
-agent = "Claude 2ab3c824-e7b3-4185-a1b8-67280a5edb9a"
-role = "builder"
-base = "dede7c44f86640a4f7d2a7eb888778fa777223ef"
-branch = "claude/issue-269-pnpm-12"
-scope = ["README.md", "docs/ARCHITECTURE.md", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "quality/config.toml"]
-opened_commit = "580d2fe40a9b45f7202c38e658e26938270690ab"
-whole_reason = "One toolchain pin with its lock and the two sentences that describe that toolchain's behaviour."
