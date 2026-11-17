@@ -146,9 +146,9 @@ path. GitHub enforces immutable releases for the organization, so a release's ta
 and assets cannot change. A consumer pins a URL together with its content hash:
 the wheel's sha256 in the URL, the tarball's sha512 integrity in the consumer's
 lockfile, which pnpm 12 requires of every URL tarball entry and enforces at
-every install, frozen or not. A release is built only from a commit that passed quality's
-release gate, with no cache read, by a workflow whose actions are pinned to
-commits and whose only write grant is the tag job's. The
+every install, frozen or not. A release is built only from a commit that passed
+quality's release gate, with no cache read, by a workflow whose actions are pinned
+to commits and whose only write grant is the tag job's. The
 [residuals of that path](https://github.com/overnightworks/quality/blob/main/docs/release.md#residual)
 are quality's to name.
 
