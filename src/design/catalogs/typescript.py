@@ -29,7 +29,7 @@ PLURAL_RULES = "pluralRules"
 TRANSLATED = "translated"
 # A function taking fewer gaps than the source's still satisfies `Words`; this checks the other direction.
 GAP_SET_CHECK = (
-    f"// A translation that leaves out a gap of its source fails here.\n({{}} as Words) satisfies typeof {TRANSLATED};"
+    f"// A translation that leaves out a gap of its source fails here.\n({{}}) as Words satisfies typeof {TRANSLATED};"
 )
 
 
