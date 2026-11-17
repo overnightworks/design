@@ -1,7 +1,0 @@
-claim_id = "671dc960f55c47779c92998b622a4362"
-agent = "Claude 2ab3c824-e7b3-4185-a1b8-67280a5edb9a"
-role = "builder"
-base = "ed8081863bf46e2ab251d94152cfd2873dce2d34"
-branch = "fix/picomatch-advisory-allowance"
-scope = ["quality/config.toml"]
-opened_commit = "3a59aa52d1c998a7c900860406696e9ed7e3cb4a"
