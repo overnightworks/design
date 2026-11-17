@@ -1,0 +1,4 @@
+overrides:
+  deepmerge: '-'
+patchedDependencies:
+  '@sveltejs/vite-plugin-svelte@7.3.1': patches/@sveltejs__vite-plugin-svelte@7.3.1.patch
