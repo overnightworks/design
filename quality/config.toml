@@ -42,3 +42,11 @@ reason = "tests scripts/generate_turn_outcome.py, not a module of src/design"
 path = "tests/catalogs/test_public_reader.py"
 rule = "test-layout"
 reason = "pins the public functions of the package, which live in two modules of src/design/catalogs"
+
+[[advisories.allow]]
+id = "GHSA-fc5q-39xc-vjpf"
+lock = "pnpm-lock.yaml"
+until = 2027-01-31
+date = 2026-11-17
+item = "overnightworks/quality#879"
+reason = "picomatch 4.0.7, the latest release, has no fix; a dev and build dependency through fdir and tinyglobby of vite, vitest and svelte-check, never shipped in the package"
