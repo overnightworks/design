@@ -1,8 +1,0 @@
-claim_id = "9dd473b40b4549d399569ddffeed81e4"
-agent = "Claude 2ab3c824-e7b3-4185-a1b8-67280a5edb9a"
-role = "builder"
-base = "bdac5597fba3bff993f295bd997e771ffd61fadb"
-branch = "claude/issue-277-region-theme"
-scope = ["README.md", "docs/stylesheet.md", "src/design/static/design.css", "tests/e2e", "tests/test_wheel.py"]
-opened_commit = "7dfe272143657cf07e6b479b4675a0fb61c64917"
-whole_reason = "One selector change with its documentation and its proof through the consumer page."
