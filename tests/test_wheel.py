@@ -109,18 +109,18 @@ def top_level_rules(stylesheet):
     return rules
 
 
-LIGHT_SELECTOR = "[data-theme='light']"
+LIGHT_SELECTOR = ":root, [data-theme='light']"
 STAGE_SELECTOR = ":root"
 DARK_SELECTOR = "[data-theme='dark']"
 
 
 def body_of(rules, selector):
-    """Body of the one top-level rule whose selector list names the selector."""
+    """Body of the one top-level rule whose selector list names every member of the selector."""
+    wanted = {part.strip() for part in selector.split(",")}
     (body,) = [
         body
         for selectors, bodies in rules.items()
-        for member in [part.strip() for part in selectors.split(",")]
-        if member == selector
+        if wanted <= {part.strip() for part in selectors.split(",")}
         for body in bodies
     ]
     return body
