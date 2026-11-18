@@ -156,6 +156,83 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			}
 		}
 
+		for (const colorScheme of colorSchemes) {
+			test(`draws the sign-in failure and the agent refusal with the same computed look in ${colorScheme} and each keeps its own placement`, async ({
+				page
+			}) => {
+				await page.emulateMedia({ colorScheme });
+				await routeTo(page, outDir);
+				const boxLooks = [
+					'display', 'gap', 'align-items', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+					'border-top-color', 'border-top-width', 'border-left-width', 'border-top-left-radius',
+					'background-color', 'font-size', 'text-align', 'color'
+				];
+				const markLooks = ['display', 'margin-top', 'color', 'width', 'height', 'background-color', 'clip-path'];
+				// The computed looks of the banner, its sign and the sign's triangle; the width a parent gives it is placement.
+				const shapeOf = (alert: Locator) =>
+					alert.evaluate(
+						(node, [boxProperties, markProperties]) => {
+							const looks = (element: Element, properties: string[]) =>
+								Object.fromEntries(properties.map((name) => [name, getComputedStyle(element).getPropertyValue(name)]));
+							const sign = node.firstElementChild!;
+							return [
+								looks(node, boxProperties),
+								looks(sign, markProperties.slice(0, 3)),
+								looks(sign.firstElementChild!, markProperties.slice(3)),
+								looks(node.lastElementChild!, ['font-size', 'color'])
+							];
+						},
+						[boxLooks, markLooks]
+					);
+				// How far the banner sits inside the box that holds its wrapper, against what that box and the wrapper declare.
+				const placement = (alert: Locator) =>
+					alert.evaluate((node) => {
+						const wrapper = node.parentElement!;
+						const holder = wrapper.parentElement!;
+						const box = node.getBoundingClientRect();
+						const holderBox = holder.getBoundingClientRect();
+						const wrapperStyle = getComputedStyle(wrapper);
+						const holderStyle = getComputedStyle(holder);
+						const px = (value: string) => parseFloat(value);
+						return {
+							left: box.left - holderBox.left,
+							right: holderBox.right - box.right,
+							declaredLeft: px(holderStyle.borderLeftWidth) + px(holderStyle.paddingLeft) + px(wrapperStyle.marginLeft),
+							declaredRight: px(holderStyle.borderRightWidth) + px(holderStyle.paddingRight) + px(wrapperStyle.marginRight),
+							wrapperMarginLeft: px(wrapperStyle.marginLeft)
+						};
+					});
+
+				await page.goto(`${origin}/?login-failed`);
+				const signInAlert = page.getByRole('main').getByRole('alert');
+				await expect(signInAlert).toHaveText(en['signIn.loginFailedBanner']);
+				const tokens = await resolveStyle(
+					page,
+					{ 'border-top-color': 'var(--fail)', 'background-color': 'var(--fail-soft)' },
+					['border-top-color', 'background-color']
+				);
+				await expect(signInAlert).toHaveCSS('border-top-color', tokens['border-top-color']);
+				await expect(signInAlert).toHaveCSS('background-color', tokens['background-color']);
+				const signInShape = await shapeOf(signInAlert);
+				const signInPlacement = await placement(signInAlert);
+
+				await page.goto(`${origin}/?agents=refusal`);
+				const refusal = page.getByRole('alert');
+				await expect(refusal).toHaveText(en['agent.ownerAbsent']);
+				const agentShape = await shapeOf(refusal);
+				const agentPlacement = await placement(refusal);
+
+				expect(signInShape).toEqual(agentShape);
+				// The sign-in page lets its banner fill the card; the agent control insets its refusal by the margin it set.
+				for (const { left, right, declaredLeft, declaredRight } of [signInPlacement, agentPlacement]) {
+					expect(left).toBeCloseTo(declaredLeft, 1);
+					expect(right).toBeCloseTo(declaredRight, 1);
+				}
+				expect(signInPlacement.wrapperMarginLeft).toBe(0);
+				expect(agentPlacement.wrapperMarginLeft).toBeGreaterThan(0);
+			});
+		}
+
 		test('names the app once in the card for screen readers', async ({ page }) => {
 			await routeTo(page, outDir);
 			await page.goto(`${origin}/`);
