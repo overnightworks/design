@@ -23,10 +23,13 @@ afterEach(async () => {
 	}
 });
 
-function bannerWithoutText(page: HTMLElement, text: string): string {
+/** The banner's tags, roles and child order with its words taken out; classes are private to the part. */
+function bannerStructure(page: HTMLElement, text: string): string {
 	const alert = page.querySelector('[role="alert"]')!;
 	expect(alert.textContent).toContain(text);
-	return alert.outerHTML.replace(text, '');
+	const copy = alert.cloneNode(true) as HTMLElement;
+	for (const element of [copy, ...copy.querySelectorAll('*')]) element.removeAttribute('class');
+	return copy.outerHTML.replace(text, '');
 }
 
 it('draws the sign-in failure and the agent refusal as the same banner', async () => {
@@ -39,5 +42,5 @@ it('draws the sign-in failure and the agent refusal as the same banner', async (
 	const control = await render((target) =>
 		mount(AgentControl, { target, props: { rows: [], onCall: () => {}, refusal: 'try-again', words: en } })
 	);
-	expect(bannerWithoutText(control, en['agent.tryAgain'])).toBe(bannerWithoutText(signIn, en['signIn.loginFailedBanner']));
+	expect(bannerStructure(control, en['agent.tryAgain'])).toBe(bannerStructure(signIn, en['signIn.loginFailedBanner']));
 });
