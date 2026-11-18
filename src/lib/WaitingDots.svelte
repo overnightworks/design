@@ -1,5 +1,3 @@
-<script lang="ts"></script>
-
 <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
 
 <style>
