@@ -26,10 +26,12 @@ ancestor wins at any depth, under either device mode. The limits:
   keep their root values, so the kit's parts show the root's accent unless the app
   writes its own values under the region's `[data-theme]`.
 - A rule keyed to the root's attribute or to the device media query follows the
-  root or the device, not the nearest region. `:root[data-theme='dark'] x` also
-  styles an `x` inside a `data-theme='light'` region of a dark root, and a
-  `@media (prefers-color-scheme: dark)` rule styles content inside a light region
-  on a dark device. Such a rule never styles a dark region of a light root.
+  root or the device, not the nearest region. `:root[data-theme='dark'] x` matches
+  only when the root carries the attribute, so it also styles an `x` inside a
+  light region of that root and never one inside a dark region of a light or
+  unmarked root. A `@media (prefers-color-scheme: dark)` rule matches by the device
+  alone, so on a dark device it styles content in every region, light or dark,
+  whatever the root, and on a light device it styles none.
 
 It also owns two classes. The first, `as-typed`, turns the case transform and the
 letter-spacing off. Text the app writes keeps the family's uppercase. Text a
