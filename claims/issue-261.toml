@@ -1,0 +1,8 @@
+claim_id = "601d675e84f2425e903301cb097181fb"
+agent = "Claude 2ab3c824-e7b3-4185-a1b8-67280a5edb9a"
+role = "builder"
+base = "4c84f8131c47a8635e231300c8fa697c5be3e8e3"
+branch = "claude/issue-261-tests-read-owners"
+scope = ["src/lib/AccountMenu.test.ts", "src/lib/AgentControl.test.ts", "src/lib/SignInPage.test.ts", "tests/e2e/agent-control.spec.ts", "tests/e2e/kit-words.spec.ts", "tests/test_npm_package.py", "tests/test_wheel.py"]
+opened_commit = "46ea4e4df0be1c3ea5259be490ffaf40645a51dd"
+whole_reason = "One rule applied across the suite: each test reads values from their owner instead of a copy, so the files share the same change."
