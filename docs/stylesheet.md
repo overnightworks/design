@@ -8,11 +8,30 @@ markup against the kit.
 The wheel's `design.css` owns the family tokens and the
 `@font-face` rules for Oswald and Open Sans. The token names are the release's
 `design-<version>-tokens.txt`, which `scripts/list_tokens` prints for any stylesheet.
-Light is under `:root`; dark sits under the device media query guarded by
-`:root:not([data-theme='light'])` and under `:root[data-theme='dark']`, so with
-no choice the page follows the device and either attribute forces its theme.
-Each theme sets `color-scheme`, so an app sets none. Everything
+Light is under `:root` and `[data-theme='light']`; dark sits under the device media
+query guarded by `:root:not([data-theme='light'])` and under `[data-theme='dark']`,
+so with no choice the page follows the device and either attribute on the root
+forces its theme. Each theme sets `color-scheme`, so an app sets none. Everything
 domain-specific stays with the app.
+
+The same attribute on any other element marks a surface that is dark (or light) in
+either device mode, such as a game table or video stage. The nearest marked
+ancestor wins at any depth, under either device mode. The limits:
+
+- The region resolves the design tokens and `color-scheme`, but it paints nothing
+  itself. The app sets `color: var(--text)` and `background: var(--bg)` on the
+  region, because the page's computed values do not recompute inside it.
+- The app's own tokens (`--primary`, `--accent`, `--on-accent`) and any token the
+  app derives at `:root` from design tokens stay root-only. Inside a region they
+  keep their root values, so the kit's parts show the root's accent unless the app
+  writes its own values under the region's `[data-theme]`.
+- A rule keyed to the root's attribute or to the device media query follows the
+  root or the device, not the nearest region. `:root[data-theme='dark'] x` matches
+  only when the root carries the attribute, so it also styles an `x` inside a
+  light region of that root and never one inside a dark region of a light or
+  unmarked root. A `@media (prefers-color-scheme: dark)` rule matches by the device
+  alone, so on a dark device it styles content in every region, light or dark,
+  whatever the root, and on a light device it styles none.
 
 It also owns two classes. The first, `as-typed`, turns the case transform and the
 letter-spacing off. Text the app writes keeps the family's uppercase. Text a
