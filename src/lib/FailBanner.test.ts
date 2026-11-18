@@ -16,23 +16,6 @@ async function render(mountInto: (target: HTMLElement) => ReturnType<typeof moun
 	return target;
 }
 
-afterEach, expect, it } from 'vitest';
-import AgentControl from './AgentControl.svelte';
-import SignInPage from './SignInPage.svelte';
-import { loadWords } from './words/index.ts';
-
-const en = await loadWords('en');
-
-const mounted: { target: HTMLElement; component: ReturnType<typeof mount> }[] = [];
-
-async function render(component: typeof AgentControl | typeof SignInPage, props: Record<string, unknown>): Promise<HTMLElement> {
-	const target = document.createElement('div');
-	document.body.append(target);
-	mounted.push({ target, component: mount(component, { target, props }) });
-	await tick();
-	return target;
-}
-
 afterEach(async () => {
 	for (const { target, component } of mounted.splice(0)) {
 		await unmount(component);
