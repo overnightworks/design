@@ -42,6 +42,10 @@ function radios(menu: HTMLElement): HTMLInputElement[] {
 	return [...menu.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
 }
 
+function buttonNamed(menu: HTMLElement, name: string): HTMLButtonElement | undefined {
+	return [...menu.querySelectorAll('button')].find((button) => button.textContent?.trim() === name);
+}
+
 function checkedLabel(menu: HTMLElement): string | undefined {
 	return radios(menu).find((radio) => radio.checked)?.closest('label')?.textContent?.trim();
 }
@@ -234,9 +238,7 @@ describe('words from the app', () => {
 			de['account.dark']
 		]);
 		expect(checkedLabel(menu)).toBe(de['account.dark']);
-		expect(menu.querySelector<HTMLButtonElement>('.out button')?.textContent?.trim()).toBe(
-			de['account.logOut']
-		);
+		expect(buttonNamed(menu, de['account.logOut'])).toBeDefined();
 		for (const word of shownWords(en)) expect(menu.textContent).not.toContain(word);
 	});
 
@@ -274,12 +276,12 @@ describe('en words', () => {
 		const menu = await render({ theme: { choice: 'dark', onChange: () => {} } });
 		const group = menu.querySelector('[role="radiogroup"]')!;
 		const label = document.getElementById(group.getAttribute('aria-labelledby')!);
-		expect(label?.textContent?.trim()).toBe('Theme');
+		expect(label?.textContent?.trim()).toBe(en['account.theme']);
 		expect([...group.querySelectorAll('label')].map((row) => row.textContent?.trim())).toEqual([
-			'Follow system',
-			'Light',
-			'Dark'
+			en['account.followSystem'],
+			en['account.light'],
+			en['account.dark']
 		]);
-		expect(menu.querySelector('.out button')?.textContent?.trim()).toBe('Log out');
+		expect(buttonNamed(menu, en['account.logOut'])).toBeDefined();
 	});
 });
