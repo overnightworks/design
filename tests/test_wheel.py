@@ -109,8 +109,20 @@ def top_level_rules(stylesheet):
     return rules
 
 
-LIGHT_SELECTOR = ":root, [data-theme='light']"
+LIGHT_SELECTOR = ":root"
 DARK_SELECTOR = "[data-theme='dark']"
+
+
+def body_of(rules, selector):
+    """Body of the one top-level rule whose selector list names the selector."""
+    (body,) = [
+        body
+        for selectors, bodies in rules.items()
+        for member in [part.strip() for part in selectors.split(",")]
+        if member == selector
+        for body in bodies
+    ]
+    return body
 
 
 def test_light_is_the_no_choice_case_and_dark_follows_the_device_or_the_attribute(installed_package):
@@ -119,14 +131,21 @@ def test_light_is_the_no_choice_case_and_dark_follows_the_device_or_the_attribut
     (device_dark,) = rules["@media (prefers-color-scheme: dark)"]
     assert ":root:not([data-theme='light'])" in device_dark
     bodies = {
-        ("light", "no attribute"): rules[LIGHT_SELECTOR][0],
-        ("dark", "attribute"): rules[DARK_SELECTOR][0],
+        ("light", "no attribute"): body_of(rules, LIGHT_SELECTOR),
+        ("dark", "attribute"): body_of(rules, DARK_SELECTOR),
         ("dark", "device"): device_dark,
     }
     for (scheme, case), body in bodies.items():
         assert re.search(r"^\s+--bg:", body, re.MULTILINE), case
         assert re.search(rf"^\s+color-scheme: {scheme};", body, re.MULTILINE), case
-    assert list(rules).index(LIGHT_SELECTOR) < list(rules).index(DARK_SELECTOR)
+
+
+def test_the_page_root_keeps_the_specificity_of_a_root_with_the_dark_attribute(installed_package):
+    _, static = installed_package
+    rules = top_level_rules((static / "design.css").read_text())
+    (selectors,) = [selectors for selectors, bodies in rules.items() if body_of(rules, DARK_SELECTOR) in bodies]
+    members = {part.strip() for part in selectors.split(",")}
+    assert ":root[data-theme='dark']" in members
 
 
 COLOUR = re.compile(r"#[0-9a-f]{3,8}|rgba?\([0-9., ]+\)")
@@ -143,8 +162,8 @@ def scheme_declarations(installed_package):
     rules = top_level_rules((static / "design.css").read_text())
     (device_dark,) = rules["@media (prefers-color-scheme: dark)"]
     return {
-        "light": declarations(rules[LIGHT_SELECTOR][0]),
-        "dark attribute": declarations(rules[DARK_SELECTOR][0]),
+        "light": declarations(body_of(rules, LIGHT_SELECTOR)),
+        "dark attribute": declarations(body_of(rules, DARK_SELECTOR)),
         "dark device": declarations(device_dark.split("{", 1)[1].rsplit("}", 1)[0]),
     }
 
