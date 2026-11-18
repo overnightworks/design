@@ -126,6 +126,7 @@
 	--font-body: 'Open Sans', Arial, sans-serif;
 }
 
+:root[data-theme='dark'],
 [data-theme='dark'] {
 	--bg: #0d0d0d;
 	--bg-deep: #050508;
