@@ -14,6 +14,11 @@ so with no choice the page follows the device and either attribute on the root
 forces its theme. Each theme sets `color-scheme`, so an app sets none. Everything
 domain-specific stays with the app.
 
+The stage and glass tokens are the exception to the themes: `--stage`,
+`--on-stage`, `--on-stage-soft`, `--glass` and `--glass-dark` are the same in
+both, because a video stage is dark in either. `HearingSwitch` and `EarMark`
+read them.
+
 The same attribute on any other element marks a surface that is dark (or light) in
 either device mode, such as a game table or video stage. The nearest marked
 ancestor wins at any depth, under either device mode. The limits:
@@ -33,11 +38,13 @@ ancestor wins at any depth, under either device mode. The limits:
   alone, so on a dark device it styles content in every region, light or dark,
   whatever the root, and on a light device it styles none.
 
-It also owns two classes. The first, `as-typed`, turns the case transform and the
-letter-spacing off. Text the app writes keeps the family's uppercase. Text a
-person typed (a name, slug or address) keeps its case, also in `h1`, `h2` and
-the page head's `h3`. An app marks such text with `as-typed` on the element that
-holds only the typed text: a `span` inside the heading, because a heading's own
+It also owns a heading rule and two classes. The rule sets `h1` and `h2` in the
+family display font (`--font-display`), spaced and uppercase, so text the app
+writes keeps the family's uppercase without a rule of its own. The first class,
+`as-typed`, turns the case transform and the letter-spacing off. Text a person
+typed (a name, slug or address) keeps its case, also in `h1`, `h2` and the page
+head's `h3`. An app marks such text with `as-typed` on the element that holds
+only the typed text: a `span` inside the heading, because a heading's own
 selector may outrank a single class on the heading itself. The second, `legal`, is the look of the legal row, described under [Writing the legal row by hand](#writing-the-legal-row-by-hand).
 
 ```html

@@ -1,6 +1,8 @@
 <script lang="ts">
+	import FailBanner from './FailBanner.svelte';
 	import LegalLinks from './LegalLinks.svelte';
 	import type { SignInPageProps } from './types.ts';
+	import WaitingDots from './WaitingDots.svelte';
 
 	let { appName, state, legalLinks, legalLinksNewTab = false, words }: SignInPageProps = $props();
 
@@ -13,10 +15,7 @@
 </script>
 
 {#snippet banner(text: string)}
-	<div class="banner" role="alert">
-		<span class="fail-shape"><i></i></span>
-		<span>{text}</span>
-	</div>
+	<div class="banner-slot"><FailBanner {text} /></div>
 {/snippet}
 
 {#snippet tabLink(tabHref: string)}
@@ -56,7 +55,7 @@
 			<p>{words['signIn.inOtherWindow']}</p>
 			<div class="wait" aria-hidden="true">
 				<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2" /><path d="M3.5 9.5h17" /></svg>
-				<span class="dots"><i></i><i></i><i></i></span>
+				<WaitingDots />
 			</div>
 			{@render tabLink(state.tabHref)}
 		{:else if state.page === 'window-blocked'}
@@ -197,33 +196,8 @@
 		font-size: 14px;
 		color: var(--text-muted);
 	}
-	.banner {
-		display: flex;
-		gap: 10px;
-		align-items: flex-start;
-		box-sizing: border-box;
+	.banner-slot {
 		width: 100%;
-		padding: 10px 12px;
-		border: 1px solid var(--fail);
-		border-left-width: 3px;
-		border-radius: 4px;
-		background: var(--fail-soft);
-		font-size: 13.5px;
-		text-align: left;
-		color: var(--text);
-	}
-	.fail-shape {
-		margin-top: 3px;
-		display: inline-flex;
-		color: var(--fail);
-	}
-	.fail-shape i {
-		width: 12px;
-		height: 12px;
-		flex: none;
-		display: inline-block;
-		background: var(--fail);
-		clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
 	}
 	.wait {
 		display: flex;
@@ -244,41 +218,6 @@
 		stroke-width: 2;
 		stroke-linecap: round;
 		stroke-linejoin: round;
-	}
-	.dots {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-	}
-	.dots i {
-		width: 6px;
-		height: 6px;
-		border-radius: 50%;
-		background: currentColor;
-		opacity: 0.6;
-	}
-	@media (prefers-reduced-motion: no-preference) {
-		.dots i {
-			animation: hop 1.2s ease-in-out infinite;
-		}
-		.dots i:nth-child(2) {
-			animation-delay: 0.12s;
-		}
-		.dots i:nth-child(3) {
-			animation-delay: 0.24s;
-		}
-	}
-	@keyframes hop {
-		0%,
-		60%,
-		100% {
-			translate: 0 0;
-			opacity: 0.45;
-		}
-		30% {
-			translate: 0 -5px;
-			opacity: 1;
-		}
 	}
 	.plain-link {
 		display: inline-flex;

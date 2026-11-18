@@ -238,7 +238,7 @@ if (query.has('words')) {
 	});
 } else if (query.has('typed')) {
 	// A person typed the name; the app wrote the words around it.
-	document.body.innerHTML = '<main><h1>Source <span class="as-typed">talks</span></h1></main>';
+	document.body.innerHTML = '<main><h1>Source <span class="as-typed">talks</span></h1><h2>Second</h2></main>';
 } else if (query.has('legal')) {
 	// The markup contract of a page that cannot render Svelte, beside the component's own row.
 	const words = await loadKitWords(pageLanguage);

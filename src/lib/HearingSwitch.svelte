@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { earPaths } from './glyphs.js';
 	import type { HearingKind, HearingSwitchProps } from './types.ts';
 	import type { Words as KitWords } from './words/de.ts';
 
@@ -23,8 +24,7 @@
 	<span class="icon">
 		<svg viewBox="0 0 24 24" aria-hidden="true">
 			{#if kind === 'hear'}
-				<path d="M6 10a6 6 0 1 1 12 0c0 3.2-3 4-3 7a3 3 0 0 1-6 0" />
-				<path d="M9.5 10a2.5 2.5 0 0 1 5 0" />
+				{#each earPaths as path (path)}<path d={path} />{/each}
 				{#if !on}<path d="M4 4l16 16" />{/if}
 			{:else if kind === 'see'}
 				<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" />
@@ -56,8 +56,8 @@
 		padding: 0 5px 0 10px;
 		border: 0;
 		border-radius: 999px;
-		background: rgba(12, 14, 17, 0.55);
-		color: #f4f6f8;
+		background: var(--glass-dark);
+		color: var(--on-stage);
 		font-family: var(--font-body);
 		font-size: 12.5px;
 		font-weight: 600;
@@ -68,7 +68,7 @@
 		backdrop-filter: blur(12px);
 	}
 	.hearing-switch:hover {
-		background: rgba(255, 255, 255, 0.15);
+		background: var(--glass);
 	}
 	.hearing-switch:focus-visible {
 		outline: 2.5px solid var(--accent);
@@ -76,7 +76,7 @@
 	}
 	.icon {
 		display: inline-flex;
-		color: rgba(244, 246, 248, 0.72);
+		color: var(--on-stage-soft);
 	}
 	.icon svg {
 		width: 16px;
@@ -90,7 +90,7 @@
 	.label {
 		overflow: hidden;
 		text-overflow: ellipsis;
-		color: rgba(244, 246, 248, 0.72);
+		color: var(--on-stage-soft);
 	}
 	.track {
 		position: relative;
@@ -98,7 +98,7 @@
 		width: 34px;
 		height: 20px;
 		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.15);
+		background: var(--glass);
 	}
 	.track::after {
 		content: '';
@@ -108,7 +108,7 @@
 		width: 14px;
 		height: 14px;
 		border-radius: 50%;
-		background: #f4f6f8;
+		background: var(--on-stage);
 	}
 	.hearing-switch[aria-checked='true'] .icon {
 		color: var(--accent);
@@ -121,7 +121,7 @@
 	}
 	.hearing-switch[aria-checked='true'] .track::after {
 		transform: translateX(14px);
-		background: #0d1013;
+		background: var(--stage);
 	}
 	.compact {
 		flex: none;
@@ -142,7 +142,7 @@
 		left: 4px;
 		z-index: 1;
 		margin-top: -6px;
-		color: #0d1013;
+		color: var(--stage);
 		pointer-events: none;
 	}
 	.compact .icon svg {
