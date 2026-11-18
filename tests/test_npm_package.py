@@ -52,36 +52,6 @@ SVELTE_TSCONFIG = json.dumps(
     }
 )
 TSC_WITHOUT_TS_ENDINGS = [argument for argument in TSC_ARGUMENTS if argument != "--allowImportingTsExtensions"]
-COMPONENT_FILES = {
-    "svelte-dist/index.js",
-    "svelte-dist/index.d.ts",
-    "svelte-dist/kitWords.js",
-    "svelte-dist/kitWords.d.ts",
-    "svelte-dist/types.js",
-    "svelte-dist/types.d.ts",
-    "svelte-dist/turn-outcome.js",
-    "svelte-dist/turn-outcome.d.ts",
-    "svelte-dist/AccountMenu.svelte",
-    "svelte-dist/AccountMenu.svelte.d.ts",
-    "svelte-dist/AgentControl.svelte",
-    "svelte-dist/AgentControl.svelte.d.ts",
-    "svelte-dist/AiMark.svelte",
-    "svelte-dist/AiMark.svelte.d.ts",
-    "svelte-dist/EarMark.svelte",
-    "svelte-dist/EarMark.svelte.d.ts",
-    "svelte-dist/HearingSwitch.svelte",
-    "svelte-dist/HearingSwitch.svelte.d.ts",
-    "svelte-dist/HelperChat.svelte",
-    "svelte-dist/HelperChat.svelte.d.ts",
-    "svelte-dist/LegalLinks.svelte",
-    "svelte-dist/LegalLinks.svelte.d.ts",
-    "svelte-dist/TurnState.svelte",
-    "svelte-dist/TurnState.svelte.d.ts",
-    "svelte-dist/Marked.svelte",
-    "svelte-dist/Marked.svelte.d.ts",
-    "svelte-dist/SignInPage.svelte",
-    "svelte-dist/SignInPage.svelte.d.ts",
-}
 
 
 @pytest.fixture(scope="module")
@@ -171,6 +141,19 @@ def kit_words_files():
     }
 
 
+def component_files():
+    """What svelte-package builds from each non-test source of src/lib, with its declaration."""
+    packed = set()
+    for source in (REPOSITORY / "src" / "lib").iterdir():
+        if not source.is_file() or ".test." in source.name:
+            continue
+        if source.suffix == ".svelte":
+            packed |= {f"svelte-dist/{source.name}", f"svelte-dist/{source.name}.d.ts"}
+        else:
+            packed |= {f"svelte-dist/{source.stem}.js", f"svelte-dist/{source.stem}.d.ts"}
+    return packed
+
+
 def packed_files(package):
     return {path.relative_to(package).as_posix() for path in package.rglob("*") if path.is_file()}
 
@@ -185,7 +168,7 @@ def export_targets(exports):
 def test_tarball_holds_exactly_the_manifest_readme_licence_stylesheet_fonts_font_licences_and_component(
     tarball, font_files, licences
 ):
-    expected = {"package.json", "README.md", "LICENSE", f"{STATIC}/design.css"} | COMPONENT_FILES | kit_words_files()
+    expected = {"package.json", "README.md", "LICENSE", f"{STATIC}/design.css"} | component_files() | kit_words_files()
     expected |= {f"{STATIC}/fonts/{name}" for name in font_files | licences}
     assert packed_files(tarball) == expected
 
