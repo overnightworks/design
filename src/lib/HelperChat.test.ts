@@ -38,12 +38,15 @@ async function render(overrides: Partial<HelperChatProps<HelperMessage>> = {}): 
 }
 
 const field = (root: HTMLElement) => root.querySelector('textarea')!;
-const sendButton = (root: HTMLElement) => field(root).nextElementSibling as HTMLButtonElement;
+const buttonWorded = (root: HTMLElement, word: string) =>
+	[...root.querySelectorAll('button')].find((candidate) => candidate.textContent?.trim() === word)!;
+const sendButton = (root: HTMLElement, words: typeof en = en) => buttonWorded(root, words['helperChat.send']);
 const status = (root: HTMLElement) => root.querySelector('[role="status"]');
 const visibleLine = (root: HTMLElement) => root.querySelector('ol [aria-hidden="true"]');
 
-// The bubble, the AI mark and the tool row have no role: the bubble is the item's content after its speaker, the mark the element worded "AI", the tool row the parent of the kit's tool word.
-const bubbleOf = (item: Element) => item.children[1] ?? null;
+// The bubble, the AI mark, the tool row and the list container have no role (gaps named on #276): the bubble is the item's content after its speaker, the mark the element worded "AI", the tool row the parent of the kit's tool word, the container the parent of the message list.
+const listContainer = (root: HTMLElement) => root.querySelector('ol')!.parentElement!;
+const bubbleOf = (item: Element) => (item.lastElementChild === item.firstElementChild ? null : item.lastElementChild);
 const bubbles = (root: HTMLElement) => [...root.querySelectorAll('li')].map(bubbleOf).filter((bubble) => bubble !== null);
 const aiMarks = (scope: Element) => [...scope.querySelectorAll('span')].filter((candidate) => candidate.textContent === 'AI' && candidate.children.length === 0);
 const toolRow = (root: HTMLElement, tool: string) =>
@@ -100,7 +103,7 @@ describe('the message list', () => {
 	it('shows only the empty hint, no list, while there is no message', async () => {
 		const root = await render();
 		expect(root.querySelector('[role="list"], ol, li')).toBeNull();
-		expect(root.querySelector('.list')?.textContent).toBe('Ask me anything');
+		expect(root.textContent).toContain('Ask me anything');
 	});
 
 	it('shows each message as written, with its line breaks kept', async () => {
@@ -110,7 +113,9 @@ describe('the message list', () => {
 				{ role: 'assistant', text: 'Sure' }
 			]
 		});
-		expect([...root.querySelectorAll('.text')].map((shown) => shown.textContent)).toEqual(['Line one\n  Line two', 'Sure']);
+		const [person, helper] = bubbles(root);
+		expect(person.textContent?.trim()).toBe('Line one\n  Line two');
+		expect(helper.textContent?.trim()).toMatch(/Sure$/);
 	});
 
 	it('leads each helper message with one AiMark before its tool rows and gives the person none', async () => {
@@ -168,7 +173,7 @@ describe('the message list', () => {
 				render: () => `<p class="problem">${parameters().message.role}@${parameters().index}</p>`
 			}))
 		});
-		const messages = [...root.querySelectorAll('.message')];
+		const messages = [...root.querySelectorAll('li')];
 		expect(messages.map((message) => message.querySelector('.problem')?.textContent)).toEqual(['user@0', 'assistant@1']);
 	});
 
@@ -191,14 +196,15 @@ describe('the history', () => {
 	it('shows the loading word instead of the list while it loads', async () => {
 		const root = await render({ history: { state: 'loading' }, messages: [{ role: 'user', text: 'Hi' }] });
 		expect(root.textContent).toContain(en['helperChat.loading']);
-		expect(root.querySelector('.list')).toBeNull();
+		expect(root.querySelector('ol')).toBeNull();
 		expect(root.textContent).not.toContain('Hi');
 	});
 
 	it('shows the failure as an alert instead of the list when it failed', async () => {
 		const root = await render({ history: { state: 'failed', failure: 'Chat is gone' }, messages: [{ role: 'user', text: 'Hi' }] });
 		expect(root.querySelector('[role="alert"]')?.textContent).toBe('Chat is gone');
-		expect(root.querySelector('.list')).toBeNull();
+		expect(root.querySelector('ol')).toBeNull();
+		expect(root.textContent).not.toContain('Hi');
 	});
 
 	it('keeps the composer while the history loads or failed', async () => {
@@ -210,8 +216,8 @@ describe('the history', () => {
 describe('the list element', () => {
 	it('binds the message container and reports its scrolling', async () => {
 		const onListScroll = vi.fn();
-		const root = await render({ onListScroll });
-		const list = root.querySelector<HTMLElement>('.list')!;
+		const root = await render({ onListScroll, messages: [{ role: 'user', text: 'Hi' }] });
+		const list = listContainer(root);
 		list.dispatchEvent(new Event('scroll'));
 		expect(onListScroll).toHaveBeenCalledOnce();
 	});
@@ -220,11 +226,11 @@ describe('the list element', () => {
 		const target = document.createElement('div');
 		document.body.append(target);
 		const holder: { list?: HTMLElement } = {};
-		const props = baseProps();
+		const props = { ...baseProps(), messages: [{ role: 'user' as const, text: 'Hi' }] };
 		Object.defineProperty(props, 'list', { get: () => holder.list, set: (value: HTMLElement) => (holder.list = value), enumerable: true });
 		mounted.push({ target, component: mount(HelperChat, { target, props }) });
 		await tick();
-		expect(holder.list).toBe(target.querySelector('.list'));
+		expect(holder.list).toBe(listContainer(target));
 		expect(holder.list?.hasAttribute('role')).toBe(false);
 	});
 });
@@ -300,7 +306,7 @@ describe('the thinking line', () => {
 
 	it('keeps the status element out of the list, as a direct child of the part’s root', async () => {
 		const root = await render({ messages: [{ role: 'user', text: 'Hi' }, { role: 'assistant', text: '' }], running: true });
-		expect(status(root)!.parentElement).toBe(root.querySelector('.helper-chat'));
+		expect(status(root)!.parentElement).toBe(root.firstElementChild);
 	});
 
 	it.each([
@@ -386,11 +392,9 @@ describe('the composer', () => {
 
 	it('puts the bar of tags between the banner and the composer box', async () => {
 		const root = await render({ composerTop: text('Tag bar'), readOnly: text('Archived') });
-		const composer = field(root).closest('.composer')!;
-		const order = [...composer.children].map((child) =>
-			child.classList.contains('read-only') ? 'banner' : child.classList.contains('composer-box') ? 'box' : child.textContent
-		);
-		expect(order).toEqual(['banner', 'Tag bar', 'box']);
+		const box = field(root).parentElement!;
+		const order = [...box.parentElement!.children].map((child) => (child === box ? 'box' : child.textContent));
+		expect(order).toEqual(['Archived', 'Tag bar', 'box']);
 	});
 
 	it('keeps focus in the composer when a button inside its box is pressed', async () => {
@@ -398,7 +402,7 @@ describe('the composer', () => {
 		const own = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
 		sendButton(root).dispatchEvent(own);
 		const app = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
-		root.querySelector('.composer-box button:not(.send)')!.dispatchEvent(app);
+		buttonWorded(root, 'Pick').dispatchEvent(app);
 		const inField = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
 		field(root).dispatchEvent(inField);
 		expect([own.defaultPrevented, app.defaultPrevented, inField.defaultPrevented]).toEqual([true, true, false]);
@@ -491,21 +495,21 @@ describe('sending', () => {
 
 	it('names Send by the kit word', async () => {
 		const root = await render({ words: de });
-		expect(sendButton(root).textContent?.trim()).toBe(de['helperChat.send']);
+		expect(sendButton(root, de)).toBeDefined();
 	});
 });
 
 describe('read-only', () => {
 	it('shows the banner above the composer and disables the field and Send', async () => {
 		const root = await render({ draft: 'Hello', readOnly: text('This chat is archived') });
-		expect(root.querySelector('.read-only')?.textContent).toContain('This chat is archived');
+		expect(root.textContent).toContain('This chat is archived');
 		expect(field(root).disabled).toBe(true);
 		expect(sendButton(root).disabled).toBe(true);
 	});
 
 	it('shows no banner and enables the field without the snippet', async () => {
 		const root = await render();
-		expect(root.querySelector('.read-only')).toBeNull();
+		expect(field(root).parentElement!.parentElement!.textContent?.trim()).toBe(en['helperChat.send']);
 		expect(field(root).disabled).toBe(false);
 	});
 });

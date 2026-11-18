@@ -207,7 +207,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 
 		test('hands the message list to the app, which restores its place, and reports scrolling', async ({ page }) => {
 			await open(page, 'scroll');
-			const list = page.locator('.list');
+			const list = page.getByRole('list').locator('xpath=..');
 			await expect.poll(() => list.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
 			await list.evaluate((node) => {
 				node.scrollTop = 0;
