@@ -1,0 +1,8 @@
+claim_id = "b57ee80e698c4242a40e95c7a860813f"
+agent = "Claude 2ab3c824-e7b3-4185-a1b8-67280a5edb9a"
+role = "builder"
+base = "4c84f8131c47a8635e231300c8fa697c5be3e8e3"
+branch = "claude/issue-260-docs-one-owner"
+scope = ["README.md", "docs/ARCHITECTURE.md", "docs/languages.md", "docs/mockups/agent-control.html", "docs/stylesheet.md"]
+opened_commit = "dd75cfcedb743cb95ccaf8c6e1dec09af3600550"
+whole_reason = "One document set: a fact moves from one document to its single owner, so the documents change together."
