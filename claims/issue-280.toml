@@ -3,6 +3,6 @@ agent = "Claude 2ab3c824-e7b3-4185-a1b8-67280a5edb9a"
 role = "builder"
 base = "7bc105f12fe178bde9ecfc857679cedb9a3cf36c"
 branch = "claude/issue-280-shared-looks-once"
-scope = ["README.md", "docs/ARCHITECTURE.md", "docs/stylesheet.md", "src/design/static/design.css", "src/lib/AgentControl.svelte", "src/lib/AgentControl.test.ts", "src/lib/EarMark.svelte", "src/lib/EarMark.test.ts", "src/lib/FailBanner.svelte", "src/lib/HearingSwitch.svelte", "src/lib/HearingSwitch.test.ts", "src/lib/SignInPage.svelte", "src/lib/SignInPage.test.ts", "src/lib/WaitingDots.svelte", "src/lib/glyphs.ts", "tests"]
+scope = ["README.md", "docs/ARCHITECTURE.md", "docs/stylesheet.md", "src/design/static/design.css", "src/lib/AgentControl.svelte", "src/lib/AgentControl.test.ts", "src/lib/EarMark.svelte", "src/lib/EarMark.test.ts", "src/lib/FailBanner.svelte", "src/lib/FailBanner.test.ts", "src/lib/HearingSwitch.svelte", "src/lib/HearingSwitch.test.ts", "src/lib/SignInPage.svelte", "src/lib/SignInPage.test.ts", "src/lib/WaitingDots.svelte", "src/lib/glyphs.ts", "tests"]
 opened_commit = "dd22015875c265ad6de5c296c4544912f8655ace"
 whole_reason = "One move of each duplicated look to its single owner, plus the family heading rule in the same stylesheet; the plan review paired them."
