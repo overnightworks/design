@@ -8,8 +8,11 @@ const widths = [390, 1280] as const;
 const languages = ['de', 'en'] as const satisfies readonly KitLanguage[];
 
 const reportsOf = (page: Page) => page.evaluate(() => window.reports);
-const bubbleOf = (page: Page, text: string) => page.locator('.bubble', { hasText: text });
-const rowOf = (page: Page, tool: string) => page.locator('.tool-call', { hasText: tool }).first();
+// The bubble, the AI mark and the tool row have no role: the bubble is the message's content after its speaker line,
+// the mark the element worded "AI", the tool row the parent of the line that names its tool.
+const bubbleOf = (page: Page, text: string) => page.getByRole('listitem').filter({ hasText: text }).locator(':scope > *').nth(1);
+const aiMarkIn = (scope: Locator) => scope.getByText('AI', { exact: true });
+const rowOf = (page: Page, tool: string) => page.getByText(tool).first().locator('..');
 
 for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[]) {
 	test.describe(`the helper chat in a production consumer that ${consumer === 'imported' ? 'imports' : 'statically links'} design.css`, () => {
@@ -131,14 +134,14 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 		test('leads each helper message with the AI mark before its tool rows and gives the person none', async ({ page }) => {
 			await open(page, 'base');
 			const helper = bubbleOf(page, 'I shortened it');
-			await expect(helper.locator('.ai-mark')).toHaveCount(1);
+			await expect(aiMarkIn(helper)).toHaveCount(1);
 			const marked = await helper.evaluate((node) => {
-				const mark = node.querySelector('.ai-mark')!;
-				const row = node.querySelector('.tool-call')!;
+				const mark = [...node.querySelectorAll('span')].find((candidate) => candidate.textContent === 'AI' && candidate.children.length === 0)!;
+				const row = [...node.querySelectorAll('span')].find((candidate) => candidate.textContent?.includes('rewrite_section'))!.parentElement!;
 				return Boolean(mark.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING) && node.firstElementChild!.contains(mark);
 			});
 			expect(marked).toBe(true);
-			await expect(bubbleOf(page, 'Make the second verse').locator('.ai-mark')).toHaveCount(0);
+			await expect(aiMarkIn(bubbleOf(page, 'Make the second verse'))).toHaveCount(0);
 		});
 
 		for (const language of languages) {
@@ -153,7 +156,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 
 		test('shows message text as written, with its line breaks', async ({ page }) => {
 			await open(page, 'base');
-			const person = bubbleOf(page, 'Make the second verse').locator('.text');
+			const person = bubbleOf(page, 'Make the second verse').getByText('Make the second verse');
 			await expect(person).toHaveCSS('white-space', 'pre-wrap');
 			expect((await person.boundingBox())!.height).toBeGreaterThan(30);
 		});

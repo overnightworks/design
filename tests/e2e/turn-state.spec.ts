@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import type { KitLanguage, KitWords } from 'overnightworks-design';
 import { buildConsumer, loadKitWordsUnderNode, origin, routeTo, type ConsumerName } from './build-consumer.ts';
 import { resolveStyle } from './probe.ts';
@@ -6,6 +6,14 @@ import { resolveStyle } from './probe.ts';
 const colorSchemes = ['light', 'dark'] as const;
 const widths = [390, 1280] as const;
 const languages = ['de', 'en'] as const satisfies readonly KitLanguage[];
+const longName = 'Leonardo da Vinci, the long-named painter and inventor';
+
+/** The part has no role: it is found by the kit's word for any of its four outcomes. */
+function turnStatesIn(scope: Page | Locator, words: KitWords): Locator {
+	return (['turnState.notEnabled', 'turnState.busy', 'turnState.budgetSpent', 'turnState.unavailable'] as const)
+		.map((key) => scope.getByText(words[key], { exact: true }))
+		.reduce((found, next) => found.or(next));
+}
 
 for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[]) {
 	test.describe(`the turn state in a production consumer that ${consumer === 'imported' ? 'imports' : 'statically links'} design.css`, () => {
@@ -19,14 +27,14 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 		async function open(page: Page, variant: string, language: KitLanguage = 'en'): Promise<void> {
 			await routeTo(page.context(), outDir);
 			await page.goto(`${origin}/?turn=${variant}${language === 'en' ? '' : `&lang=${language}`}`);
-			await expect(page.locator('.turn-state').first()).toBeVisible();
+			await expect(turnStatesIn(page, wordsOf[language]).first()).toBeVisible();
 		}
 
 		for (const language of languages) {
 			test(`words each stated outcome in the ${language} words and draws nothing for an unstated one`, async ({ page }) => {
 				await open(page, 'alone', language);
 				const words = wordsOf[language];
-				const parts = page.locator('.turn-state');
+				const parts = turnStatesIn(page, words);
 				await expect(parts).toHaveText([
 					words['turnState.notEnabled'],
 					words['turnState.busy'],
@@ -45,7 +53,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 					await page.setViewportSize({ width, height: 800 });
 					await open(page, 'alone');
 					const tokens = await resolveStyle(page, { color: 'var(--text-muted)' }, ['color']);
-					const part = page.locator('.turn-state').first();
+					const part = turnStatesIn(page, wordsOf.en).first();
 					await expect(part).toHaveCSS('color', tokens.color);
 					await expect(part).toHaveCSS('white-space', 'nowrap');
 					const box = (await part.boundingBox())!;
@@ -58,14 +66,14 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 					await page.emulateMedia({ colorScheme });
 					await page.setViewportSize({ width, height: 800 });
 					await open(page, 'here');
-					const rows = page.locator('li.agent');
+					const rows = page.getByRole('listitem');
 					await expect(rows).toHaveCount(3);
 
 					const long = rows.nth(1);
-					const name = long.locator('.name');
+					const name = long.getByText(longName, { exact: true });
 					await expect(name).toHaveCSS('text-overflow', 'ellipsis');
 					expect(await name.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
-					const part = long.locator('.turn-state');
+					const part = turnStatesIn(long, wordsOf.en);
 					const partBox = (await part.boundingBox())!;
 					const rowBox = (await long.boundingBox())!;
 					expect(partBox.x).toBeGreaterThanOrEqual(rowBox.x);
@@ -76,7 +84,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 						return box.right - parseFloat(getComputedStyle(node).paddingRight);
 					});
 					for (const row of [rows.first(), long]) {
-						const rowPart = (await row.locator('.turn-state').boundingBox())!;
+						const rowPart = (await turnStatesIn(row, wordsOf.en).boundingBox())!;
 						const button = (await row.getByRole('button').boundingBox())!;
 						const clearOfPart = rowPart.x + rowPart.width <= button.x || rowPart.y + rowPart.height <= button.y;
 						expect(clearOfPart).toBe(true);
@@ -84,8 +92,8 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 					}
 					expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
-					await expect(rows.nth(2).locator('.turn-state')).toHaveCount(0);
-					await expect(rows.first().locator('.turn-state')).toHaveText(wordsOf.en['turnState.busy']);
+					await expect(turnStatesIn(rows.nth(2), wordsOf.en)).toHaveCount(0);
+					await expect(turnStatesIn(rows.first(), wordsOf.en)).toHaveText(wordsOf.en['turnState.busy']);
 				});
 			}
 		}
