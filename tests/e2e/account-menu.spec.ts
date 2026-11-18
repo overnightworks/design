@@ -123,7 +123,13 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			test('every row reaches its touch floor and the name is taller than Settings', async ({ page }) => {
 				await open(page);
 				expect(await page.evaluate(() => matchMedia('(any-pointer: coarse)').matches)).toBe(true);
-				const rows = await panelOf(page).locator('.row').all();
+				const panel = panelOf(page);
+				const rows = [
+					panel.getByRole('link', { name: typedName }),
+					...(await panel.getByRole('button').all()),
+					panel.getByText(en['account.theme'], { exact: true }),
+					...(await panel.getByRole('radio').locator('..').all())
+				];
 				expect(rows.length).toBeGreaterThan(0);
 				for (const row of rows) {
 					expect((await row.boundingBox())!.height).toBeGreaterThanOrEqual(touchRowFloor);
@@ -186,7 +192,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 
 		test('keeps the case of a mixed-case name', async ({ page }) => {
 			await open(page);
-			const name = panelOf(page).locator('.as-typed');
+			const name = page.getByRole('link', { name: typedName }).getByText(typedName, { exact: true });
 			await expect(name).toHaveCSS('text-transform', 'none');
 			expect(await name.textContent()).toBe(typedName);
 			expect(await name.innerText()).toBe(typedName);

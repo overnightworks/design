@@ -38,9 +38,22 @@ async function render(overrides: Partial<HelperChatProps<HelperMessage>> = {}): 
 }
 
 const field = (root: HTMLElement) => root.querySelector('textarea')!;
-const sendButton = (root: HTMLElement) => root.querySelector<HTMLButtonElement>('.send')!;
+const buttonWorded = (root: HTMLElement, word: string) =>
+	[...root.querySelectorAll('button')].find((candidate) => candidate.textContent?.trim() === word)!;
+const sendButton = (root: HTMLElement, words: typeof en = en) => buttonWorded(root, words['helperChat.send']);
 const status = (root: HTMLElement) => root.querySelector('[role="status"]');
-const visibleLine = (root: HTMLElement) => root.querySelector('.list .thinking');
+const visibleLine = (root: HTMLElement) => root.querySelector('ol [aria-hidden="true"]');
+
+// AiMark.svelte holds the word as a constant for every language, so no catalog key exists (gap named on #276).
+const aiMarkWord = 'AI';
+
+// The bubble, the AI mark, the tool row and the list container have no role (gaps named on #276): the bubble is the item's content after its speaker, the mark the element worded with the AI mark word, the tool row the parent of the kit's tool word, the container the parent of the message list.
+const listContainer = (root: HTMLElement) => root.querySelector('ol')!.parentElement!;
+const bubbleOf = (item: Element) => (item.lastElementChild === item.firstElementChild ? null : item.lastElementChild);
+const bubbles = (root: HTMLElement) => [...root.querySelectorAll('li')].map(bubbleOf).filter((bubble) => bubble !== null);
+const aiMarks = (scope: Element) => [...scope.querySelectorAll('span')].filter((candidate) => candidate.textContent === aiMarkWord && candidate.children.length === 0);
+const toolRow = (root: HTMLElement, tool: string) =>
+	[...root.querySelectorAll('span')].find((candidate) => candidate.textContent === en['helperChat.ranTool']({ tool }))!.parentElement!;
 
 function press(target: HTMLElement, init: KeyboardEventInit): KeyboardEvent {
 	const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init });
@@ -87,13 +100,13 @@ describe('the message list', () => {
 			words['helperChat.speaker']({ name: 'Mozart' })
 		]);
 		expect(items.map((item) => item.getAttribute('aria-label'))).toEqual([null, null, null]);
-		expect(items[2].querySelector('.bubble')).toBeNull();
+		expect(bubbleOf(items[2])).toBeNull();
 	});
 
 	it('shows only the empty hint, no list, while there is no message', async () => {
 		const root = await render();
 		expect(root.querySelector('[role="list"], ol, li')).toBeNull();
-		expect(root.querySelector('.list')?.textContent).toBe('Ask me anything');
+		expect(root.textContent).toContain('Ask me anything');
 	});
 
 	it('shows each message as written, with its line breaks kept', async () => {
@@ -103,7 +116,9 @@ describe('the message list', () => {
 				{ role: 'assistant', text: 'Sure' }
 			]
 		});
-		expect([...root.querySelectorAll('.text')].map((shown) => shown.textContent)).toEqual(['Line one\n  Line two', 'Sure']);
+		const [person, helper] = bubbles(root);
+		expect(person.textContent?.trim()).toBe('Line one\n  Line two');
+		expect(helper.textContent?.trim()).toMatch(/Sure$/);
 	});
 
 	it('leads each helper message with one AiMark before its tool rows and gives the person none', async () => {
@@ -113,18 +128,18 @@ describe('the message list', () => {
 				{ role: 'assistant', text: 'Done', toolCalls: [{ name: 'rewrite', input: {} }] }
 			]
 		});
-		const [personBubble, helperBubble] = [...root.querySelectorAll('.bubble')];
-		expect(personBubble.querySelector('.ai-mark')).toBeNull();
-		expect(helperBubble.querySelectorAll('.ai-mark')).toHaveLength(1);
-		expect(helperBubble.firstElementChild?.querySelector('.ai-mark')).not.toBeNull();
-		expect(helperBubble.querySelector('.ai-mark')!.compareDocumentPosition(helperBubble.querySelector('.tool-call')!)).toBe(
+		const [personBubble, helperBubble] = bubbles(root);
+		expect(aiMarks(personBubble)).toHaveLength(0);
+		expect(aiMarks(helperBubble)).toHaveLength(1);
+		expect(helperBubble.firstElementChild?.contains(aiMarks(helperBubble)[0])).toBe(true);
+		expect(aiMarks(helperBubble)[0].compareDocumentPosition(toolRow(root, 'rewrite'))).toBe(
 			Node.DOCUMENT_POSITION_FOLLOWING
 		);
 	});
 
 	it('shows no bubble for a helper message with neither text nor tool calls', async () => {
 		const root = await render({ messages: [{ role: 'user', text: 'Hi' }, { role: 'assistant', text: '' }] });
-		expect(root.querySelectorAll('.bubble')).toHaveLength(1);
+		expect(bubbles(root)).toHaveLength(1);
 	});
 
 	it('shows a tool row with the kit word for the tool, the target and the title the app gives it', async () => {
@@ -136,7 +151,7 @@ describe('the message list', () => {
 			})),
 			toolCallTitle: (shown) => JSON.stringify(shown.input)
 		});
-		const row = root.querySelector('.tool-call')!;
+		const row = toolRow(root, 'rewrite');
 		expect(row.textContent).toContain(en['helperChat.ranTool']({ tool: 'rewrite' }));
 		expect(row.querySelector('.target')?.textContent).toBe('target of rewrite');
 		expect(row.getAttribute('title')).toBe('{"line":3}');
@@ -146,7 +161,7 @@ describe('the message list', () => {
 		const root = await render({
 			messages: [{ role: 'assistant', text: 'Done', toolCalls: [{ name: 'rewrite', input: {} }] }]
 		});
-		const row = root.querySelector('.tool-call')!;
+		const row = toolRow(root, 'rewrite');
 		expect(row.hasAttribute('title')).toBe(false);
 		expect(row.children).toHaveLength(1);
 	});
@@ -161,7 +176,7 @@ describe('the message list', () => {
 				render: () => `<p class="problem">${parameters().message.role}@${parameters().index}</p>`
 			}))
 		});
-		const messages = [...root.querySelectorAll('.message')];
+		const messages = [...root.querySelectorAll('li')];
 		expect(messages.map((message) => message.querySelector('.problem')?.textContent)).toEqual(['user@0', 'assistant@1']);
 	});
 
@@ -184,14 +199,15 @@ describe('the history', () => {
 	it('shows the loading word instead of the list while it loads', async () => {
 		const root = await render({ history: { state: 'loading' }, messages: [{ role: 'user', text: 'Hi' }] });
 		expect(root.textContent).toContain(en['helperChat.loading']);
-		expect(root.querySelector('.list')).toBeNull();
+		expect(root.querySelector('ol')).toBeNull();
 		expect(root.textContent).not.toContain('Hi');
 	});
 
 	it('shows the failure as an alert instead of the list when it failed', async () => {
 		const root = await render({ history: { state: 'failed', failure: 'Chat is gone' }, messages: [{ role: 'user', text: 'Hi' }] });
 		expect(root.querySelector('[role="alert"]')?.textContent).toBe('Chat is gone');
-		expect(root.querySelector('.list')).toBeNull();
+		expect(root.querySelector('ol')).toBeNull();
+		expect(root.textContent).not.toContain('Hi');
 	});
 
 	it('keeps the composer while the history loads or failed', async () => {
@@ -203,8 +219,8 @@ describe('the history', () => {
 describe('the list element', () => {
 	it('binds the message container and reports its scrolling', async () => {
 		const onListScroll = vi.fn();
-		const root = await render({ onListScroll });
-		const list = root.querySelector<HTMLElement>('.list')!;
+		const root = await render({ onListScroll, messages: [{ role: 'user', text: 'Hi' }] });
+		const list = listContainer(root);
 		list.dispatchEvent(new Event('scroll'));
 		expect(onListScroll).toHaveBeenCalledOnce();
 	});
@@ -213,11 +229,11 @@ describe('the list element', () => {
 		const target = document.createElement('div');
 		document.body.append(target);
 		const holder: { list?: HTMLElement } = {};
-		const props = baseProps();
+		const props = { ...baseProps(), messages: [{ role: 'user' as const, text: 'Hi' }] };
 		Object.defineProperty(props, 'list', { get: () => holder.list, set: (value: HTMLElement) => (holder.list = value), enumerable: true });
 		mounted.push({ target, component: mount(HelperChat, { target, props }) });
 		await tick();
-		expect(holder.list).toBe(target.querySelector('.list'));
+		expect(holder.list).toBe(listContainer(target));
 		expect(holder.list?.hasAttribute('role')).toBe(false);
 	});
 });
@@ -275,9 +291,9 @@ describe('the thinking line', () => {
 			messages: [{ role: 'assistant', text: '', toolCalls: [{ name: 'rewrite', input: {} }] }],
 			running: true
 		});
-		const row = root.querySelector('.tool-call')!;
+		const row = toolRow(root, 'rewrite');
 		const visible = visibleLine(root)!;
-		expect(root.querySelector('.bubble')!.contains(visible)).toBe(true);
+		expect(bubbles(root)[0].contains(visible)).toBe(true);
 		expect(visible.getAttribute('aria-hidden')).toBe('true');
 		expect(visible.textContent).toBe(en['helperChat.thinking']({ name: 'Mozart' }));
 		expect(row.compareDocumentPosition(visible)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
@@ -285,15 +301,15 @@ describe('the thinking line', () => {
 
 	it('gives the pending helper message one AiMark and its bubble the visible thinking line while it has neither text nor tool calls', async () => {
 		const root = await render({ messages: [{ role: 'user', text: 'Hi' }, { role: 'assistant', text: '' }], running: true });
-		const bubbles = root.querySelectorAll('.bubble');
-		expect(bubbles).toHaveLength(2);
-		expect(bubbles[1].querySelectorAll('.ai-mark')).toHaveLength(1);
-		expect(bubbles[1].contains(visibleLine(root))).toBe(true);
+		const shown = bubbles(root);
+		expect(shown).toHaveLength(2);
+		expect(aiMarks(shown[1])).toHaveLength(1);
+		expect(shown[1].contains(visibleLine(root))).toBe(true);
 	});
 
 	it('keeps the status element out of the list, as a direct child of the part’s root', async () => {
 		const root = await render({ messages: [{ role: 'user', text: 'Hi' }, { role: 'assistant', text: '' }], running: true });
-		expect(status(root)!.parentElement).toBe(root.querySelector('.helper-chat'));
+		expect(status(root)!.parentElement).toBe(root.firstElementChild);
 	});
 
 	it.each([
@@ -348,7 +364,7 @@ describe('the thinking line', () => {
 		await tick();
 		expect(status(target)).toBe(line);
 		expect(line.textContent).toBe(en['helperChat.thinking']({ name: 'Mozart' }));
-		expect(target.querySelectorAll('.bubble')[3].contains(visibleLine(target))).toBe(true);
+		expect(bubbles(target)[3].contains(visibleLine(target))).toBe(true);
 	});
 });
 
@@ -379,11 +395,9 @@ describe('the composer', () => {
 
 	it('puts the bar of tags between the banner and the composer box', async () => {
 		const root = await render({ composerTop: text('Tag bar'), readOnly: text('Archived') });
-		const composer = field(root).closest('.composer')!;
-		const order = [...composer.children].map((child) =>
-			child.classList.contains('read-only') ? 'banner' : child.classList.contains('composer-box') ? 'box' : child.textContent
-		);
-		expect(order).toEqual(['banner', 'Tag bar', 'box']);
+		const box = field(root).parentElement!;
+		const order = [...box.parentElement!.children].map((child) => (child === box ? 'box' : child.textContent));
+		expect(order).toEqual(['Archived', 'Tag bar', 'box']);
 	});
 
 	it('keeps focus in the composer when a button inside its box is pressed', async () => {
@@ -391,7 +405,7 @@ describe('the composer', () => {
 		const own = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
 		sendButton(root).dispatchEvent(own);
 		const app = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
-		root.querySelector('.composer-box button:not(.send)')!.dispatchEvent(app);
+		buttonWorded(root, 'Pick').dispatchEvent(app);
 		const inField = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
 		field(root).dispatchEvent(inField);
 		expect([own.defaultPrevented, app.defaultPrevented, inField.defaultPrevented]).toEqual([true, true, false]);
@@ -484,21 +498,21 @@ describe('sending', () => {
 
 	it('names Send by the kit word', async () => {
 		const root = await render({ words: de });
-		expect(sendButton(root).textContent?.trim()).toBe(de['helperChat.send']);
+		expect(sendButton(root, de)).toBeDefined();
 	});
 });
 
 describe('read-only', () => {
 	it('shows the banner above the composer and disables the field and Send', async () => {
 		const root = await render({ draft: 'Hello', readOnly: text('This chat is archived') });
-		expect(root.querySelector('.read-only')?.textContent).toContain('This chat is archived');
+		expect(root.textContent).toContain('This chat is archived');
 		expect(field(root).disabled).toBe(true);
 		expect(sendButton(root).disabled).toBe(true);
 	});
 
 	it('shows no banner and enables the field without the snippet', async () => {
 		const root = await render();
-		expect(root.querySelector('.read-only')).toBeNull();
+		expect(field(root).parentElement!.parentElement!.textContent?.trim()).toBe(en['helperChat.send']);
 		expect(field(root).disabled).toBe(false);
 	});
 });

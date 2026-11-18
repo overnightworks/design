@@ -188,7 +188,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			await page.goto(`${origin}/?typed`);
 
 			const heading = page.getByRole('heading', { level: 1 });
-			const typed = heading.locator('.as-typed');
+			const typed = heading.getByText('talks', { exact: true });
 			await expect(typed).toHaveCSS('text-transform', 'none');
 			expect(await typed.innerText()).toBe('talks');
 			expect(await heading.innerText()).toBe('SOURCE talks');
