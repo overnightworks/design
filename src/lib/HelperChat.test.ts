@@ -38,9 +38,16 @@ async function render(overrides: Partial<HelperChatProps<HelperMessage>> = {}): 
 }
 
 const field = (root: HTMLElement) => root.querySelector('textarea')!;
-const sendButton = (root: HTMLElement) => root.querySelector<HTMLButtonElement>('.send')!;
+const sendButton = (root: HTMLElement) => field(root).nextElementSibling as HTMLButtonElement;
 const status = (root: HTMLElement) => root.querySelector('[role="status"]');
-const visibleLine = (root: HTMLElement) => root.querySelector('.list .thinking');
+const visibleLine = (root: HTMLElement) => root.querySelector('ol [aria-hidden="true"]');
+
+// The bubble, the AI mark and the tool row have no role: the bubble is the item's content after its speaker, the mark the element worded "AI", the tool row the parent of the kit's tool word.
+const bubbleOf = (item: Element) => item.children[1] ?? null;
+const bubbles = (root: HTMLElement) => [...root.querySelectorAll('li')].map(bubbleOf).filter((bubble) => bubble !== null);
+const aiMarks = (scope: Element) => [...scope.querySelectorAll('span')].filter((candidate) => candidate.textContent === 'AI' && candidate.children.length === 0);
+const toolRow = (root: HTMLElement, tool: string) =>
+	[...root.querySelectorAll('span')].find((candidate) => candidate.textContent === en['helperChat.ranTool']({ tool }))!.parentElement!;
 
 function press(target: HTMLElement, init: KeyboardEventInit): KeyboardEvent {
 	const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init });
@@ -87,7 +94,7 @@ describe('the message list', () => {
 			words['helperChat.speaker']({ name: 'Mozart' })
 		]);
 		expect(items.map((item) => item.getAttribute('aria-label'))).toEqual([null, null, null]);
-		expect(items[2].querySelector('.bubble')).toBeNull();
+		expect(bubbleOf(items[2])).toBeNull();
 	});
 
 	it('shows only the empty hint, no list, while there is no message', async () => {
@@ -113,18 +120,18 @@ describe('the message list', () => {
 				{ role: 'assistant', text: 'Done', toolCalls: [{ name: 'rewrite', input: {} }] }
 			]
 		});
-		const [personBubble, helperBubble] = [...root.querySelectorAll('.bubble')];
-		expect(personBubble.querySelector('.ai-mark')).toBeNull();
-		expect(helperBubble.querySelectorAll('.ai-mark')).toHaveLength(1);
-		expect(helperBubble.firstElementChild?.querySelector('.ai-mark')).not.toBeNull();
-		expect(helperBubble.querySelector('.ai-mark')!.compareDocumentPosition(helperBubble.querySelector('.tool-call')!)).toBe(
+		const [personBubble, helperBubble] = bubbles(root);
+		expect(aiMarks(personBubble)).toHaveLength(0);
+		expect(aiMarks(helperBubble)).toHaveLength(1);
+		expect(helperBubble.firstElementChild?.contains(aiMarks(helperBubble)[0])).toBe(true);
+		expect(aiMarks(helperBubble)[0].compareDocumentPosition(toolRow(root, 'rewrite'))).toBe(
 			Node.DOCUMENT_POSITION_FOLLOWING
 		);
 	});
 
 	it('shows no bubble for a helper message with neither text nor tool calls', async () => {
 		const root = await render({ messages: [{ role: 'user', text: 'Hi' }, { role: 'assistant', text: '' }] });
-		expect(root.querySelectorAll('.bubble')).toHaveLength(1);
+		expect(bubbles(root)).toHaveLength(1);
 	});
 
 	it('shows a tool row with the kit word for the tool, the target and the title the app gives it', async () => {
@@ -136,7 +143,7 @@ describe('the message list', () => {
 			})),
 			toolCallTitle: (shown) => JSON.stringify(shown.input)
 		});
-		const row = root.querySelector('.tool-call')!;
+		const row = toolRow(root, 'rewrite');
 		expect(row.textContent).toContain(en['helperChat.ranTool']({ tool: 'rewrite' }));
 		expect(row.querySelector('.target')?.textContent).toBe('target of rewrite');
 		expect(row.getAttribute('title')).toBe('{"line":3}');
@@ -146,7 +153,7 @@ describe('the message list', () => {
 		const root = await render({
 			messages: [{ role: 'assistant', text: 'Done', toolCalls: [{ name: 'rewrite', input: {} }] }]
 		});
-		const row = root.querySelector('.tool-call')!;
+		const row = toolRow(root, 'rewrite');
 		expect(row.hasAttribute('title')).toBe(false);
 		expect(row.children).toHaveLength(1);
 	});
@@ -275,9 +282,9 @@ describe('the thinking line', () => {
 			messages: [{ role: 'assistant', text: '', toolCalls: [{ name: 'rewrite', input: {} }] }],
 			running: true
 		});
-		const row = root.querySelector('.tool-call')!;
+		const row = toolRow(root, 'rewrite');
 		const visible = visibleLine(root)!;
-		expect(root.querySelector('.bubble')!.contains(visible)).toBe(true);
+		expect(bubbles(root)[0].contains(visible)).toBe(true);
 		expect(visible.getAttribute('aria-hidden')).toBe('true');
 		expect(visible.textContent).toBe(en['helperChat.thinking']({ name: 'Mozart' }));
 		expect(row.compareDocumentPosition(visible)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
@@ -285,10 +292,10 @@ describe('the thinking line', () => {
 
 	it('gives the pending helper message one AiMark and its bubble the visible thinking line while it has neither text nor tool calls', async () => {
 		const root = await render({ messages: [{ role: 'user', text: 'Hi' }, { role: 'assistant', text: '' }], running: true });
-		const bubbles = root.querySelectorAll('.bubble');
-		expect(bubbles).toHaveLength(2);
-		expect(bubbles[1].querySelectorAll('.ai-mark')).toHaveLength(1);
-		expect(bubbles[1].contains(visibleLine(root))).toBe(true);
+		const shown = bubbles(root);
+		expect(shown).toHaveLength(2);
+		expect(aiMarks(shown[1])).toHaveLength(1);
+		expect(shown[1].contains(visibleLine(root))).toBe(true);
 	});
 
 	it('keeps the status element out of the list, as a direct child of the part’s root', async () => {
@@ -348,7 +355,7 @@ describe('the thinking line', () => {
 		await tick();
 		expect(status(target)).toBe(line);
 		expect(line.textContent).toBe(en['helperChat.thinking']({ name: 'Mozart' }));
-		expect(target.querySelectorAll('.bubble')[3].contains(visibleLine(target))).toBe(true);
+		expect(bubbles(target)[3].contains(visibleLine(target))).toBe(true);
 	});
 });
 
