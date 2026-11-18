@@ -22,10 +22,13 @@ ancestor wins at any depth, under either device mode. The limits:
   itself. The app sets `color: var(--text)` and `background: var(--bg)` on the
   region, because the page's computed values do not recompute inside it.
 - The app's own tokens (`--primary`, `--accent`, `--on-accent`) and any token the
-  app derives at `:root` from design tokens stay root-only. Inside a dark region
-  they keep their root values, so the kit's parts show the light accent unless the
-  app writes its own values under `[data-theme='dark']`.
+  app derives at `:root` from design tokens stay root-only. Inside a region they
+  keep their root values, so the kit's parts show the root's accent unless the app
+  writes its own values under the region's `[data-theme]`.
 - A rule the app writes as `:root[data-theme='dark'] x` matches the page root only.
+- An app does not redefine a family token at `:root`: on a dark root the
+  `[data-theme='dark']` block wins only by source order, so a later app `:root`
+  rule would override it.
 
 It also owns two classes. The first, `as-typed`, turns the case transform and the
 letter-spacing off. Text the app writes keeps the family's uppercase. Text a
