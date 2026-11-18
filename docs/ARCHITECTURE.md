@@ -18,13 +18,11 @@ flowchart LR
   design[design repository]
   gate[quality gate]
   release[GitHub release]
-  py[Python apps]
   kit[SvelteKit apps]
   platform[platform]
   kc[Keycloak themes and legal pages]
   gate -- checks every pull request and release --> design
   design -- release.yml --> release
-  release -- wheel, pinned by URL and hash --> py
   release -- tarball, pinned by URL --> kit
   release -- wheel with the extra catalogs (or po to only read PO files), pinned the same way --> build[app build runs design-catalogs on its catalogs]
   release -- wheel, pinned by URL and hash --> platform
@@ -177,7 +175,7 @@ workflow-security scan and SonarCloud for CSS, HTML, Python and TypeScript.
   npm package, so every app would declare Babel itself and the copies would drift.
   Reopens only if an app cannot install the wheel in its build.
 - Babel as a plain dependency of the wheel: its locale data would reach every
-  Python server that takes the wheel only for `design.css`.
+  app that takes the wheel for its static files.
 - Babel's catalog update, and a hash of the source text, for freshness: the update
   matches entries by text across keys and drops plural categories the source lacks.
   A translation is current when its `msgid` equals the source's text for its key.
