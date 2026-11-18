@@ -53,7 +53,8 @@ flowchart TB
 ```
 
 - **Stylesheet and fonts** (`design.css`, [`stylesheet.md`](stylesheet.md)): the family
-  tokens, the `@font-face` rules and the classes `as-typed` and `legal`.
+  tokens, the `@font-face` rules, the heading rule for `h1` and `h2` and the classes
+  `as-typed` and `legal`.
 - **Components** ([README](../README.md#components)): props and behaviour are the
   docstrings of [`src/lib/types.ts`](../src/lib/types.ts); the words and the facts
   beyond the types are in [`stylesheet.md`](stylesheet.md). The app passes the
