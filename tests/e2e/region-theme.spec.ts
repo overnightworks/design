@@ -112,6 +112,17 @@ for (const consumer of [
         });
       }
 
+      test(`a root declaration of the app that comes later cannot override an explicit dark root, on a ${deviceScheme} device`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ colorScheme: deviceScheme });
+        await openPage(page, outDir, "dark");
+        await page.addStyleTag({ content: ":root { --bg: rgb(1, 2, 3); }" });
+        expect(await resolved(page, "html")).toEqual(
+          await resolved(page, "#dark-region"),
+        );
+      });
+
       test(`the page root and its unmarked content follow a ${deviceScheme} device when nobody chose`, async ({
         page,
       }) => {

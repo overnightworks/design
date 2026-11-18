@@ -140,14 +140,6 @@ def test_light_is_the_no_choice_case_and_dark_follows_the_device_or_the_attribut
         assert re.search(rf"^\s+color-scheme: {scheme};", body, re.MULTILINE), case
 
 
-def test_the_page_root_keeps_the_specificity_of_a_root_with_the_dark_attribute(installed_package):
-    _, static = installed_package
-    rules = top_level_rules((static / "design.css").read_text())
-    (selectors,) = [selectors for selectors, bodies in rules.items() if body_of(rules, DARK_SELECTOR) in bodies]
-    members = {part.strip() for part in selectors.split(",")}
-    assert ":root[data-theme='dark']" in members
-
-
 COLOUR = re.compile(r"#[0-9a-f]{3,8}|rgba?\([0-9., ]+\)")
 
 
