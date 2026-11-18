@@ -7,11 +7,14 @@ const colorSchemes = ['light', 'dark'] as const;
 const widths = [390, 1280] as const;
 const languages = ['de', 'en'] as const satisfies readonly KitLanguage[];
 
+// AiMark.svelte holds the word as a constant for every language, so no catalog key exists (gap named on #276).
+const aiMarkWord = 'AI';
+
 const reportsOf = (page: Page) => page.evaluate(() => window.reports);
 // The bubble, the AI mark and the tool row have no role: the bubble is the message's content after its speaker line,
-// the mark the element worded "AI", the tool row the parent of the line that names its tool.
+// the mark the element worded with the AI mark word, the tool row the parent of the line that names its tool.
 const bubbleOf = (page: Page, text: string) => page.getByRole('listitem').filter({ hasText: text }).locator(':scope > *').nth(1);
-const aiMarkIn = (scope: Locator) => scope.getByText('AI', { exact: true });
+const aiMarkIn = (scope: Locator) => scope.getByText(aiMarkWord, { exact: true });
 const rowOf = (page: Page, tool: string) => page.getByText(tool).first().locator('..');
 
 for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[]) {
@@ -135,11 +138,13 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			await open(page, 'base');
 			const helper = bubbleOf(page, 'I shortened it');
 			await expect(aiMarkIn(helper)).toHaveCount(1);
-			const marked = await helper.evaluate((node) => {
-				const mark = [...node.querySelectorAll('span')].find((candidate) => candidate.textContent === 'AI' && candidate.children.length === 0)!;
-				const row = [...node.querySelectorAll('span')].find((candidate) => candidate.textContent?.includes('rewrite_section'))!.parentElement!;
-				return Boolean(mark.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING) && node.firstElementChild!.contains(mark);
-			});
+			const mark = (await aiMarkIn(helper).elementHandle())!;
+			const row = (await rowOf(page, 'rewrite_section').elementHandle())!;
+			const marked = await helper.evaluate(
+				(node, [markNode, rowNode]) =>
+					Boolean(markNode.compareDocumentPosition(rowNode) & Node.DOCUMENT_POSITION_FOLLOWING) && node.firstElementChild!.contains(markNode),
+				[mark, row],
+			);
 			expect(marked).toBe(true);
 			await expect(aiMarkIn(bubbleOf(page, 'Make the second verse'))).toHaveCount(0);
 		});

@@ -44,11 +44,14 @@ const sendButton = (root: HTMLElement, words: typeof en = en) => buttonWorded(ro
 const status = (root: HTMLElement) => root.querySelector('[role="status"]');
 const visibleLine = (root: HTMLElement) => root.querySelector('ol [aria-hidden="true"]');
 
-// The bubble, the AI mark, the tool row and the list container have no role (gaps named on #276): the bubble is the item's content after its speaker, the mark the element worded "AI", the tool row the parent of the kit's tool word, the container the parent of the message list.
+// AiMark.svelte holds the word as a constant for every language, so no catalog key exists (gap named on #276).
+const aiMarkWord = 'AI';
+
+// The bubble, the AI mark, the tool row and the list container have no role (gaps named on #276): the bubble is the item's content after its speaker, the mark the element worded with the AI mark word, the tool row the parent of the kit's tool word, the container the parent of the message list.
 const listContainer = (root: HTMLElement) => root.querySelector('ol')!.parentElement!;
 const bubbleOf = (item: Element) => (item.lastElementChild === item.firstElementChild ? null : item.lastElementChild);
 const bubbles = (root: HTMLElement) => [...root.querySelectorAll('li')].map(bubbleOf).filter((bubble) => bubble !== null);
-const aiMarks = (scope: Element) => [...scope.querySelectorAll('span')].filter((candidate) => candidate.textContent === 'AI' && candidate.children.length === 0);
+const aiMarks = (scope: Element) => [...scope.querySelectorAll('span')].filter((candidate) => candidate.textContent === aiMarkWord && candidate.children.length === 0);
 const toolRow = (root: HTMLElement, tool: string) =>
 	[...root.querySelectorAll('span')].find((candidate) => candidate.textContent === en['helperChat.ranTool']({ tool }))!.parentElement!;
 
