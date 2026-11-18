@@ -273,11 +273,11 @@ describe('words from the app', () => {
 	}
 
 	it.each([
-		['signed-out', { page: 'signed-out', signInHref: '/auth/login' }, ['Du bist abgemeldet.', 'Anmelden']],
+		['signed-out', { page: 'signed-out', signInHref: '/auth/login' }, [de['signIn.loggedOut'], de['signIn.logIn']]],
 		[
 			'signed-out, unfinished',
 			{ page: 'signed-out', signInHref: '/auth/login', unfinished: true },
-			['Du bist abgemeldet.', de['signIn.signInUnfinished'], 'Anmelden']
+			[de['signIn.loggedOut'], de['signIn.signInUnfinished'], de['signIn.logIn']]
 		],
 		[
 			'signing-in',
@@ -292,19 +292,19 @@ describe('words from the app', () => {
 		[
 			'login-failed',
 			{ page: 'login-failed', signInHref: '/auth/login' },
-			['Anmeldung fehlgeschlagen', de['signIn.loginFailedBanner'], 'Erneut versuchen']
+			[de['signIn.loginFailed'], de['signIn.loginFailedBanner'], de['signIn.tryAgain']]
 		],
 		[
 			'no-access with a callback',
 			{ page: 'no-access', onLogOut: () => {} },
-			['Kein Zugang', noAccessSentence, 'Abmelden']
+			[de['signIn.noAccess'], noAccessSentence, de['signIn.logOut']]
 		],
 		[
 			'no-access with a form action',
 			{ page: 'no-access', logOutAction: '/logout' },
-			['Kein Zugang', noAccessSentence, 'Abmelden']
+			[de['signIn.noAccess'], noAccessSentence, de['signIn.logOut']]
 		],
-		['no-access without a log-out form', { page: 'no-access' }, ['Kein Zugang', noAccessSentence]]
+		['no-access without a log-out form', { page: 'no-access' }, [de['signIn.noAccess'], noAccessSentence]]
 	] as const)('shows the given words and no en word in %s', async (_name, state, shown) => {
 		const page = await render({ words: de, state });
 		expect(visibleTexts(page)).toEqual(shown);
@@ -319,36 +319,36 @@ describe('words from the app', () => {
 
 describe('en words', () => {
 	it.each([
-		['signed-out', { page: 'signed-out', signInHref: '/auth/login' }, ['You are logged out.', 'Log in']],
+		['signed-out', { page: 'signed-out', signInHref: '/auth/login' }, [en['signIn.loggedOut'], en['signIn.logIn']]],
 		[
 			'signed-out, unfinished',
 			{ page: 'signed-out', signInHref: '/auth/login', unfinished: true },
-			['You are logged out.', 'Sign-in did not finish.', 'Log in']
+			[en['signIn.loggedOut'], en['signIn.signInUnfinished'], en['signIn.logIn']]
 		],
 		[
 			'signing-in',
 			{ page: 'signing-in', tabHref: '/app' },
-			['Signing in', 'In the other window', 'Open in a tab']
+			[en['signIn.signingIn'], en['signIn.inOtherWindow'], en['signIn.openInTab']]
 		],
 		[
 			'window-blocked',
 			{ page: 'window-blocked', tabHref: '/app' },
-			['Window blocked', 'Your browser blocked the sign-in window.', 'Open in a tab']
+			[en['signIn.windowBlocked'], en['signIn.windowBlockedSentence'], en['signIn.openInTab']]
 		],
 		[
 			'login-failed',
 			{ page: 'login-failed', signInHref: '/auth/login' },
-			['Login failed', 'Sign-in did not work. Please try again.', 'Try again']
+			[en['signIn.loginFailed'], en['signIn.loginFailedBanner'], en['signIn.tryAgain']]
 		],
 		[
 			'no-access with a callback',
 			{ page: 'no-access', onLogOut: () => {} },
-			['No access', 'You are signed in, but this account has no access to Hallucinai.', 'Log out']
+			[en['signIn.noAccess'], en['signIn.noAccessSentence']({ appName: 'Hallucinai' }), en['signIn.logOut']]
 		],
 		[
 			'no-access with a form action',
 			{ page: 'no-access', logOutAction: '/logout' },
-			['No access', 'You are signed in, but this account has no access to Hallucinai.', 'Log out']
+			[en['signIn.noAccess'], en['signIn.noAccessSentence']({ appName: 'Hallucinai' }), en['signIn.logOut']]
 		]
 	] as const)('renders the en texts of the kit in %s', async (_name, state, shown) => {
 		const page = await render({ state });

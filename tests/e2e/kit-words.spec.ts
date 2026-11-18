@@ -2,6 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
+import type { KitLanguage } from 'overnightworks-design';
+import { loadWords } from '../../src/lib/words/index.ts';
 import { buildConsumer, loadKitWordsUnderNode, origin, routeTo } from './build-consumer.ts';
 
 const catalogs = join(dirname(fileURLToPath(import.meta.url)), '../../src/catalogs');
@@ -26,18 +28,17 @@ test.describe('the kit words in a production consumer', () => {
 		expect(chunks).toHaveLength(languages.length);
 	});
 
-	for (const [language, logOut] of [
-		['de', 'Abmelden'],
-		['en', 'Log out']
-	] as const) {
+	for (const language of languages as KitLanguage[]) {
 		test(`load the ${language} words in the browser`, async ({ page }) => {
+			const words = await loadWords(language);
 			await routeTo(page, outDir);
 			await page.goto(`${origin}/?words=${language}`);
-			await expect(page.getByRole('status')).toHaveText(logOut);
+			await expect(page.getByRole('status')).toHaveText(words['account.logOut']);
 		});
 
 		test(`load the ${language} words under Node`, async () => {
-			expect((await loadKitWordsUnderNode(language))['account.logOut']).toBe(logOut);
+			const words = await loadWords(language);
+			expect((await loadKitWordsUnderNode(language))['account.logOut']).toBe(words['account.logOut']);
 		});
 	}
 });
