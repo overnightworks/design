@@ -43,6 +43,26 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			await expect(chipOf(page, 'hear')).not.toHaveCSS('backdrop-filter', 'none');
 		});
 
+		for (const colorScheme of colorSchemes) {
+			test(`puts the chip on the stage glass, its off label softened and its knob in the on-stage ink in ${colorScheme}`, async ({
+				page
+			}) => {
+				await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+				await open(page, 'off');
+				const tokens = await resolveStyle(
+					page,
+					{ 'background-color': 'var(--glass-dark)', color: 'var(--on-stage-soft)', 'border-top-color': 'var(--on-stage)' },
+					['background-color', 'color', 'border-top-color']
+				);
+				const chip = chipOf(page, 'hear');
+				await expect(chip).toHaveAttribute('aria-checked', 'false');
+				await expect(chip).toHaveCSS('background-color', tokens['background-color']);
+				await expect(chip.locator('span').nth(1)).toHaveCSS('color', tokens.color);
+				const knob = await chip.locator('span[aria-hidden]').evaluate((node) => getComputedStyle(node, '::after').backgroundColor);
+				expect(knob).toBe(tokens['border-top-color']);
+			});
+		}
+
 		for (const kind of ['hear', 'see'] as const) {
 			for (const colorScheme of colorSchemes) {
 				for (const width of widths) {

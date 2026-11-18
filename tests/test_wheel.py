@@ -109,7 +109,8 @@ def top_level_rules(stylesheet):
     return rules
 
 
-LIGHT_SELECTOR = ":root"
+LIGHT_SELECTOR = "[data-theme='light']"
+STAGE_SELECTOR = ":root"
 DARK_SELECTOR = "[data-theme='dark']"
 
 
@@ -153,7 +154,9 @@ def scheme_declarations(installed_package):
     _, static = installed_package
     rules = top_level_rules((static / "design.css").read_text())
     (device_dark,) = rules["@media (prefers-color-scheme: dark)"]
+    (stage,) = rules[STAGE_SELECTOR]
     return {
+        "stage": declarations(stage),
         "light": declarations(body_of(rules, LIGHT_SELECTOR)),
         "dark attribute": declarations(body_of(rules, DARK_SELECTOR)),
         "dark device": declarations(device_dark.split("{", 1)[1].rsplit("}", 1)[0]),
@@ -170,6 +173,13 @@ def test_token_list_holds_exactly_the_properties_the_stylesheet_defines(installe
     ).stdout.split()
     defined = {name for declared in scheme_declarations.values() for name in declared if name.startswith("--")}
     assert listing == sorted(defined)
+
+
+def test_the_stage_tokens_are_the_same_in_both_themes_and_no_theme_block_redefines_them(scheme_declarations):
+    stage = scheme_declarations["stage"].keys()
+    assert stage
+    for case in ("light", "dark attribute", "dark device"):
+        assert not stage & scheme_declarations[case].keys(), case
 
 
 def test_every_colour_token_of_light_is_defined_in_both_dark_blocks_as_a_colour(scheme_declarations):

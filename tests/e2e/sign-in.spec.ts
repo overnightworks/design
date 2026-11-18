@@ -183,6 +183,29 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			await expect(card).toHaveCSS('font-family', body);
 		});
 
+		test('sets h1 and h2 in the display font, uppercase and spaced in proportion, from design.css alone', async ({ page }) => {
+			await routeTo(page, outDir);
+			await page.goto(`${origin}/?typed`);
+
+			const { 'font-family': display } = await resolveStyle(page, { 'font-family': 'var(--font-display)' }, [
+				'font-family'
+			]);
+			const first = page.getByRole('heading', { level: 1 });
+			const second = page.getByRole('heading', { level: 2 });
+			for (const heading of [first, second]) {
+				await expect(heading).toHaveCSS('font-family', display);
+				await expect(heading).toHaveCSS('text-transform', 'uppercase');
+				await expect(heading).not.toHaveCSS('letter-spacing', 'normal');
+			}
+			const trackingPerSize = (heading: Locator) =>
+				heading.evaluate((node) => {
+					const style = getComputedStyle(node);
+					return parseFloat(style.letterSpacing) / parseFloat(style.fontSize);
+				});
+			expect(await trackingPerSize(second)).toBeCloseTo(await trackingPerSize(first), 3);
+			await expect(first.getByText('talks', { exact: true })).toHaveCSS('letter-spacing', 'normal');
+		});
+
 		test('keeps the case of typed text in an uppercase heading', async ({ page }) => {
 			await routeTo(page, outDir);
 			await page.goto(`${origin}/?typed`);
