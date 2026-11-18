@@ -96,7 +96,7 @@ def top_level_rules(stylesheet):
     for index, character in enumerate(stylesheet):
         if character == "{":
             if depth == 0:
-                selector = stylesheet[selector_start:index].strip()
+                selector = " ".join(stylesheet[selector_start:index].split())
                 body_start = index + 1
             depth += 1
         elif character == "}":
@@ -109,20 +109,24 @@ def top_level_rules(stylesheet):
     return rules
 
 
+LIGHT_SELECTOR = ":root, [data-theme='light']"
+DARK_SELECTOR = "[data-theme='dark']"
+
+
 def test_light_is_the_no_choice_case_and_dark_follows_the_device_or_the_attribute(installed_package):
     _, static = installed_package
     rules = top_level_rules((static / "design.css").read_text())
     (device_dark,) = rules["@media (prefers-color-scheme: dark)"]
     assert ":root:not([data-theme='light'])" in device_dark
     bodies = {
-        ("light", "no attribute"): rules[":root"][0],
-        ("dark", "attribute"): rules[":root[data-theme='dark']"][0],
+        ("light", "no attribute"): rules[LIGHT_SELECTOR][0],
+        ("dark", "attribute"): rules[DARK_SELECTOR][0],
         ("dark", "device"): device_dark,
     }
     for (scheme, case), body in bodies.items():
         assert re.search(r"^\s+--bg:", body, re.MULTILINE), case
         assert re.search(rf"^\s+color-scheme: {scheme};", body, re.MULTILINE), case
-    assert "[data-theme='light']" not in rules
+    assert list(rules).index(LIGHT_SELECTOR) < list(rules).index(DARK_SELECTOR)
 
 
 COLOUR = re.compile(r"#[0-9a-f]{3,8}|rgba?\([0-9., ]+\)")
@@ -139,8 +143,8 @@ def scheme_declarations(installed_package):
     rules = top_level_rules((static / "design.css").read_text())
     (device_dark,) = rules["@media (prefers-color-scheme: dark)"]
     return {
-        "light": declarations(rules[":root"][0]),
-        "dark attribute": declarations(rules[":root[data-theme='dark']"][0]),
+        "light": declarations(rules[LIGHT_SELECTOR][0]),
+        "dark attribute": declarations(rules[DARK_SELECTOR][0]),
         "dark device": declarations(device_dark.split("{", 1)[1].rsplit("}", 1)[0]),
     }
 

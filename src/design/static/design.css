@@ -1,13 +1,16 @@
 /* design family tokens and fonts: what every overnightworks product shares.
    With no theme choice the page follows the device (light, or dark under
    prefers-color-scheme); data-theme='light' and data-theme='dark' force a
-   theme, and each theme sets color-scheme. The state set (--ok, --busy, --fail
-   and their -soft partners) is shared; the app colour (--primary, --accent,
-   --on-accent) and everything domain-specific stay with the app; the
-   sign-in grid value is computed by the SignInPage component. Only the latin
-   and latin-ext subsets, woff2 only. The classes as-typed and legal are the
-   only rules outside the tokens and fonts; legal is the legal row of
-   LegalLinks and of a page that cannot render Svelte. */
+   theme, and each theme sets color-scheme. On the page root the attribute is
+   the person's choice; on any other element it marks a surface that is light
+   or dark in either device mode, and the nearest marked ancestor wins. The
+   state set (--ok, --busy, --fail and their -soft partners) is shared; the
+   app colour (--primary, --accent, --on-accent) and everything
+   domain-specific stay with the app; the sign-in grid value is computed by
+   the SignInPage component. Only the latin and latin-ext subsets, woff2
+   only. The classes as-typed and legal are the only rules outside the tokens
+   and fonts; legal is the legal row of LegalLinks and of a page that cannot
+   render Svelte. */
 
 @font-face {
 	font-family: 'Oswald';
@@ -101,7 +104,8 @@
 		U+A720-A7FF;
 }
 
-:root {
+:root,
+[data-theme='light'] {
 	--bg: #f4f4f6;
 	--bg-deep: #e8e8ec;
 	--surface: #ffffff;
@@ -122,7 +126,7 @@
 	--font-body: 'Open Sans', Arial, sans-serif;
 }
 
-:root[data-theme='dark'] {
+[data-theme='dark'] {
 	--bg: #0d0d0d;
 	--bg-deep: #050508;
 	--surface: #111;
