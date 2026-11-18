@@ -8,11 +8,24 @@ markup against the kit.
 The wheel's `design.css` owns the family tokens and the
 `@font-face` rules for Oswald and Open Sans. The token names are the release's
 `design-<version>-tokens.txt`, which `scripts/list_tokens` prints for any stylesheet.
-Light is under `:root`; dark sits under the device media query guarded by
-`:root:not([data-theme='light'])` and under `:root[data-theme='dark']`, so with
-no choice the page follows the device and either attribute forces its theme.
-Each theme sets `color-scheme`, so an app sets none. Everything
+Light is under `:root` and `[data-theme='light']`; dark sits under the device media
+query guarded by `:root:not([data-theme='light'])` and under `[data-theme='dark']`,
+so with no choice the page follows the device and either attribute on the root
+forces its theme. Each theme sets `color-scheme`, so an app sets none. Everything
 domain-specific stays with the app.
+
+The same attribute on any other element marks a surface that is dark (or light) in
+either device mode, such as a game table or video stage. The nearest marked
+ancestor wins at any depth, under either device mode. The limits:
+
+- The region resolves the design tokens and `color-scheme`, but it paints nothing
+  itself. The app sets `color: var(--text)` and `background: var(--bg)` on the
+  region, because the page's computed values do not recompute inside it.
+- The app's own tokens (`--primary`, `--accent`, `--on-accent`) and any token the
+  app derives at `:root` from design tokens stay root-only. Inside a dark region
+  they keep their root values, so the kit's parts show the light accent unless the
+  app writes its own values under `[data-theme='dark']`.
+- A rule the app writes as `:root[data-theme='dark'] x` matches the page root only.
 
 It also owns two classes. The first, `as-typed`, turns the case transform and the
 letter-spacing off. Text the app writes keeps the family's uppercase. Text a
