@@ -1,8 +1,0 @@
-claim_id = "84f6b86fc4ab4f2683d06382c229c82e"
-agent = "Claude 2ab3c824-e7b3-4185-a1b8-67280a5edb9a"
-role = "builder"
-base = "bdac5597fba3bff993f295bd997e771ffd61fadb"
-branch = "claude/issue-276-specs-by-role"
-scope = ["src/lib/HelperChat.test.ts", "src/lib/TurnState.test.ts", "tests/e2e/account-menu.spec.ts", "tests/e2e/helper-chat.spec.ts", "tests/e2e/sign-in.spec.ts", "tests/e2e/turn-state.spec.ts"]
-opened_commit = "909de38cc9cf57ebc3dee8a0d5dc18397621e6e8"
-whole_reason = "One rule applied across the remaining specs: each finds elements by role and catalog key, so the files share the same change."
