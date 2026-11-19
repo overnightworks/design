@@ -1,7 +1,7 @@
 # design
 
 The family look that overnightworks products share (tokens, fonts, the heading
-rule, two classes and ten Svelte components), for the engineers of those products.
+rule, four classes and ten Svelte components), for the engineers of those products.
 
 ## Quick start
 
@@ -108,7 +108,7 @@ rules `--check` holds are in [Languages](docs/languages.md#using-the-generator).
 
 - [Vision](docs/VISION.md): what design is for and what it is not.
 - [Stylesheet reference](docs/stylesheet.md): the classes, tokens, wording and
-  legal-row markup.
+  the markup of the legal row and the sign-in card.
 - [Architecture](docs/ARCHITECTURE.md): the parts, the trust and the proof.
 - [Languages](docs/languages.md): the fleet standard for building apps so that a
   further language needs no code change, and the generator's use.

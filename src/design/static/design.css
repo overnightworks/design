@@ -222,3 +222,54 @@ h2 {
 	min-height: 24px;
 	border-bottom: none;
 }
+
+.sign-in-card {
+	position: relative;
+	z-index: 1;
+	width: 340px;
+	max-width: 100%;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 16px;
+	padding: 28px 22px 22px;
+	text-align: center;
+	background: var(--card-bg);
+	border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
+	border-radius: 6px;
+	color: var(--text);
+	font-family: var(--font-body);
+}
+.sign-in-action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 44px;
+	padding: 0 14px;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	font-family: var(--font-display);
+	font-size: 14px;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	text-decoration: none;
+	white-space: nowrap;
+	cursor: pointer;
+}
+.sign-in-action.primary {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: var(--on-accent);
+}
+.sign-in-action.secondary {
+	background: transparent;
+	border-color: var(--border);
+	color: var(--text);
+}
+.sign-in-action:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}

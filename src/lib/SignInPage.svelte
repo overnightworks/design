@@ -36,7 +36,7 @@
 	<div class="grid-bg"></div>
 	<div class="glow glow-primary"></div>
 	<div class="glow glow-accent"></div>
-	<main class="card">
+	<main class="sign-in-card">
 		<span class="wordmark" data-text={appName}>{appName}</span>
 		{#if state.page === 'signed-out'}
 			<h1>{words['signIn.loggedOut']}</h1>
@@ -45,7 +45,7 @@
 			{/if}
 			{@const onSignIn = state.onSignIn}
 			<a
-				class="action primary"
+				class="sign-in-action primary"
 				href={state.signInHref}
 				data-sveltekit-reload
 				onclick={onSignIn && ((event) => startSignIn(event, onSignIn))}>{words['signIn.logIn']}</a
@@ -65,19 +65,19 @@
 		{:else if state.page === 'login-failed'}
 			<h1>{words['signIn.loginFailed']}</h1>
 			{@render banner(words['signIn.loginFailedBanner'])}
-			<a class="action primary" href={state.signInHref} data-sveltekit-reload>{words['signIn.tryAgain']}</a>
+			<a class="sign-in-action primary" href={state.signInHref} data-sveltekit-reload>{words['signIn.tryAgain']}</a>
 		{:else}
 			<h1>{words['signIn.noAccess']}</h1>
 			<p>{words['signIn.noAccessSentence']({ appName })}</p>
 			{#if state.logOutAction !== undefined}
 				<form class="log-out" method="post" action={state.logOutAction}>
-					<button class="action secondary" type="submit">{words['signIn.logOut']}</button>
+					<button class="sign-in-action secondary" type="submit">{words['signIn.logOut']}</button>
 				</form>
 			{:else if state.onLogOut !== undefined}
 				{#if state.logOutFailure}
 					<p role="alert">{state.logOutFailure}</p>
 				{/if}
-				<button class="action secondary" type="button" onclick={state.onLogOut}>{words['signIn.logOut']}</button>
+				<button class="sign-in-action secondary" type="button" onclick={state.onLogOut}>{words['signIn.logOut']}</button>
 			{/if}
 		{/if}
 	</main>
@@ -138,22 +138,6 @@
 		background: var(--accent);
 		bottom: -60px;
 		left: -60px;
-	}
-	.card {
-		position: relative;
-		z-index: 1;
-		width: 340px;
-		max-width: 100%;
-		box-sizing: border-box;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 16px;
-		padding: 28px 22px 22px;
-		text-align: center;
-		background: var(--card-bg);
-		border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
-		border-radius: 6px;
 	}
 	.wordmark {
 		position: relative;
@@ -236,39 +220,7 @@
 		outline: 2px solid var(--accent);
 		outline-offset: 2px;
 	}
-	.action {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		box-sizing: border-box;
-		width: 100%;
-		min-height: 44px;
-		padding: 0 14px;
-		border: 1px solid transparent;
-		border-radius: 4px;
-		font-family: var(--font-display);
-		font-size: 14px;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		text-decoration: none;
-		white-space: nowrap;
-		cursor: pointer;
-	}
 	.log-out {
 		display: contents;
-	}
-	.action.primary {
-		background: var(--accent);
-		border-color: var(--accent);
-		color: var(--on-accent);
-	}
-	.action.secondary {
-		background: transparent;
-		border-color: var(--border);
-		color: var(--text);
-	}
-	.action:focus-visible {
-		outline: 2px solid var(--accent);
-		outline-offset: 2px;
 	}
 </style>

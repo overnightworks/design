@@ -54,7 +54,7 @@ flowchart TB
 
 - **Stylesheet and fonts** (`design.css`, [`stylesheet.md`](stylesheet.md)): the family
   tokens, the `@font-face` rules, the heading rule for `h1` and `h2` and the classes
-  `as-typed` and `legal`.
+  `as-typed`, `legal`, `sign-in-card` and `sign-in-action`.
 - **Components** ([README](../README.md#components)): props and behaviour are the
   docstrings of [`src/lib/types.ts`](../src/lib/types.ts); the words and the facts
   beyond the types are in [`stylesheet.md`](stylesheet.md). The app passes the
@@ -135,7 +135,7 @@ catalogs, which are as trusted as its code, and reads no network and no secret.
 A catalog text is quoted into the modules (a JSON string in TypeScript, `repr` in
 Python), so no text can leave its literal; the page owns every element and target.
 
-**Ownership of the components.** A component owns its markup and look. The app
+**Ownership of the components.** A component owns its markup and look; a look that a page without Svelte also draws is a documented class in design.css, which the component applies. The app
 owns what needs a decision about its product: routes, the trigger and popover,
 storing the theme and setting `data-theme`, how logging out works, how a sign-in
 starts, wording of failures, legal link targets, the app colour and loading
