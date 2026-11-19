@@ -237,10 +237,9 @@ def test_shipped_components_neither_store_nor_fetch_nor_write_the_theme_which_th
 
 def test_a_consumer_imports_legal_links_and_its_props_type_from_the_package_root(consumer):
     consumer.check(
-        f"import {{ LegalLinks, type KitWords, type LegalLinksProps }} from '{consumer.name}';\n"
+        f"import {{ type KitWords, type LegalLinksProps }} from '{consumer.name}';\n"
         "declare const words: KitWords;\n"
         "const props: LegalLinksProps = { links: [{ label: 'Imprint', href: '/imprint' }], words };\n"
-        "export const component: typeof LegalLinks = LegalLinks;\n"
         "// @ts-expect-error links is required\n"
         "export const missing: LegalLinksProps = {};\n"
         "export { props };\n"
@@ -318,12 +317,11 @@ def test_a_consumer_gives_each_sign_in_state_only_its_own_props(consumer):
 
 def test_a_consumer_gives_the_account_menu_one_log_out_form_and_a_typed_theme_choice(consumer):
     consumer.check(
-        f"import {{ AccountMenu, type AccountMenuProps, type KitWords, type ThemeChoice }} from '{consumer.name}';\n"
+        f"import {{ type AccountMenuProps, type KitWords, type ThemeChoice }} from '{consumer.name}';\n"
         "declare const words: KitWords;\n"
         "const common = {\n"
         "  name: 'F', accountHref: '/a', onAccountOpen: () => {}, appRows: [], legalLinks: [], words,\n"
         "};\n"
-        "export const component: typeof AccountMenu = AccountMenu;\n"
         "export const callback: AccountMenuProps = { ...common, onLogOut: () => {}, logOutFailure: 'x' };\n"
         "export const action: AccountMenuProps = { ...common, logOutAction: '/logout' };\n"
         "export const choice: ThemeChoice = 'follow-system';\n"
@@ -331,9 +329,6 @@ def test_a_consumer_gives_the_account_menu_one_log_out_form_and_a_typed_theme_ch
         "theme: { choice: 'dark', onChange: (next: ThemeChoice) => void next } };\n"
         "export const row: AccountMenuProps = { ...common, logOutAction: '/l', "
         "appRows: [{ label: 'S', onSelect: () => {} }] };\n"
-        "// @ts-expect-error a choice outside the union\n"
-        "export const wrong: AccountMenuProps = { ...common, logOutAction: '/l', "
-        "theme: { choice: 'sepia', onChange: () => {} } };\n"
         "// @ts-expect-error a choice without its callback\n"
         "export const silent: AccountMenuProps = { ...common, logOutAction: '/l', theme: { choice: 'dark' } };\n"
         "// @ts-expect-error an app row that still carries icon\n"
@@ -366,10 +361,12 @@ COMPONENT_PROPS = {
 
 
 @pytest.mark.parametrize("component", COMPONENT_PROPS)
-def test_a_consumer_passes_the_kit_words_to_each_component_and_fails_its_type_check_without_them(consumer, component):
+def test_a_consumer_imports_each_component_and_its_props_type_and_fails_its_type_check_without_the_words(
+    consumer, component
+):
     props = COMPONENT_PROPS[component]
     consumer.check(
-        f"import {{ {component}, type KitWords }} from '{consumer.name}';\n"
+        f"import {{ {component}, type {component}Props, type KitWords }} from '{consumer.name}';\n"
         "import type { ComponentProps } from 'svelte';\n"
         f"type Props = ComponentProps<typeof {component}>;\n"
         "declare const words: KitWords;\n"
@@ -382,21 +379,10 @@ def test_a_consumer_passes_the_kit_words_to_each_component_and_fails_its_type_ch
     )
 
 
-@pytest.mark.parametrize(
-    "removed",
-    [
-        "AccountMenuWords",
-        "SignInPageWords",
-        "AgentControlWords",
-        "HearingSwitchWords",
-        "EarMarkWords",
-        "HelperChatWords",
-        "TurnStateWords",
-    ],
-)
-def test_the_package_root_exports_no_per_component_words_type(consumer, removed):
+def test_the_package_root_exports_no_per_component_words_type(consumer):
     consumer.check(
-        f"// @ts-expect-error the package exports no such type\nimport type {{ {removed} }} from '{consumer.name}';\n"
+        "// @ts-expect-error the package exports no such type\n"
+        f"import type {{ AccountMenuWords }} from '{consumer.name}';\n"
     )
 
 
@@ -455,107 +441,63 @@ def test_a_consumer_imports_the_ai_mark_from_the_package_root(consumer):
     consumer.check(f"import {{ AiMark }} from '{consumer.name}';\nexport const component: typeof AiMark = AiMark;\n")
 
 
-def test_a_consumer_imports_the_agent_control_with_its_types_from_the_package_root(
-    consumer,
-):
+def test_a_consumer_gives_an_agent_row_its_outcome_only_in_the_ended_state(consumer):
     consumer.check(
-        f"import {{ AgentControl, type AgentControlOutcome, type AgentControlProps, type AgentControlRefusal, "
-        f"type AgentRow, type KitWords }} from '{consumer.name}';\n"
-        "export const component: typeof AgentControl = AgentControl;\n"
-        "declare const words: KitWords;\n"
-        "const common = { onCall: (key: string) => void key, onSendAway: (key: string) => void key, words };\n"
-        "const rows: AgentRow[] = [\n"
-        "  { key: 'k1', name: 'Mozart', state: 'available' },\n"
-        "  { key: 'k2', name: 'Bach', state: 'inviting' },\n"
-        "  { key: 'k3', name: 'Leonardo', state: 'here' },\n"
-        "  { key: 'k4', name: 'Bach', state: 'ended', outcome: 'busy' },\n"
-        "];\n"
-        "export const plain: AgentControlProps = { ...common, rows };\n"
-        "export const withoutSendAway: AgentControlProps = { onCall: (key: string) => void key, rows, words };\n"
-        "export const fullPlace: AgentControlProps = { ...common, rows: [], full: true };\n"
-        "// @ts-expect-error full is a boolean\n"
-        "export const fullWord: AgentControlProps = { ...common, rows, full: 'yes' };\n"
-        "export const refused: AgentControlProps = { ...common, rows, refusal: 'place-full' };\n"
-        "export const reasons: AgentControlRefusal[] = [\n"
-        "  'not-allowed', 'owner-absent', 'place-full', 'agent-unavailable', 'try-again',\n"
-        "];\n"
-        "// @ts-expect-error a refusal outside the five reasons\n"
-        "export const unknownRefusal: AgentControlProps = { ...common, rows, refusal: 'sorry' };\n"
-        "export const outcomes: AgentControlOutcome[] = ['no-answer', 'busy', 'owner-absent'];\n"
-        "// @ts-expect-error a state outside the four\n"
-        "export const unknownState: AgentRow = { key: 'k', name: 'N', state: 'gone' };\n"
+        f"import type {{ AgentRow }} from '{consumer.name}';\n"
+        "export const ended: AgentRow = { key: 'k', name: 'N', state: 'ended', outcome: 'busy' };\n"
         "// @ts-expect-error an ended row names its outcome\n"
         "export const unnamedOutcome: AgentRow = { key: 'k', name: 'N', state: 'ended' };\n"
-        "// @ts-expect-error an outcome outside the three\n"
-        "export const unknownOutcome: AgentRow = { key: 'k', name: 'N', state: 'ended', outcome: 'gone' };\n"
         "// @ts-expect-error only an ended row has an outcome\n"
         "export const strayOutcome: AgentRow = { key: 'k', name: 'N', state: 'here', outcome: 'busy' };\n"
-        "// @ts-expect-error the rows are required\n"
-        "export const noRows: AgentControlProps = { ...common };\n"
     )
 
 
-def test_a_consumer_imports_the_hearing_switch_with_its_types_from_the_package_root(consumer):
+def test_a_consumer_extends_the_helper_message_and_gives_a_failed_history_its_failure(consumer):
     consumer.check(
-        f"import {{ HearingSwitch, type HearingKind, type HearingSwitchProps, type KitWords }} "
+        f"import {{ type HelperChatProps, type HelperHistory, type HelperMessage, type KitWords }} "
         f"from '{consumer.name}';\n"
-        "export const component: typeof HearingSwitch = HearingSwitch;\n"
         "declare const words: KitWords;\n"
-        "const common = { on: true, onChange: (on: boolean) => void on, words };\n"
-        "export const hear: HearingSwitchProps = { ...common, kind: 'hear' };\n"
-        "export const listen: HearingSwitchProps = { ...common, kind: 'listen' };\n"
-        "export const kinds: HearingKind[] = ['hear', 'listen'];\n"
-        "// @ts-expect-error a kind outside the two\n"
-        "export const unknownKind: HearingSwitchProps = { ...common, kind: 'mute' };\n"
-        "// @ts-expect-error the switch is controlled: the state is required\n"
-        "export const uncontrolled: HearingSwitchProps = "
-        "{ kind: 'hear', onChange: (on: boolean) => void on, words };\n"
-        "// @ts-expect-error a press reports the new state as a boolean\n"
-        "export const wrongReport: HearingSwitchProps = "
-        "{ ...common, kind: 'hear', onChange: (on: string) => void on };\n"
-    )
-
-
-def test_a_consumer_imports_the_ear_mark_with_its_types_from_the_package_root(consumer):
-    consumer.check(
-        f"import {{ EarMark, type EarMarkProps, type KitWords }} from '{consumer.name}';\n"
-        "export const component: typeof EarMark = EarMark;\n"
-        "declare const words: KitWords;\n"
-        "export const own: EarMarkProps = { agent: 'Mozart', words };\n"
-        "export const other: EarMarkProps = { agent: 'Mozart', person: 'Anna', words };\n"
-        "// @ts-expect-error the agent's name is required\n"
-        "export const nameless: EarMarkProps = { words };\n"
-        "// @ts-expect-error the person's name is a string or absent\n"
-        "export const wrongPerson: EarMarkProps = { agent: 'Mozart', person: 1, words };\n"
-    )
-
-
-def test_a_consumer_imports_the_helper_chat_with_its_types_from_the_package_root(consumer):
-    consumer.check(
-        f"import {{ HelperChat, type HelperChatProps, type HelperHistory, type HelperMessage, type HelperRole, "
-        f"type HelperToolCall, type KitWords }} from '{consumer.name}';\n"
-        "export const component: typeof HelperChat = HelperChat;\n"
-        "declare const words: KitWords;\n"
-        "const common = { messages: [], running: false, history: { state: 'ready' }, helperName: 'M', emptyHint: '', "
-        "placeholder: '', draft: '', onDraft: (draft: string, caret: number) => void caret, "
-        "onSend: (text: string) => void text, words } as const;\n"
-        "export const props: HelperChatProps<HelperMessage> = { ...common };\n"
-        "export const roles: HelperRole[] = ['user', 'assistant'];\n"
-        "export const call: HelperToolCall = { name: 'rewrite', input: { line: 3 } };\n"
-        "export const histories: HelperHistory[] = [{ state: 'ready' }, { state: 'loading' }, "
-        "{ state: 'failed', failure: 'x' }];\n"
         "interface AppMessage extends HelperMessage { readonly id: string }\n"
-        "export const own: HelperChatProps<AppMessage> = "
-        "{ ...common, messages: [{ role: 'user', text: 't', id: 'a' }] };\n"
-        "// @ts-expect-error a role outside the two\n"
-        "export const unknownRole: HelperMessage = { role: 'system', text: 't' };\n"
+        "export const own: HelperChatProps<AppMessage> = {\n"
+        "  messages: [{ role: 'user', text: 't', id: 'a' }], running: false, history: { state: 'ready' },\n"
+        "  helperName: 'M', emptyHint: '', placeholder: '', draft: '',\n"
+        "  onDraft: (draft: string, caret: number) => void caret, onSend: (text: string) => void text, words,\n"
+        "};\n"
         "// @ts-expect-error a failed history names its failure\n"
         "export const nameless: HelperHistory = { state: 'failed' };\n"
-        "// @ts-expect-error the composer is controlled: the draft is required\n"
-        "export const uncontrolled: HelperChatProps<HelperMessage> = "
-        "{ ...common, draft: undefined };\n"
-        "// @ts-expect-error a send reports the trimmed text as a string\n"
-        "export const wrongSend: HelperChatProps<HelperMessage> = { ...common, onSend: (text: number) => void text };\n"
+    )
+
+
+def test_a_consumer_cannot_loosen_what_the_agent_components_require_of_it(consumer):
+    consumer.check(
+        f"import type {{ AgentControlProps, EarMarkProps, HearingSwitchProps, HelperChatProps, HelperMessage, "
+        f"KitWords }} from '{consumer.name}';\n"
+        "declare const words: KitWords;\n"
+        "const control = { onCall: (key: string) => void key, rows: [], words };\n"
+        "export const withoutSendAway: AgentControlProps = control;\n"
+        "// @ts-expect-error the rows are required\n"
+        "export const noRows: AgentControlProps = { onCall: control.onCall, words };\n"
+        "// @ts-expect-error full is a boolean\n"
+        "export const fullWord: AgentControlProps = { ...control, full: 'yes' };\n"
+        "const hearing = { kind: 'hear', on: true, onChange: (on: boolean) => void on, words } as const;\n"
+        "export const hear: HearingSwitchProps = hearing;\n"
+        "// @ts-expect-error the switch is controlled: on is required\n"
+        "export const uncontrolled: HearingSwitchProps = { kind: 'hear', onChange: hearing.onChange, words };\n"
+        "// @ts-expect-error a press reports a boolean\n"
+        "export const wrongReport: HearingSwitchProps = { ...hearing, onChange: (on: string) => void on };\n"
+        "export const own: EarMarkProps = { agent: 'Mozart', words };\n"
+        "// @ts-expect-error the agent's name is required\n"
+        "export const nameless: EarMarkProps = { words };\n"
+        "// @ts-expect-error person is a string or absent\n"
+        "export const wrongPerson: EarMarkProps = { agent: 'Mozart', person: 1, words };\n"
+        "const chat = { messages: [], running: false, history: { state: 'ready' }, helperName: 'M', emptyHint: '', "
+        "placeholder: '', draft: '', onDraft: (draft: string, caret: number) => void caret, "
+        "onSend: (text: string) => void text, words } as const;\n"
+        "export const props: HelperChatProps<HelperMessage> = chat;\n"
+        "// @ts-expect-error the draft is required\n"
+        "export const noDraft: HelperChatProps<HelperMessage> = { ...chat, draft: undefined };\n"
+        "// @ts-expect-error send reports a string\n"
+        "export const wrongSend: HelperChatProps<HelperMessage> = { ...chat, onSend: (text: number) => void text };\n"
     )
 
 

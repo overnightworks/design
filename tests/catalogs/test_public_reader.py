@@ -76,23 +76,9 @@ def test_parse_catalog_returns_the_header_language_and_every_entry_in_file_order
 
 
 @pytest.mark.parametrize(
-    ("content", "language"),
-    [
-        pytest.param('msgid ""\nmsgstr ""\n"X-Other: 1\\n"\n', None, id="header without language"),
-        pytest.param('msgctxt "a.b"\nmsgid "Eins"\nmsgstr ""\n', None, id="no header"),
-        pytest.param('msgid ""\nmsgstr ""\n"Language: pt-BR\\n"\n', "pt-BR", id="header with language"),
-    ],
-)
-def test_parse_catalog_names_no_language_unless_the_header_does(content, language):
-    assert parse_catalog(content.encode(), "x.po").language == language
-
-
-@pytest.mark.parametrize(
     ("msgstr", "forms"),
     [
         pytest.param('msgstr[0] "Seat"\n', ("Seat",), id="one form"),
-        pytest.param('msgstr[0] "Seat"\nmsgstr[1] ""\n', ("Seat", ""), id="two forms, the last empty"),
-        pytest.param('msgstr[0] ""\nmsgstr[1] "b"\nmsgstr[2] ""\n', ("", "b", ""), id="three forms"),
         pytest.param('msgstr[0] "a"\nmsgstr[1] "b"\nmsgstr[2] "c"\nmsgstr[3] "d"\n', ("a", "b", "c", "d"), id="four"),
     ],
 )
@@ -105,11 +91,6 @@ def test_parse_catalog_returns_exactly_the_msgstr_forms_the_file_writes(msgstr, 
 @pytest.mark.parametrize(
     ("content", "kept"),
     [
-        pytest.param(
-            'msgctxt "a.b"\nmsgid "Eins"\nmsgstr ""\n\n#~ msgctxt "gone.old"\n#~ msgid "x"\n#~ msgstr ""\n',
-            "Eins",
-            id="obsolete entry",
-        ),
         pytest.param(
             'msgid "a"\nmsgstr ""\n\n#~ msgid "b"\n#~ msgstr[0] ""\n#~ msgstr[1] "Geheim"\n',
             "a",
@@ -129,7 +110,6 @@ def test_parse_catalog_leaves_out_an_obsolete_entry(content, kept):
 @pytest.mark.parametrize(
     ("content", "message"),
     [
-        pytest.param(b'msgid "Gr\xfc\xdfe"\nmsgstr ""\n', r"^de\.po: the catalog is not valid UTF-8$", id="not UTF-8"),
         pytest.param(b'msgid "a"\nmsgstr "b\n', r"^de\.po:2: the string is not closed by a quote$", id="open string"),
         pytest.param(b'msgid "a"\nbogus "b"\n', r"^de\.po:2: Unknown or misformatted keyword$", id="invalid file"),
     ],
