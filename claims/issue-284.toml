@@ -1,0 +1,8 @@
+claim_id = "b36f837dee974b1498c285462685858f"
+agent = "Claude 27a67e6a-d638-4888-bce6-c323fa029369"
+role = "builder"
+base = "5014da6e824ee2cec440862fd8c4bcdf278bdfba"
+branch = "claude/issue-284-sign-in-card-classes"
+scope = ["README.md", "docs/ARCHITECTURE.md", "docs/stylesheet.md", "src/design/static/design.css", "src/lib/SignInPage.ssr.test.ts", "src/lib/SignInPage.svelte", "src/lib/SignInPage.test.ts", "tests"]
+opened_commit = "7168b6e67c8a9c559854dc69842e7755730b7733"
+whole_reason = "One move of the sign-in card and action look into the stylesheet, with the documents and proofs that name it."
