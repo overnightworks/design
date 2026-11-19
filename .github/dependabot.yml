@@ -17,7 +17,7 @@ updates:
     ignore:
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
-    # why: @vitest/coverage-v8 requires exactly the installed vitest as its
+    # why: @vitest/coverage-istanbul requires exactly the installed vitest as its
     # peer, so both move in one update.
     groups:
       vitest:
