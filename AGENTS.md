@@ -11,7 +11,7 @@
 - `uv run --frozen ruff check .` and `uv run --frozen ruff format --check .`: Python lint; both must pass.
 - `quality check`: the shared static check. Run it at the release `.github/workflows/ci.yml` pins.
 - `pnpm run test:consumer`: the Playwright consumers, a probe stack. Run it only through `probe-run`, as the global contract's section "Machine load and local runs" says; the consumers serve a routed origin and bind no host port, so lanes may drive in parallel. It clears `coverage/drive` and leaves the browser's counters there.
-- `pnpm run coverage:merge`: remaps the browser counters onto `src/lib`, merges them with Vitest's and writes `coverage/lcov.info` and a text table, then fails when the merge counts fewer branches than Vitest or the lockfile holds two source-map remappers. Run it after `test:coverage` and the consumer drive.
+- `pnpm run coverage:merge`: remaps the browser counters onto `src/lib`, merges them with Vitest's and writes `coverage/lcov.info` and a text table, then fails when the merge counts fewer branches or covered branches than Vitest or the lockfile holds two source-map remappers. Run it after `test:coverage` and the consumer drive.
 - `gh workflow run release.yml -R overnightworks/design -f version=X.Y.Z`: the release dispatch, an agent's step once the version pull request has landed with its review and CI green. `main` must carry X.Y.Z in `pyproject.toml` and `package.json`.
 
 ## Rules

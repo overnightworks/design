@@ -16,7 +16,7 @@ const remappers = new Set(
 	readFileSync('pnpm-lock.yaml', 'utf8')
 		.split('\n')
 		.filter((line) => line.startsWith('  ') && !line.startsWith('   ') && line.endsWith(':'))
-		.map((line) => line.slice(2, -1).replace(/'/g, '').split('(')[0])
+		.map((line) => line.slice(2, -1).replaceAll("'", '').split('(')[0])
 		.filter((key) => remapperPackages.some((name) => key.startsWith(name)))
 );
 
