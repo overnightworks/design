@@ -1,0 +1,8 @@
+claim_id = "c0d032eeb5f2434296e1dee87f332bdf"
+agent = "Claude 27a67e6a-d638-4888-bce6-c323fa029369"
+role = "builder"
+base = "79c29cceac4be625311e8f06fd593369f24d288f"
+branch = "claude/issue-296-merge-loses-nothing"
+scope = [".github/workflows/ci.yml", "AGENTS.md", "docs/ARCHITECTURE.md", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "scripts", "vitest.config.ts"]
+opened_commit = "939cbdb2213998e643453b9907f974ca84bd49be"
+whole_reason = "One measurement path: the remapper, the unit compile and the comparison only make sense together."
