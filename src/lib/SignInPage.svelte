@@ -139,6 +139,21 @@
 		bottom: -60px;
 		left: -60px;
 	}
+	.sign-in-card {
+		position: relative;
+		z-index: 1;
+		width: 340px;
+		max-width: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 16px;
+		text-align: center;
+	}
+	.sign-in-action {
+		width: 100%;
+		white-space: nowrap;
+	}
 	.wordmark {
 		position: relative;
 		display: inline-block;

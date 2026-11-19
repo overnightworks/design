@@ -136,23 +136,28 @@ platform's Keycloak theme takes `design.css` and the fonts from the release whee
 
 ## Drawing the sign-in card by hand
 
-A page that cannot render Svelte draws the sign-in card with two classes, and `SignInPage` applies the same two. `sign-in-card` goes on the element that holds the card: its box (width, padding, border, radius, background), the column its content stands in, and the family's body font and text colour. `sign-in-action` goes on a link or a button inside it, with `primary` for the one way forward and `secondary` for a way out: the full-width button in the display font, in the accent colour for `primary` and outlined for `secondary`, with the family's focus ring. The words are the kit's sign-in words in the page's language, as in [Sign-in wording](#sign-in-wording).
+A page that cannot render Svelte draws the sign-in card with two classes, and `SignInPage` applies the same two. The classes are the look and only the look; the page arranges the card's content, the card's width and its buttons. `sign-in-card` goes on the element that holds the card: its padding, border, radius, background, and the family's body font and text colour. `sign-in-action` goes on a link or a button inside it, with `primary` for the one way forward and `secondary` for a way out: the button in the display font, centred, in the accent colour for `primary` and outlined for `secondary`, with the family's focus ring. The words are the kit's sign-in words in the page's language, as in [Sign-in wording](#sign-in-wording).
+
+The classes arrange neither the card nor what it holds, so the card works as the element of any templated page, whose wrappers, forms and buttons are the page's own. A card takes the width of its container and its children flow as they would anywhere; an action is an inline box that takes the width of its label and wraps a long one. Written as plain elements, a card with a form and two actions side by side:
 
 ```html
 <main class="sign-in-card">
-  <h1>Du bist abgemeldet.</h1>
-  <a class="sign-in-action primary" href="/login">Anmelden</a>
+  <div><h1>Anmelden</h1></div>
+  <div>
+    <form action="/login" method="post">
+      <div><label for="name">Name</label> <input id="name" name="name" /></div>
+      <div>
+        <a class="sign-in-action primary" href="/login">Anmelden</a>
+        <button class="sign-in-action secondary" type="submit">Abmelden</button>
+      </div>
+    </form>
+  </div>
 </main>
 ```
 
-```html
-<main class="sign-in-card">
-  <h1>Kein Zugang</h1>
-  <button class="sign-in-action secondary" type="button">Abmelden</button>
-</main>
-```
+A page that wants the card narrower, the text centred or the actions as wide as the card says so in its own rules or in a `style` attribute on the elements involved, for example `style="width: 340px; max-width: 100%"` on the card.
 
-The classes read `--primary`, `--accent` and `--on-accent`, which the page defines as [the app colour](#what-it-leaves-to-each-product). The card holds no heading style: `h1` takes the heading rule above, and the page sets the size it wants. The wordmark above the heading, the grid and the glows behind the card, the failure banner and the signing-in states are `SignInPage`'s own and are not offered. A button that submits a form keeps the card's width only when its `form` is `display: contents`. The page keeps the card's placement on the page.
+The classes read `--primary`, `--accent` and `--on-accent`, which the page defines as [the app colour](#what-it-leaves-to-each-product). The card holds no heading style: `h1` takes the heading rule above, and the page sets the size it wants. The wordmark above the heading, the grid and the glows behind the card, the failure banner and the signing-in states are `SignInPage`'s own and are not offered. The page keeps the card's placement on the page.
 
 ## What it leaves to each product
 
