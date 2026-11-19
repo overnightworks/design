@@ -5,10 +5,12 @@ const mounted: { target: HTMLElement; component: ReturnType<typeof mount> }[] = 
 
 /** Unmounts everything mounted so far; the helper does it after each test. */
 export async function unmountMounted(): Promise<void> {
-	for (const { target, component } of mounted.splice(0)) {
-		await unmount(component);
-		target.remove();
-	}
+	await Promise.all(
+		mounted.splice(0).map(async ({ target, component }) => {
+			await unmount(component);
+			target.remove();
+		})
+	);
 }
 
 afterEach(unmountMounted);
