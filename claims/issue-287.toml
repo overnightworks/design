@@ -1,8 +1,0 @@
-claim_id = "def767d3ccd844028f12092b71a8218c"
-agent = "Claude 27a67e6a-d638-4888-bce6-c323fa029369"
-role = "builder"
-base = "028d883c2769c2c8a7110f5a541ce80633cf9dd0"
-branch = "claude/issue-287-sign-in-look-without-layout"
-scope = ["README.md", "docs/ARCHITECTURE.md", "docs/stylesheet.md", "src/design/static/design.css", "src/lib/SignInPage.ssr.test.ts", "src/lib/SignInPage.svelte", "src/lib/SignInPage.test.ts", "tests"]
-opened_commit = "778ab20066d06e3a03e9f21655afec035add2221"
-whole_reason = "One cut between the sign-in look and SignInPage's layout, with the documents and proofs that name it."
