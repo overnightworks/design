@@ -1,12 +1,9 @@
 import { expect, test } from './coverage.ts';
 import type { Page } from '@playwright/test';
-import type { KitLanguage, KitWords } from 'overnightworks-design';
-import { buildConsumer, loadKitWordsUnderNode, origin, routeTo, type ConsumerName } from './build-consumer.ts';
+import type { KitLanguage } from 'overnightworks-design';
+import { colorSchemes, consumerNames, consumerTitle, languages, origin, useConsumer, widths } from './build-consumer.ts';
 import { resolveStyle } from './probe.ts';
 
-const colorSchemes = ['light', 'dark'] as const;
-const languages = ['de', 'en'] as const satisfies readonly KitLanguage[];
-const widths = [390, 1280] as const;
 const legalNames = ['Impressum', 'Datenschutz', 'Nutzungsbedingungen'];
 const typedName = 'Felix mcDonald';
 const touchRowFloor = 44;
@@ -57,20 +54,12 @@ async function expectNothingStoredOrFetched(
 	expect(stored).toBe(0);
 }
 
-for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[]) {
-	test.describe(`the account menu in a production consumer that ${consumer === 'imported' ? 'imports' : 'statically links'} design.css`, () => {
-		let outDir: string;
-		let wordsOf: Record<KitLanguage, KitWords>;
-		let en: KitWords;
-		test.beforeAll(async () => {
-			outDir = await buildConsumer(consumer);
-			wordsOf = { de: await loadKitWordsUnderNode('de'), en: await loadKitWordsUnderNode('en') };
-			en = wordsOf.en;
-		});
+for (const consumer of consumerNames) {
+	test.describe(consumerTitle('the account menu', consumer), () => {
+		const { wordsOf, route, open: openAt } = useConsumer(consumer);
 
 		async function open(page: Page, variant = '', language: KitLanguage = 'en'): Promise<void> {
-			await routeTo(page.context(), outDir);
-			await page.goto(`${origin}/?menu=${variant}${language === 'en' ? '' : `&lang=${language}`}`);
+			await openAt(page, `menu=${variant}`, language);
 			await expect(panelOf(page)).toBeVisible();
 		}
 
@@ -90,17 +79,17 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 					);
 					expect(surface).not.toBe('rgba(0, 0, 0, 0)');
 					await expect(panelOf(page)).toHaveCSS('background-color', surface);
-					await expect(page.getByRole('radio', { name: en['account.followSystem'] })).toBeChecked();
-					await expect(page.getByRole('radio', { name: en['account.followSystem'] })).toHaveCSS(
+					await expect(page.getByRole('radio', { name: wordsOf.en['account.followSystem'] })).toBeChecked();
+					await expect(page.getByRole('radio', { name: wordsOf.en['account.followSystem'] })).toHaveCSS(
 						'background-image',
 						/radial-gradient/
 					);
-					await expect(page.getByRole('button', { name: en['account.logOut'] }).locator('..')).toHaveCSS(
+					await expect(page.getByRole('button', { name: wordsOf.en['account.logOut'] }).locator('..')).toHaveCSS(
 						'border-top-style',
 						'solid'
 					);
 					const logOutHeight = (await page
-						.getByRole('button', { name: en['account.logOut'] })
+						.getByRole('button', { name: wordsOf.en['account.logOut'] })
 						.locator('..')
 						.boundingBox())!.height;
 					const settingsHeight = (await page
@@ -128,7 +117,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 				const rows = [
 					panel.getByRole('link', { name: typedName }),
 					...(await panel.getByRole('button').all()),
-					panel.getByText(en['account.theme'], { exact: true }),
+					panel.getByText(wordsOf.en['account.theme'], { exact: true }),
 					...(await panel.getByRole('radio').locator('..').all())
 				];
 				expect(rows.length).toBeGreaterThan(0);
@@ -154,7 +143,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			test('a row stays below the touch floor', async ({ page }) => {
 				await open(page);
 				expect(await page.evaluate(() => matchMedia('(any-pointer: coarse)').matches)).toBe(false);
-				const radioRow = page.getByRole('radio', { name: en['account.followSystem'] }).locator('..');
+				const radioRow = page.getByRole('radio', { name: wordsOf.en['account.followSystem'] }).locator('..');
 				expect((await radioRow.boundingBox())!.height).toBeLessThan(touchRowFloor);
 			});
 
@@ -227,15 +216,15 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			await page.emulateMedia({ colorScheme: 'dark' });
 			await open(page);
 			const html = page.locator('html');
-			await page.getByRole('radio', { name: en['account.light'] }).click();
+			await page.getByRole('radio', { name: wordsOf.en['account.light'] }).click();
 			await expect(html).toHaveAttribute('data-theme', 'light');
-			await page.getByRole('radio', { name: en['account.dark'] }).click();
+			await page.getByRole('radio', { name: wordsOf.en['account.dark'] }).click();
 			await expect(html).toHaveAttribute('data-theme', 'dark');
 			await expect(panelOf(page)).toBeVisible();
-			await expect(page.getByRole('radio', { name: en['account.dark'] })).toBeChecked();
-			await page.getByRole('radio', { name: en['account.followSystem'] }).click();
+			await expect(page.getByRole('radio', { name: wordsOf.en['account.dark'] })).toBeChecked();
+			await page.getByRole('radio', { name: wordsOf.en['account.followSystem'] }).click();
 			await expect(html).not.toHaveAttribute('data-theme');
-			await expect(page.getByRole('radio', { name: en['account.followSystem'] })).toBeChecked();
+			await expect(page.getByRole('radio', { name: wordsOf.en['account.followSystem'] })).toBeChecked();
 			await expectNothingStoredOrFetched(page, requests);
 		});
 
@@ -244,11 +233,11 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 		}) => {
 			const requests = watchRequests(page);
 			await open(page, 'ignore');
-			await page.getByRole('radio', { name: en['account.dark'] }).click();
+			await page.getByRole('radio', { name: wordsOf.en['account.dark'] }).click();
 			expect(await reportsOf(page)).toEqual(['theme:dark']);
-			await expect(page.getByRole('radio', { name: en['account.followSystem'] })).toBeChecked();
-			await expect(page.getByRole('radio', { name: en['account.dark'] })).not.toBeChecked();
-			await page.getByRole('radio', { name: en['account.followSystem'] }).click();
+			await expect(page.getByRole('radio', { name: wordsOf.en['account.followSystem'] })).toBeChecked();
+			await expect(page.getByRole('radio', { name: wordsOf.en['account.dark'] })).not.toBeChecked();
+			await page.getByRole('radio', { name: wordsOf.en['account.followSystem'] }).click();
 			expect(await reportsOf(page)).toEqual(['theme:dark']);
 			await expectNothingStoredOrFetched(page, requests);
 		});
@@ -271,13 +260,13 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			expect(order).toEqual([
 				typedName,
 				'Settings',
-				en['account.followSystem'],
-				en['account.logOut'],
+				wordsOf.en['account.followSystem'],
+				wordsOf.en['account.logOut'],
 				...legalNames,
 				null
 			]);
 
-			await page.getByRole('radio', { name: en['account.followSystem'] }).focus();
+			await page.getByRole('radio', { name: wordsOf.en['account.followSystem'] }).focus();
 			await page.keyboard.press('ArrowDown');
 			await page.keyboard.press('ArrowDown');
 			await page.keyboard.press('Space');
@@ -288,7 +277,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 					await page.keyboard.press('Enter');
 				})()
 			]);
-			await page.getByRole('button', { name: en['account.logOut'] }).focus();
+			await page.getByRole('button', { name: wordsOf.en['account.logOut'] }).focus();
 			await page.keyboard.press('Enter');
 			await page.keyboard.press('Space');
 			expect(await reportsOf(page)).toEqual([
@@ -330,7 +319,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 
 		test('draws the focused radio ring outside its own border', async ({ page }) => {
 			await open(page);
-			const radio = page.getByRole('radio', { name: en['account.followSystem'] });
+			const radio = page.getByRole('radio', { name: wordsOf.en['account.followSystem'] });
 			await radio.focus();
 			const offset = await radio.evaluate((element) =>
 				Number.parseFloat(getComputedStyle(element).outlineOffset)
@@ -342,16 +331,16 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			const requests = watchRequests(page);
 			await open(page, 'no-theme');
 			await expect(page.getByRole('radio')).toHaveCount(0);
-			await expect(page.getByText(en['account.theme'])).toHaveCount(0);
+			await expect(page.getByText(wordsOf.en['account.theme'])).toHaveCount(0);
 			await expectNothingStoredOrFetched(page, requests);
 		});
 
 		test('posts to the log out action when it is a form', async ({ page }) => {
-			await routeTo(page.context(), outDir);
+			await route(page.context());
 			await page.route(`${origin}/logout`, (route) => route.fulfill({ status: 204 }));
 			await page.goto(`${origin}/?menu=action`);
 			const posted = page.waitForRequest(`${origin}/logout`);
-			await page.getByRole('button', { name: en['account.logOut'] }).click({ noWaitAfter: true });
+			await page.getByRole('button', { name: wordsOf.en['account.logOut'] }).click({ noWaitAfter: true });
 			expect((await posted).method()).toBe('POST');
 		});
 	});

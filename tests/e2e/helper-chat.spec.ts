@@ -1,12 +1,8 @@
 import { expect, test } from './coverage.ts';
 import type { Locator, Page } from '@playwright/test';
-import type { KitLanguage, KitWords } from 'overnightworks-design';
-import { buildConsumer, loadKitWordsUnderNode, origin, routeTo, type ConsumerName } from './build-consumer.ts';
+import type { KitLanguage } from 'overnightworks-design';
+import { colorSchemes, consumerNames, consumerTitle, languages, useConsumer, widths } from './build-consumer.ts';
 import { resolveStyle } from './probe.ts';
-
-const colorSchemes = ['light', 'dark'] as const;
-const widths = [390, 1280] as const;
-const languages = ['de', 'en'] as const satisfies readonly KitLanguage[];
 
 // AiMark.svelte holds the word as a constant for every language, so no catalog key exists (gap named on #276).
 const aiMarkWord = 'AI';
@@ -18,14 +14,9 @@ const bubbleOf = (page: Page, text: string) => page.getByRole('listitem').filter
 const aiMarkIn = (scope: Locator) => scope.getByText(aiMarkWord, { exact: true });
 const rowOf = (page: Page, tool: string) => page.getByText(tool).first().locator('..');
 
-for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[]) {
-	test.describe(`the helper chat in a production consumer that ${consumer === 'imported' ? 'imports' : 'statically links'} design.css`, () => {
-		let outDir: string;
-		let wordsOf: Record<KitLanguage, KitWords>;
-		test.beforeAll(async () => {
-			outDir = await buildConsumer(consumer);
-			wordsOf = { de: await loadKitWordsUnderNode('de'), en: await loadKitWordsUnderNode('en') };
-		});
+for (const consumer of consumerNames) {
+	test.describe(consumerTitle('the helper chat', consumer), () => {
+		const { wordsOf, open: openAt } = useConsumer(consumer);
 
 		const fieldOf = (page: Page, language: KitLanguage = 'en'): Locator =>
 			page.getByRole('textbox', { name: wordsOf[language]['helperChat.composerLabel']({ name: 'Mozart' }), exact: true });
@@ -35,8 +26,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			page.getByRole('button', { name: wordsOf[language]['helperChat.send'], exact: true });
 
 		async function open(page: Page, variant: string, language: KitLanguage = 'en'): Promise<void> {
-			await routeTo(page.context(), outDir);
-			await page.goto(`${origin}/?helper=${variant}${language === 'en' ? '' : `&lang=${language}`}`);
+			await openAt(page, `helper=${variant}`, language);
 			await expect(fieldOf(page, language)).toBeVisible();
 		}
 
