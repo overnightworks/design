@@ -1,4 +1,6 @@
 overrides:
   deepmerge: '-'
+  glob: '^14.0.2'
+  minimatch: '^11.0.1'
 patchedDependencies:
   '@sveltejs/vite-plugin-svelte@7.3.1': patches/@sveltejs__vite-plugin-svelte@7.3.1.patch
