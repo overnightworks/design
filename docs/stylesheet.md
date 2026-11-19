@@ -38,14 +38,14 @@ ancestor wins at any depth, under either device mode. The limits:
   alone, so on a dark device it styles content in every region, light or dark,
   whatever the root, and on a light device it styles none.
 
-It also owns a heading rule and two classes. The rule sets `h1` and `h2` in the
+It also owns a heading rule and four classes. The rule sets `h1` and `h2` in the
 family display font (`--font-display`), spaced and uppercase, so text the app
 writes keeps the family's uppercase without a rule of its own. The first class,
 `as-typed`, turns the case transform and the letter-spacing off. Text a person
 typed (a name, slug or address) keeps its case, also in `h1`, `h2` and the page
 head's `h3`. An app marks such text with `as-typed` on the element that holds
 only the typed text: a `span` inside the heading, because a heading's own
-selector may outrank a single class on the heading itself. The second, `legal`, is the look of the legal row, described under [Writing the legal row by hand](#writing-the-legal-row-by-hand).
+selector may outrank a single class on the heading itself. The second, `legal`, is the look of the legal row, described under [Writing the legal row by hand](#writing-the-legal-row-by-hand). The third and fourth, `sign-in-card` and `sign-in-action` (with `primary` or `secondary`), are the look of the sign-in card and of its buttons, described under [Drawing the sign-in card by hand](#drawing-the-sign-in-card-by-hand).
 
 ```html
 <h3>Source <span class="as-typed">talks</span></h3>
@@ -133,6 +133,26 @@ A page that belongs to no single app, such as Keycloak's central sign-in pages, 
 `LegalLinks` takes `place`: `'page'` (the default) for a row on a page, `'menu'` for the look of a row inside a menu, whose links open in a new tab.
 
 platform's Keycloak theme takes `design.css` and the fonts from the release wheel; hal's [docs/keycloak.md](https://github.com/overnightworks/hal/blob/main/docs/keycloak.md#theme-and-language) gives the reasons for hal's deviation above.
+
+## Drawing the sign-in card by hand
+
+A page that cannot render Svelte draws the sign-in card with two classes, and `SignInPage` applies the same two. `sign-in-card` goes on the element that holds the card: its box (width, padding, border, radius, background), the column its content stands in, and the family's body font and text colour. `sign-in-action` goes on a link or a button inside it, with `primary` for the one way forward and `secondary` for a way out: the full-width button in the display font, in the accent colour for `primary` and outlined for `secondary`, with the family's focus ring. The words are the kit's sign-in words in the page's language, as in [Sign-in wording](#sign-in-wording).
+
+```html
+<main class="sign-in-card">
+  <h1>Du bist abgemeldet.</h1>
+  <a class="sign-in-action primary" href="/login">Anmelden</a>
+</main>
+```
+
+```html
+<main class="sign-in-card">
+  <h1>Kein Zugang</h1>
+  <button class="sign-in-action secondary" type="button">Abmelden</button>
+</main>
+```
+
+The classes read `--primary`, `--accent` and `--on-accent`, which the page defines as [the app colour](#what-it-leaves-to-each-product). The card holds no heading style: `h1` takes the heading rule above, and the page sets the size it wants. The wordmark above the heading, the grid and the glows behind the card, the failure banner and the signing-in states are `SignInPage`'s own and are not offered. A button that submits a form keeps the card's width only when its `form` is `display: contents`. The page keeps the card's placement on the page.
 
 ## What it leaves to each product
 

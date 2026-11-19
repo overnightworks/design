@@ -109,6 +109,21 @@ def top_level_rules(stylesheet):
     return rules
 
 
+def test_every_class_the_stylesheet_reference_documents_is_a_selector_of_the_stylesheet(installed_package):
+    _, static = installed_package
+    reference = (REPOSITORY / "docs" / "stylesheet.md").read_text()
+    documented = {name for attribute in re.findall(r'class="([^"]+)"', reference) for name in attribute.split()}
+    selectors = " ".join(top_level_rules((static / "design.css").read_text()))
+    drawn = set(re.findall(r"\.([a-z][a-z0-9-]*)", selectors))
+    assert documented
+    assert documented <= drawn, documented - drawn
+
+
+def test_the_stylesheet_uses_no_light_dark_function(installed_package):
+    _, static = installed_package
+    assert "light-dark(" not in (static / "design.css").read_text()
+
+
 LIGHT_SELECTOR = ":root, [data-theme='light']"
 STAGE_SELECTOR = ":root"
 DARK_SELECTOR = "[data-theme='dark']"
