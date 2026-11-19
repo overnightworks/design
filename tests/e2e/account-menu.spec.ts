@@ -348,14 +348,11 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 
 		test('posts to the log out action when it is a form', async ({ page }) => {
 			await routeTo(page.context(), outDir);
-			const posted: string[] = [];
-			await page.route(`${origin}/logout`, (route) => {
-				posted.push(route.request().method());
-				return route.fulfill({ status: 204 });
-			});
+			await page.route(`${origin}/logout`, (route) => route.fulfill({ status: 204 }));
 			await page.goto(`${origin}/?menu=action`);
+			const posted = page.waitForRequest(`${origin}/logout`);
 			await page.getByRole('button', { name: en['account.logOut'] }).click({ noWaitAfter: true });
-			await expect.poll(() => posted).toEqual(['POST']);
+			expect((await posted).method()).toBe('POST');
 		});
 	});
 }
