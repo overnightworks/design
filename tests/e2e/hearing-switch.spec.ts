@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test } from './coverage.ts';
+import type { Locator, Page } from '@playwright/test';
 import type { KitLanguage, KitWords } from 'overnightworks-design';
 import { buildConsumer, loadKitWordsUnderNode, origin, routeTo, type ConsumerName } from './build-consumer.ts';
 import { resolveStyle } from './probe.ts';
@@ -234,11 +235,12 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 				await tapsLandOnChip(page, 'see');
 			});
 
-			test('draws the hearing chip beside a compact chip as wide as under a fine pointer', async ({ page, browser }) => {
+			test('draws the hearing chip beside a compact chip as wide as under a fine pointer', async ({ page, browser, driveCoverage }) => {
 				await open(page, 'narrow');
 				const drawn = async (target: Page) => (await chipOf(target, 'hear').boundingBox())!.width;
 				const coarse = await drawn(page);
 				const fineContext = await browser.newContext({ hasTouch: false, isMobile: false, viewport: { width: 390, height: 800 } });
+				await driveCoverage.watch(fineContext);
 				try {
 					const fine = await fineContext.newPage();
 					await open(fine, 'narrow');

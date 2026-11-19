@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test } from './coverage.ts';
+import type { Locator, Page } from '@playwright/test';
 import type { KitLanguage, KitWords } from 'overnightworks-design';
 import { buildConsumer, loadKitWordsUnderNode, origin, routeTo, type ConsumerName } from './build-consumer.ts';
 import { resolveStyle } from './probe.ts';

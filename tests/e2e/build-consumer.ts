@@ -1,12 +1,14 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { dirname, join, normalize, resolve, sep } from 'node:path';
+import { dirname, join, normalize, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import type { BrowserContext, Page } from '@playwright/test';
 import type { KitLanguage, KitWords } from 'overnightworks-design/words';
+import { createInstrumenter } from 'istanbul-lib-instrument';
 import { build } from 'vite';
+import istanbul from 'vite-plugin-istanbul';
 
 const consumersRoot = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(consumersRoot, '../..');
@@ -40,6 +42,47 @@ function installPackage(): void {
 	execFileSync('tar', ['-xzf', tarball(), '-C', installed, '--strip-components=1']);
 }
 
+const kitDirectory = join(consumersRoot, 'node_modules/overnightworks-design');
+const kitSourceDirectory = join(repositoryRoot, 'src/lib');
+
+interface InputSourceMap {
+	sources?: string[];
+}
+
+/**
+ * Istanbul's own instrumenter, with the input source map's sources rewritten to the
+ * file's twin under `src/lib`, which is where the merged report counts the component.
+ * It refuses a `.svelte` file whose installed copy differs from that twin, because the
+ * counters would then name lines of a file that is not the one measured.
+ */
+function kitInstrumenter() {
+	const instrumenter = createInstrumenter({
+		coverageGlobalScopeFunc: false,
+		coverageGlobalScope: 'globalThis',
+		preserveComments: true,
+		produceSourceMap: true,
+		autoWrap: true,
+		esModules: true,
+		compact: false
+	});
+	return {
+		instrumentSync(code: string, filename: string, inputSourceMap?: InputSourceMap): string {
+			const twin = join(kitSourceDirectory, relative(join(kitDirectory, 'svelte-dist'), filename));
+			if (!readFileSync(filename).equals(readFileSync(twin))) {
+				throw new Error(`${filename} differs from ${twin}; the coverage of the kit would name the wrong lines.`);
+			}
+			if (inputSourceMap?.sources) {
+				inputSourceMap.sources = inputSourceMap.sources.map(() => twin);
+			}
+			return instrumenter.instrumentSync(code, filename, inputSourceMap as never);
+		},
+		lastSourceMap: () => instrumenter.lastSourceMap(),
+		get fileCoverage() {
+			return instrumenter.fileCoverage;
+		}
+	};
+}
+
 /** Builds the consumer for production and returns its output directory. */
 export async function buildConsumer(name: ConsumerName): Promise<string> {
 	const consumerDirectory = join(consumersRoot, name);
@@ -49,8 +92,18 @@ export async function buildConsumer(name: ConsumerName): Promise<string> {
 		root: consumerDirectory,
 		configFile: false,
 		logLevel: 'warn',
-		plugins: [svelte()],
-		build: { outDir, emptyOutDir: true }
+		// The counters live only in this build: the tarball above is what the release path packs.
+		plugins: [
+			svelte(),
+			istanbul({
+				cwd: kitDirectory,
+				include: ['svelte-dist/**'],
+				extension: ['.svelte'],
+				forceBuildInstrument: true,
+				instrumenter: kitInstrumenter()
+			})
+		],
+		build: { outDir, emptyOutDir: true, sourcemap: true }
 	});
 	if (name === 'linked') {
 		// A linked stylesheet is copied into the page's origin untouched, bypassing the bundler.

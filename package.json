@@ -33,7 +33,8 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:consumer": "playwright test --config tests/e2e/playwright.config.ts"
+    "test:consumer": "rm -rf coverage/drive && playwright test --config tests/e2e/playwright.config.ts",
+    "coverage:merge": "nyc report --temp-dir coverage/drive --report-dir coverage/remapped --reporter json --extension .svelte --extension .ts && nyc report --temp-dir coverage/remapped --report-dir coverage --reporter lcov --reporter text --extension .svelte --extension .ts"
   },
   "packageManager": "pnpm@12.21.0",
   "devEngines": {
