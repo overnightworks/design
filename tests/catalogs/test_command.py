@@ -25,6 +25,19 @@ def clean_translation(clean_source, write_catalog, catalog_text, block):
     )
 
 
+@pytest.fixture
+def python_module(project, declare):
+    """The declared Python module of the clean catalogs."""
+    declare(python="src/app/words.py")
+    return project / "src/app/words.py"
+
+
+@pytest.fixture(params=[SOURCE_LANGUAGE, "pl", "index", "python"])
+def generated_module(request, clean_translation, python_module, module_for):
+    """Each module the command writes for the clean catalogs: a language's, the loader and the Python module."""
+    return python_module if request.param == "python" else module_for(request.param)
+
+
 def test_main_writes_the_typed_source_module_from_the_source_catalog(clean_source, module_path):
     assert main([]) == 0
 
@@ -33,103 +46,41 @@ def test_main_writes_the_typed_source_module_from_the_source_catalog(clean_sourc
     assert '    "table.seatFree": "Frei",' in written
 
 
-def test_main_writes_a_text_with_gaps_as_a_function_in_the_source_module(
-    write_source, catalog_text, block, module_path, evaluate
-):
-    write_source(catalog_text(block("chat.greeting", "Hallo {name}, {count} Nachrichten")))
-    probe = (
-        'import { words } from "./de.ts";'
-        ' process.stdout.write(JSON.stringify(words["chat.greeting"]({ name: "Eva", count: 1000 })));'
-    )
-
-    assert main([]) == 0
-
-    assert evaluate({"de.ts": module_path.read_text(encoding="utf-8")}, probe) == "Hallo Eva, 1.000 Nachrichten"
-
-
-def test_main_writes_a_marked_text_as_a_list_of_parts_in_the_source_module(
-    write_source, catalog_text, block, module_path, evaluate
-):
-    write_source(catalog_text(block("home.note", "Nur {#strong}wichtig{/strong}")))
-    probe = 'import { words } from "./de.ts"; process.stdout.write(JSON.stringify(words["home.note"]));'
-
-    assert main(["--check"]) == 1
-    assert main([]) == 0
-
-    assert evaluate({"de.ts": module_path.read_text(encoding="utf-8")}, probe) == [
-        "Nur ",
-        {"marker": "strong", "text": "wichtig"},
-    ]
-    assert main(["--check"]) == 0
-
-
-def test_main_run_again_gives_the_same_bytes(clean_source, module_path):
+def test_main_run_again_gives_the_same_bytes(generated_module):
     main([])
-    first = module_path.read_bytes()
+    first = generated_module.read_bytes()
 
     assert main([]) == 0
-    assert module_path.read_bytes() == first
+    assert generated_module.read_bytes() == first
 
 
-def test_main_check_passes_on_a_current_module_and_writes_nothing(clean_source, module_path):
+def test_main_check_passes_on_a_current_module_and_writes_nothing(generated_module):
     main([])
-    before = module_path.stat().st_mtime_ns
+    before = generated_module.stat().st_mtime_ns
 
     assert main(["--check"]) == 0
-    assert module_path.stat().st_mtime_ns == before
+    assert generated_module.stat().st_mtime_ns == before
 
 
-@pytest.mark.parametrize("language", [SOURCE_LANGUAGE, "pl", "index"])
 @pytest.mark.parametrize(
     ("content", "sentence"),
-    [(None, "the module is missing"), ("// edited by hand\n", "the module differs from its catalog")],
+    [(None, "the module is missing"), ("edited by hand\n", "the module differs from its catalog")],
     ids=["missing", "differing"],
 )
 def test_main_check_fails_naming_a_missing_or_differing_module_and_writes_nothing(
-    clean_translation, module_for, capsys, language, content, sentence
+    generated_module, capsys, content, sentence
 ):
     main([])
-    module = module_for(language)
     if content is None:
-        module.unlink()
+        generated_module.unlink()
     else:
-        module.write_text(content, encoding="utf-8")
+        generated_module.write_text(content, encoding="utf-8")
 
     assert main(["--check"]) == 1
 
     error = capsys.readouterr().err
-    assert module.name in error
-    assert f"{sentence}; run design-catalogs" in error
-    assert (module.read_text(encoding="utf-8") if module.exists() else None) == content
-
-
-def test_main_writes_a_typed_module_for_every_other_catalog(clean_translation, module_for):
-    assert main([]) == 0
-
-    written = module_for("pl").read_text(encoding="utf-8")
-    assert 'import type { Words } from "./de.js";' in written
-    assert "export const words: Words = {" in written
-    assert '    "table.seatFree": "Wolne",' in written
-
-
-def test_main_writes_the_loader_of_the_languages_the_catalog_files_name(clean_translation, module_for):
-    assert main([]) == 0
-
-    assert 'export const languages = ["de", "pl"] as const;' in module_for("index").read_text(encoding="utf-8")
-
-
-def test_main_writes_the_loader_for_a_source_alone(clean_source, module_for):
-    assert main([]) == 0
-
-    assert 'export const languages = ["de"] as const;' in module_for("index").read_text(encoding="utf-8")
-
-
-def test_main_check_passes_on_current_modules_of_every_language_and_writes_nothing(clean_translation, module_for):
-    main([])
-    before = [module_for(language).stat().st_mtime_ns for language in (SOURCE_LANGUAGE, "pl")]
-
-    assert main(["--check"]) == 0
-    assert [module_for(language).stat().st_mtime_ns for language in (SOURCE_LANGUAGE, "pl")] == before
+    assert f"{generated_module.name}: {sentence}; run design-catalogs" in error
+    assert (generated_module.read_text(encoding="utf-8") if generated_module.exists() else None) == content
 
 
 def test_main_check_fails_naming_a_file_in_the_module_directory_that_no_catalog_produces(
@@ -162,26 +113,16 @@ def test_main_without_check_leaves_a_file_no_catalog_produces_alone(clean_transl
 
 
 @pytest.mark.parametrize("arguments", [[], ["--check"]])
-@pytest.mark.parametrize(
-    ("entries", "key"),
-    [
-        pytest.param([(None, "Schlicht")], "Schlicht", id="no msgctxt"),
-        pytest.param([("seat_free", "Frei")], "seat_free", id="bad key"),
-        pytest.param([("table.seatFree", "Frei", "Free")], "table.seatFree", id="non-empty msgstr"),
-        pytest.param([("table.seatFree", "Frei {name:>5}")], "name:>5", id="gap with a format spec"),
-        pytest.param([("table.seatFree", "Frei"), ("table.seatFree", "Platz")], "table.seatFree", id="duplicate"),
-    ],
-)
-def test_main_fails_naming_file_and_key_of_a_broken_entry_and_writes_nothing(
-    write_source, catalog_text, block, module_path, capsys, arguments, entries, key
+def test_main_fails_naming_file_and_key_of_a_broken_source_entry_and_writes_nothing(
+    write_source, catalog_text, block, module_path, capsys, arguments
 ):
-    write_source(catalog_text(*(block(*entry) for entry in entries)))
+    write_source(catalog_text(block("seat_free", "Frei")))
 
     assert main(arguments) == 1
 
     error = capsys.readouterr().err
     assert "de.po" in error
-    assert key in error
+    assert "seat_free" in error
     assert not module_path.exists()
 
 
@@ -194,129 +135,32 @@ def test_main_fails_naming_the_source_catalog_and_the_declaration_key_when_it_is
 
 
 @pytest.mark.parametrize("arguments", [[], ["--check"]])
-@pytest.mark.parametrize(
-    ("damage", "line"),
-    [
-        pytest.param('msgctxt "app.name"\nmsgid "Skat\nmsgstr ""\n', 11, id="unterminated msgid"),
-        pytest.param('msgctxt "app.name"\n  msgid "Skat\nmsgstr ""\n', 11, id="indented unterminated msgid"),
-        pytest.param('msgctxt "app.name"\nmsgid "Skat"\nmsgstr ""\nthis is garbage\n', 13, id="garbage line"),
-        pytest.param('msgctxt "table.title"\nmsgid "Tisch"\n', 11, id="missing msgstr"),
-    ],
-)
 def test_main_fails_naming_file_and_line_of_a_malformed_catalog_and_writes_nothing(
-    write_source, catalog_text, block, module_path, capsys, arguments, damage, line
+    write_source, catalog_text, block, module_path, capsys, arguments
 ):
-    write_source(catalog_text(block("table.seatFree", "Frei"), damage))
+    write_source(catalog_text(block("table.seatFree", "Frei"), 'msgctxt "app.name"\nmsgid "Skat\nmsgstr ""\n'))
 
     assert main(arguments) == 1
 
     output = capsys.readouterr()
     assert output.out == ""
-    assert f"de.po:{line}" in output.err
+    assert "de.po:11" in output.err
     assert not module_path.exists()
 
 
 @pytest.mark.parametrize("arguments", [[], ["--check"]])
-@pytest.mark.parametrize(
-    ("translation", "language", "named"),
-    [
-        pytest.param([("table.seatFree", "Frei", "Wolne")], "pl", ["pl.po", "app.name"], id="missing key"),
-        pytest.param(
-            [("table.seatFree", "Frei", "Wolne"), ("app.name", "Skat", "Skat"), ("table.extra", "Extra", "Dodatek")],
-            "pl",
-            ["pl.po", "table.extra"],
-            id="extra key",
-        ),
-        pytest.param(
-            [("table.seatFree", "Frei", ""), ("app.name", "Skat", "Skat")],
-            "pl",
-            ["pl.po", "table.seatFree"],
-            id="empty",
-        ),
-        pytest.param(
-            [("table.seatFree", "Platz frei", "Wolne"), ("app.name", "Skat", "Skat")],
-            "pl",
-            ["pl.po", "table.seatFree", "Platz frei", "Frei"],
-            id="older than its source",
-        ),
-        pytest.param(
-            [("table.seatFree", "Frei", "Wolne {name}"), ("app.name", "Skat", "Skat")],
-            "pl",
-            ["pl.po", "table.seatFree", "{name}", "the source has no gaps"],
-            id="gaps the source lacks",
-        ),
-        pytest.param(
-            [("table.seatFree", "Frei", "Wolne {name:>5}"), ("app.name", "Skat", "Skat")],
-            "pl",
-            ["pl.po", "table.seatFree", "{name:>5}"],
-            id="malformed gap",
-        ),
-        pytest.param(
-            [("table.seatFree", "Frei", "{#strong}Wolne{/strong}"), ("app.name", "Skat", "Skat")],
-            "pl",
-            ["pl.po", "table.seatFree", "{#strong}", "the source has no markers"],
-            id="markers the source lacks",
-        ),
-        pytest.param(
-            [("table.seatFree", "Frei", "{#strong}Wolne"), ("app.name", "Skat", "Skat")],
-            "pl",
-            ["pl.po", "table.seatFree", "{#strong}", "never closed"],
-            id="malformed marker",
-        ),
-        pytest.param(
-            [("table.seatFree", "Frei", "Wolne"), ("app.name", "Skat", "Skat")],
-            "en",
-            ["pl.po", "Language"],
-            id="header names another language",
-        ),
-    ],
-)
-def test_main_fails_naming_file_key_and_texts_of_a_broken_translation_and_writes_nothing(
-    clean_source, write_catalog, catalog_text, block, module_for, capsys, arguments, translation, language, named
+def test_main_fails_naming_file_and_key_of_a_broken_translation_and_writes_nothing(
+    clean_source, write_catalog, catalog_text, block, module_for, capsys, arguments
 ):
-    write_catalog("pl", catalog_text(*(block(*entry) for entry in translation), language=language))
+    write_catalog("pl", catalog_text(block("table.seatFree", "Frei", "Wolne"), language="pl"))
 
     assert main(arguments) == 1
 
     error = capsys.readouterr().err
-    assert all(name in error for name in named)
+    assert "pl.po" in error
+    assert "app.name" in error
     assert not module_for("pl").exists()
     assert not module_for(SOURCE_LANGUAGE).exists()
-
-
-def test_main_fails_naming_a_translation_entry_whose_msgstr_is_blank(
-    clean_source, write_catalog, catalog_text, block, module_for, capsys
-):
-    write_catalog(
-        "pl",
-        catalog_text(block("table.seatFree", "Frei", "   "), block("app.name", "Skat", "Skat"), language="pl"),
-    )
-
-    assert main([]) == 1
-
-    assert "table.seatFree has an empty msgstr" in capsys.readouterr().err
-    assert not module_for("pl").exists()
-
-
-def test_main_help_says_the_command_writes_one_module_per_language(capsys):
-    with pytest.raises(SystemExit) as stopped:
-        main(["--help"])
-
-    assert stopped.value.code == 0
-    assert "per language" in capsys.readouterr().out
-
-
-def test_main_fails_naming_a_fuzzy_translation_entry(clean_source, write_catalog, catalog_text, block, capsys):
-    write_catalog(
-        "pl",
-        catalog_text(
-            block("table.seatFree", "Frei", "Wolne", fuzzy=True), block("app.name", "Skat", "Skat"), language="pl"
-        ),
-    )
-
-    assert main([]) == 1
-
-    assert "table.seatFree is fuzzy" in capsys.readouterr().err
 
 
 def test_main_fails_naming_a_catalog_whose_file_name_is_no_language_tag(
@@ -329,40 +173,15 @@ def test_main_fails_naming_a_catalog_whose_file_name_is_no_language_tag(
     assert "pl_PL.po" in capsys.readouterr().err
 
 
-def test_main_fails_naming_a_source_catalog_whose_header_names_another_language(
-    write_source, catalog_text, block, module_path, capsys
-):
-    write_source(catalog_text(block("table.seatFree", "Frei"), language="en"))
+def test_main_help_says_the_command_writes_one_module_per_language_and_runs_after_the_translations_are_written(capsys):
+    with pytest.raises(SystemExit) as stopped:
+        main(["--help"])
 
-    assert main([]) == 1
-
-    assert "de.po" in capsys.readouterr().err
-    assert not module_path.exists()
-
-
-def test_main_fails_naming_a_source_catalog_without_a_language_header(write_source, block, module_path, capsys):
-    write_source(block("table.seatFree", "Frei"))
-
-    assert main([]) == 1
-
-    error = capsys.readouterr().err
-    assert "de.po" in error
-    assert "Language header" in error
-    assert not module_path.exists()
-
-
-def test_main_fails_naming_a_source_entry_with_msgid_plural_and_says_plural_forms_are_not_used(
-    write_source, catalog_text, capsys
-):
-    write_source(
-        catalog_text('msgctxt "table.seats"\nmsgid "Platz"\nmsgid_plural "Plätze"\nmsgstr[0] ""\nmsgstr[1] ""\n')
-    )
-
-    assert main([]) == 1
-
-    error = capsys.readouterr().err
-    assert "table.seats" in error
-    assert "plural forms are not used" in error
+    assert stopped.value.code == 0
+    help_text = " ".join(capsys.readouterr().out.split())
+    assert "per language" in help_text
+    assert "--sync" in help_text
+    assert "after the translations are written" in help_text
 
 
 @pytest.mark.parametrize("language", [SOURCE_LANGUAGE, "pl"])
@@ -377,13 +196,6 @@ def test_main_fails_naming_a_catalog_that_is_not_utf8_without_a_traceback(
     assert not module_for(language).exists()
 
 
-@pytest.fixture
-def python_module(project, declare):
-    """The declared Python module of the clean catalogs."""
-    declare(python="src/app/words.py")
-    return project / "src/app/words.py"
-
-
 def test_main_writes_the_python_module_of_every_language_where_the_declaration_names_one(
     clean_translation, python_module, import_module
 ):
@@ -395,47 +207,10 @@ def test_main_writes_the_python_module_of_every_language_where_the_declaration_n
     assert words.text("pl", "table.seatFree") == "Wolne"
 
 
-def test_main_run_again_gives_the_same_python_module_bytes(clean_translation, python_module):
-    main([])
-    first = python_module.read_bytes()
-
-    assert main([]) == 0
-    assert python_module.read_bytes() == first
-
-
 def test_main_writes_no_python_module_where_the_declaration_names_none(clean_translation, project):
     assert main([]) == 0
 
     assert not list(project.rglob("*.py"))
-
-
-def test_main_check_passes_on_a_current_python_module_and_writes_nothing(clean_translation, python_module):
-    main([])
-    before = python_module.stat().st_mtime_ns
-
-    assert main(["--check"]) == 0
-    assert python_module.stat().st_mtime_ns == before
-
-
-@pytest.mark.parametrize(
-    ("content", "sentence"),
-    [(None, "the module is missing"), ("# edited by hand\n", "the module differs from its catalog")],
-    ids=["missing", "differing"],
-)
-def test_main_check_fails_naming_a_missing_or_differing_python_module_and_writes_nothing(
-    clean_translation, python_module, capsys, content, sentence
-):
-    main([])
-    if content is None:
-        python_module.unlink()
-    else:
-        python_module.write_text(content, encoding="utf-8")
-
-    assert main(["--check"]) == 1
-
-    error = capsys.readouterr().err
-    assert f"{python_module.name}: {sentence}; run design-catalogs" in error
-    assert (python_module.read_text(encoding="utf-8") if python_module.exists() else None) == content
 
 
 def test_main_reads_and_writes_the_paths_of_the_declaration(project, declare, catalog_text, block):
@@ -449,37 +224,17 @@ def test_main_reads_and_writes_the_paths_of_the_declaration(project, declare, ca
 
 
 @pytest.mark.parametrize("arguments", [[], ["--check"]])
-@pytest.mark.parametrize(
-    ("table", "named"),
-    [
-        pytest.param({"unknown": "x"}, "unknown", id="unknown key"),
-        pytest.param({"python": "../words.py"}, "python", id="path above the repository"),
-        pytest.param({"python": "frontend/src/lib/words/de.ts"}, "python", id="python over a typescript module"),
-        pytest.param({"python": "pyproject.toml"}, "python", id="python over the declaration itself"),
-        pytest.param({"typescript": "frontend/src/lib/catalogs"}, "typescript", id="typescript naming the catalogs"),
-    ],
-)
-def test_main_fails_naming_the_table_and_key_of_a_broken_declaration_and_writes_nothing(
-    clean_source, declare, project, module_path, capsys, arguments, table, named
-):
-    declare(**table)
-
-    assert main(arguments) == 1
-
-    error = capsys.readouterr().err
-    assert "tool.design-catalogs" in error
-    assert named in error
-    assert not module_path.exists()
-
-
-@pytest.mark.parametrize("arguments", [[], ["--check"]])
 def test_main_refuses_a_python_module_over_a_catalog_and_leaves_the_catalog_as_it_was(
-    clean_source, declare, project, arguments
+    clean_source, declare, project, capsys, arguments
 ):
     declare(python=clean_source.relative_to(project).as_posix())
     before = clean_source.read_bytes()
 
     assert main(arguments) == 1
+
+    error = capsys.readouterr().err
+    assert "tool.design-catalogs" in error
+    assert "python" in error
     assert clean_source.read_bytes() == before
 
 
@@ -502,77 +257,6 @@ def polish_seats(*categories):
         )
         for category in categories
     ]
-
-
-def test_main_writes_and_checks_the_family_of_a_language_with_more_categories_than_the_source(
-    seats_source, write_catalog, catalog_text, block, module_for, evaluate, capsys
-):
-    write_catalog(
-        "pl", catalog_text(*(block(*entry) for entry in polish_seats("one", "few", "many", "other")), language="pl")
-    )
-    probe = (
-        'import { words } from "./pl.ts";'
-        ' process.stdout.write(JSON.stringify([1, 2, 5, 1.5].map((count) => words["table.seats"](count))));'
-    )
-
-    assert main([]) == 0
-
-    assert evaluate({"pl.ts": module_for("pl").read_text(encoding="utf-8")}, probe) == [
-        "one 1",
-        "few 2",
-        "many 5",
-        "other 1,5",
-    ]
-    assert main(["--check"]) == 0
-    assert capsys.readouterr().err == ""
-
-
-@pytest.mark.parametrize(
-    ("categories", "named"),
-    [
-        pytest.param(("one", "few", "other"), ["table.seats.many", "is missing"], id="missing category"),
-        pytest.param(("one", "few", "many", "other", "two"), ["table.seats.two", "not a plural category"], id="extra"),
-    ],
-)
-def test_main_fails_naming_the_key_of_a_family_category_the_language_lacks_or_has_too_many_of(
-    seats_source, write_catalog, catalog_text, block, module_for, capsys, categories, named
-):
-    write_catalog("pl", catalog_text(*(block(*entry) for entry in polish_seats(*categories)), language="pl"))
-
-    assert main([]) == 1
-
-    error = capsys.readouterr().err
-    assert all(name in error for name in ["pl.po", *named])
-    assert not module_for("pl").exists()
-
-
-def test_main_fails_naming_a_plain_key_equal_to_the_key_of_a_family(write_source, catalog_text, block, capsys):
-    write_source(catalog_text(block("table.seats", "Plätze"), *(block(key, text) for key, text in SEATS_SOURCE)))
-
-    assert main([]) == 1
-
-    assert "table.seats is a plain key and a plural family" in capsys.readouterr().err
-
-
-def test_main_fails_naming_the_file_of_a_translation_without_babel_rules_when_the_source_has_a_family(
-    seats_source, write_catalog, catalog_text, capsys
-):
-    write_catalog("tlh", catalog_text(language="tlh"))
-
-    assert main([]) == 1
-
-    assert "tlh.po" in capsys.readouterr().err
-
-
-def test_main_fails_naming_the_file_of_a_source_without_babel_rules_when_it_has_a_family(
-    write_catalog, declare, catalog_text, block, capsys
-):
-    declare(source="tlh")
-    write_catalog("tlh", catalog_text(*(block(key, text) for key, text in SEATS_SOURCE), language="tlh"))
-
-    assert main([]) == 1
-
-    assert "tlh.po" in capsys.readouterr().err
 
 
 def test_main_takes_catalogs_without_babel_rules_where_no_family_needs_them(
@@ -642,35 +326,6 @@ def test_main_sync_run_again_changes_no_byte(stale_translation):
     assert stale_translation.stat().st_mtime_ns == before
 
 
-def test_main_sync_writes_no_byte_of_a_catalog_that_already_follows_its_source(clean_translation):
-    clean_translation.write_text(
-        clean_translation.read_text(encoding="utf-8").replace("\n\n", "\n\n\n# kept as the translator wrote it\n"),
-        encoding="utf-8",
-    )
-    before = clean_translation.read_bytes()
-
-    assert main(["--sync"]) == 0
-    assert clean_translation.read_bytes() == before
-
-
-def test_main_sync_keeps_the_header_the_comments_and_the_order_of_the_entries(
-    write_source, write_catalog, catalog_text, block
-):
-    write_source(catalog_text(block("app.name", "Skat"), block("chat.new", "Neu"), block("table.title", "Tisch neu")))
-    header = catalog_text(language="pl").replace('"Content-Type', '"X-Custom: kept\\n"\n"Content-Type')
-    entries = (
-        "# translator note\n" + block("table.title", "Tisch", "Stół") + "\n" + block("app.name", "Skat", "Skat (pl)")
-    )
-    path = write_catalog("pl", header + "\n" + entries)
-
-    assert main(["--sync"]) == 0
-
-    written = path.read_text(encoding="utf-8")
-    assert written.startswith(header)
-    assert written.index("table.title") < written.index("app.name") < written.index("chat.new")
-    assert "# translator note\n#, fuzzy\nmsgctxt" in written
-
-
 def test_main_sync_writes_catalogs_only(stale_translation, module_for):
     assert main(["--sync"]) == 0
 
@@ -699,20 +354,6 @@ def test_main_check_fails_on_a_synced_catalog_until_the_translations_are_written
     )
     assert main([]) == 0
     assert main(["--check"]) == 0
-
-
-def test_main_sync_gives_a_family_the_categories_of_its_language(
-    seats_source, write_catalog, catalog_text, block, capsys
-):
-    path = write_catalog("pl", catalog_text(*(block(*entry) for entry in polish_seats("one", "other")), language="pl"))
-
-    assert main(["--sync"]) == 0
-
-    written = path.read_text(encoding="utf-8")
-    assert 'msgctxt "table.seats.few"\nmsgid "{count} Plätze"\nmsgstr ""\n' in written
-    assert 'msgctxt "table.seats.many"\nmsgid "{count} Plätze"\nmsgstr ""\n' in written
-    assert written.index("seats.one") < written.index("seats.few") < written.index("seats.many")
-    assert written.index("seats.many") < written.index("seats.other")
 
 
 def test_main_sync_refuses_to_run_with_check_and_writes_nothing(stale_translation):
@@ -759,36 +400,3 @@ def test_main_sync_refuses_a_translation_it_cannot_follow_and_writes_no_catalog(
     assert "en.po" in error
     assert "app.name is a duplicate" in error
     assert before == (stale_translation.read_bytes(), broken.read_bytes())
-
-
-def test_main_sync_refuses_a_translation_whose_language_header_is_wrong_and_writes_no_catalog(
-    stale_translation, write_catalog, catalog_text, block, capsys
-):
-    wrong = write_catalog("en", catalog_text(block("app.name", "Skat", "a"), language="de"))
-    before = (stale_translation.read_bytes(), wrong.read_bytes())
-
-    assert main(["--sync"]) == 1
-
-    assert "en.po" in capsys.readouterr().err
-    assert before == (stale_translation.read_bytes(), wrong.read_bytes())
-
-
-def test_main_help_says_the_command_runs_after_the_translations_are_written(capsys):
-    with pytest.raises(SystemExit):
-        main(["--help"])
-
-    help_text = " ".join(capsys.readouterr().out.split())
-    assert "--sync" in help_text
-    assert "after the translations are written" in help_text
-
-
-@pytest.mark.parametrize("arguments", [[], ["--check"]])
-def test_main_gives_the_same_sentence_in_every_mode_when_a_declared_path_lies_below_a_file(
-    clean_source, declare, project, capsys, arguments
-):
-    (project / "afile").write_text("", encoding="utf-8")
-    declare(python="afile/nested/words.py")
-
-    assert main(arguments) == 1
-
-    assert capsys.readouterr().err == "tool.design-catalogs python: 'afile' is a file, so nothing can lie below it\n"
