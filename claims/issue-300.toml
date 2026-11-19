@@ -1,0 +1,8 @@
+claim_id = "40c2b2d7779e440e9a9c095ea373fd89"
+agent = "Claude 27a67e6a-d638-4888-bce6-c323fa029369"
+role = "builder"
+base = "1661fc98e83352d43ab75930f0b78527dc6a643e"
+branch = "claude/issue-300-e2e-harness"
+scope = ["tests/e2e"]
+opened_commit = "264fe2abb94f75e4300efe752c131bdcaf7df23b"
+whole_reason = "Every spec shares the one harness; the helper and its users change together."
