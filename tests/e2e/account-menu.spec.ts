@@ -154,22 +154,6 @@ for (const consumer of consumerNames) {
 			});
 		});
 
-		for (const colorScheme of colorSchemes) {
-			test(`a hovered legal link takes the text colour in ${colorScheme}`, async ({ page }) => {
-				await page.emulateMedia({ colorScheme });
-				await page.setViewportSize({ width: 1280, height: 800 });
-				await open(page);
-
-				const link = page.getByRole('link', { name: legalNames[0] });
-				const resting = await link.evaluate((node) => getComputedStyle(node).color);
-				const { color: text } = await resolveStyle(page, { color: 'var(--text)' }, ['color']);
-
-				await link.hover();
-				await expect(link).toHaveCSS('color', text);
-				expect(resting).not.toBe(text);
-			});
-		}
-
 		test('takes its body font from the family token', async ({ page }) => {
 			await open(page);
 

@@ -154,7 +154,7 @@ export function consumerTitle(subject: string, name: ConsumerName): string {
  */
 export function useConsumer(name: ConsumerName, { words = true } = {}) {
 	let outDir: string;
-	const wordsOf = { de: {} as KitWords, en: {} as KitWords };
+	const wordsOf: Record<KitLanguage, KitWords> = { de: {} as KitWords, en: {} as KitWords };
 	test.beforeAll(async () => {
 		outDir = await buildConsumer(name);
 		if (words) {
