@@ -1,17 +1,14 @@
-import { mount, tick, unmount } from 'svelte';
+import { mount } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SignInPage from './SignInPage.svelte';
+import { mountInDocument } from './mountInDocument.test.helper.ts';
 import type { SignInPageProps } from './types.ts';
 import { loadWords } from './words/index.ts';
 
 const en = await loadWords('en');
 const de = await loadWords('de');
 
-const mounted: { target: HTMLElement; component: ReturnType<typeof mount> }[] = [];
-
 async function render(overrides: Partial<SignInPageProps> = {}): Promise<HTMLElement> {
-	const target = document.createElement('div');
-	document.body.append(target);
 	const props: SignInPageProps = {
 		appName: 'Hallucinai',
 		state: { page: 'signed-out', signInHref: '/auth/login' },
@@ -19,16 +16,10 @@ async function render(overrides: Partial<SignInPageProps> = {}): Promise<HTMLEle
 		words: en,
 		...overrides
 	};
-	mounted.push({ target, component: mount(SignInPage, { target, props }) });
-	await tick();
-	return target;
+	return mountInDocument((into) => mount(SignInPage, { target: into, props }));
 }
 
-afterEach(async () => {
-	for (const { target, component } of mounted.splice(0)) {
-		await unmount(component);
-		target.remove();
-	}
+afterEach(() => {
 	document.title = '';
 });
 

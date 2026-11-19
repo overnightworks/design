@@ -1,14 +1,13 @@
 import { mount, tick, unmount } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import AccountMenu from './AccountMenu.svelte';
+import { mountInDocument } from './mountInDocument.test.helper.ts';
 import type { AccountMenuProps, ThemeChoice } from './types.ts';
 import { loadWords } from './words/index.ts';
 
 const en = await loadWords('en');
 const de = await loadWords('de');
-
-const mounted: { target: HTMLElement; component: ReturnType<typeof mount> }[] = [];
 
 function baseProps(overrides: Partial<AccountMenuProps> = {}): AccountMenuProps {
 	return {
@@ -23,20 +22,9 @@ function baseProps(overrides: Partial<AccountMenuProps> = {}): AccountMenuProps 
 	} as AccountMenuProps;
 }
 
-async function render(overrides: Partial<AccountMenuProps> = {}): Promise<HTMLElement> {
-	const target = document.createElement('div');
-	document.body.append(target);
-	mounted.push({ target, component: mount(AccountMenu, { target, props: baseProps(overrides) }) });
-	await tick();
-	return target;
+function render(overrides: Partial<AccountMenuProps> = {}): Promise<HTMLElement> {
+	return mountInDocument((into) => mount(AccountMenu, { target: into, props: baseProps(overrides) }));
 }
-
-afterEach(async () => {
-	for (const { target, component } of mounted.splice(0)) {
-		await unmount(component);
-		target.remove();
-	}
-});
 
 function radios(menu: HTMLElement): HTMLInputElement[] {
 	return [...menu.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
@@ -105,19 +93,13 @@ describe('theme rows', () => {
 
 	it('checks the new choice when the passed choice changes', async () => {
 		const state = new SvelteMap<string, ThemeChoice>([['choice', 'light']]);
-		const target = document.createElement('div');
-		document.body.append(target);
 		const theme = {
 			get choice() {
 				return state.get('choice')!;
 			},
 			onChange: () => {}
 		};
-		mounted.push({
-			target,
-			component: mount(AccountMenu, { target, props: baseProps({ theme }) })
-		});
-		await tick();
+		const target = await mountInDocument((into) => mount(AccountMenu, { target: into, props: baseProps({ theme }) }));
 		expect(checkedLabel(target)).toBe(en['account.light']);
 		state.set('choice', 'follow-system');
 		await tick();
@@ -245,16 +227,13 @@ describe('words from the app', () => {
 	it('shows words given after the mount instead of the ones it first showed', async () => {
 		const state = new SvelteMap<string, typeof en>([['words', en]]);
 		const onChange = vi.fn();
-		const target = document.createElement('div');
-		document.body.append(target);
 		const props = {
 			...baseProps({ theme: { choice: 'dark', onChange } }),
 			get words() {
 				return state.get('words')!;
 			}
 		};
-		mounted.push({ target, component: mount(AccountMenu, { target, props }) });
-		await tick();
+		const target = await mountInDocument((into) => mount(AccountMenu, { target: into, props }));
 		expect(checkedLabel(target)).toBe(en['account.dark']);
 		state.set('words', de);
 		await tick();

@@ -1,25 +1,14 @@
-import { mount, tick, unmount } from 'svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { mount } from 'svelte';
+import { describe, expect, it } from 'vitest';
 import TurnState from './TurnState.svelte';
+import { mountInDocument } from './mountInDocument.test.helper.ts';
 import type { TurnOutcome } from './types.ts';
 import { loadWords, type Language } from './words/index.ts';
 
-const mounted: { target: HTMLElement; component: ReturnType<typeof mount> }[] = [];
-
 async function render(outcome: TurnOutcome | undefined, language: Language = 'en'): Promise<HTMLElement> {
-	const target = document.createElement('div');
-	document.body.append(target);
-	mounted.push({ target, component: mount(TurnState, { target, props: { outcome, words: await loadWords(language) } }) });
-	await tick();
-	return target;
+	const words = await loadWords(language);
+	return mountInDocument((into) => mount(TurnState, { target: into, props: { outcome, words } }));
 }
-
-afterEach(async () => {
-	for (const { target, component } of mounted.splice(0)) {
-		await unmount(component);
-		target.remove();
-	}
-});
 
 const wordKeys = [
 	['not_enabled', 'turnState.notEnabled'],
