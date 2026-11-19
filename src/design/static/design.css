@@ -12,9 +12,10 @@
    computed by the SignInPage component. Only the latin and latin-ext
    subsets, woff2 only. The rules outside the tokens and fonts are the
    heading rule (h1 and h2 in the display font, spaced and uppercase) and the
-   classes as-typed and legal; as-typed takes a word out of the heading rule,
-   and legal is the legal row of LegalLinks and of a page that cannot render
-   Svelte. */
+   classes as-typed, legal, sign-in-card and sign-in-action; as-typed takes a
+   word out of the heading rule, legal is the legal row of LegalLinks, and
+   sign-in-card with sign-in-action (primary or secondary) is the card and the
+   buttons of SignInPage, each for a page that cannot render Svelte. */
 
 @font-face {
 	font-family: 'Oswald';

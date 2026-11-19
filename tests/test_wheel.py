@@ -119,8 +119,9 @@ def test_every_class_the_stylesheet_reference_documents_is_a_selector_of_the_sty
     assert documented <= drawn, documented - drawn
 
 
-def test_the_stylesheet_keeps_to_plain_selectors_and_values_a_static_link_resolves():
-    assert "light-dark(" not in (REPOSITORY / "src" / "design" / "static" / "design.css").read_text()
+def test_the_stylesheet_uses_no_light_dark_function(installed_package):
+    _, static = installed_package
+    assert "light-dark(" not in (static / "design.css").read_text()
 
 
 LIGHT_SELECTOR = ":root, [data-theme='light']"
