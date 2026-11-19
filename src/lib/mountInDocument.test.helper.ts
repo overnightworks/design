@@ -1,4 +1,4 @@
-import { mount, tick, unmount, type Component } from 'svelte';
+import { mount, tick, unmount } from 'svelte';
 import { afterEach } from 'vitest';
 
 const mounted: { target: HTMLElement; component: ReturnType<typeof mount> }[] = [];
@@ -23,12 +23,4 @@ export async function mountInDocument(
 	mounted.push({ target, component: mountInto(target) });
 	await tick();
 	return target;
-}
-
-/** Mounts a component with its props into a fresh element of the document. */
-export function renderComponent<Props extends Record<string, any>>(
-	component: Component<Props>,
-	props: Props
-): Promise<HTMLElement> {
-	return mountInDocument((target) => mount(component, { target, props }));
 }
