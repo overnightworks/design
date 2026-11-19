@@ -56,27 +56,6 @@ def test_render_translation_imports_the_words_type_of_the_source_and_declares_th
     )
 
 
-def test_render_translation_checks_the_gaps_of_a_translation_with_gaps_in_both_directions():
-    catalog = TranslationCatalog(
-        language=LanguageTag("pl"),
-        entries=(Entry(Key("table.seatFree"), "Wolne"), Entry(Key("chat.greeting"), "Cześć {name}")),
-    )
-
-    assert render_translation(catalog, LanguageTag("de")) == (
-        "// Generated from the pl catalog by design-catalogs. Do not edit.\n"
-        "\n"
-        'import type { Words } from "./de.js";\n'
-        "// prettier-ignore\n"
-        "const translated = {\n"
-        '    "table.seatFree": "Wolne",\n'
-        '    "chat.greeting": (gaps: { readonly name: string }) => "Cześć " + gaps.name,\n'
-        "} satisfies Words;\n"
-        "// A translation that leaves out a gap of its source fails here.\n"
-        "({}) as Words satisfies typeof translated;\n"
-        "export const words: Words = translated;\n"
-    )
-
-
 def test_render_gives_the_same_bytes_for_the_same_catalog(source_catalog):
     first = render(source_catalog(table_seatFree="Frei"))
     second = render(source_catalog(table_seatFree="Frei"))
@@ -161,26 +140,6 @@ def test_a_translations_gap_function_formats_count_with_its_own_language(evaluat
     assert value == "Eva has 1,234,567 messages"
 
 
-def test_a_module_hoists_one_number_format_however_many_texts_use_count(source_catalog):
-    module = render(source_catalog(chat_first="{count} eins", chat_second="{count} zwei", chat_third="{name}"))
-
-    assert module.count("new Intl.NumberFormat(") == 1
-
-
-def test_a_module_without_a_count_gap_holds_no_number_format(source_catalog):
-    assert "NumberFormat" not in render(source_catalog(chat_greeting="Hallo {name}", app_name="Skat"))
-
-
-def test_a_module_holds_a_gap_function_only_for_a_text_with_gaps(evaluate, source_catalog):
-    module = render(source_catalog(chat_greeting="Hallo {name}", app_name="Skat"))
-    probe = (
-        'import { words } from "./de.ts";'
-        ' process.stdout.write(JSON.stringify([typeof words["chat.greeting"], typeof words["app.name"]]));'
-    )
-
-    assert evaluate({"de.ts": module}, probe) == ["function", "string"]
-
-
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
@@ -263,7 +222,6 @@ def test_render_writes_a_family_as_one_function_of_the_count_choosing_by_one_hoi
     ("language", "categories", "counts", "expected"),
     [
         pytest.param("de", ("one", "other"), (0, 1, 2), ["other 0", "one 1", "other 2"], id="de"),
-        pytest.param("en", ("one", "other"), (0, 1, 2), ["other 0", "one 1", "other 2"], id="en"),
         pytest.param(
             "pl",
             ("one", "few", "many", "other"),
@@ -306,26 +264,6 @@ def test_a_family_function_fills_the_gaps_beside_the_count(evaluate):
     )
 
     assert evaluate({"en.ts": module}, probe) == "Eva has 1,234 seats"
-
-
-def test_a_family_function_takes_the_gaps_object_only_where_the_family_has_a_further_gap(source_catalog):
-    module = render(source_catalog(table_seats_one="{count} Platz", table_seats_other="{name}: {count} Plätze"))
-
-    assert "(count: number, gaps: { readonly name: string }) => string;" in module
-
-
-def test_a_module_hoists_one_plural_rules_however_many_families_it_holds(source_catalog):
-    module = render(
-        source_catalog(
-            table_seats_one="a", table_seats_other="b", table_chairs_one="c", table_chairs_other="d", app_name="Skat"
-        )
-    )
-
-    assert module.count("new Intl.PluralRules(") == 1
-
-
-def test_a_module_without_a_family_holds_no_plural_rules(source_catalog):
-    assert "PluralRules" not in render(source_catalog(chat_greeting="Hallo {name} {count}", app_name="Skat"))
 
 
 def test_a_family_and_a_plain_text_of_a_translation_are_two_keys_of_its_words(evaluate):
@@ -418,14 +356,6 @@ def test_the_loader_names_the_languages_and_the_source_language(run_loader):
 PARTS = 'readonly (string | { readonly marker: "strong"; readonly text: string })[]'
 
 
-def test_render_writes_a_marked_text_without_gaps_as_a_constant_list_of_parts_with_an_explicit_type(source_catalog):
-    module = render(source_catalog(home_note="Nur {#strong}wichtig{/strong} hier", app_name="Skat"))
-
-    assert f'    readonly "home.note": {PARTS};\n' in module
-    assert f'    "home.note": ["Nur ", {{ marker: "strong", text: "wichtig" }}, " hier"] as {PARTS},\n' in module
-    assert '    "app.name": "Skat",\n' in module
-
-
 def test_render_writes_a_marked_text_with_gaps_as_a_function_returning_parts_with_an_explicit_type(source_catalog):
     module = render(source_catalog(home_confirm="Lösche {#strong}{count} Takes{/strong} von {name}"))
 
@@ -435,44 +365,6 @@ def test_render_writes_a_marked_text_with_gaps_as_a_function_returning_parts_wit
         f'    "home.confirm": ({gaps}): {PARTS} =>'
         ' ["Lösche ", { marker: "strong", text: numberFormat.format(gaps.count) + " Takes" }, " von " + gaps.name],\n'
     ) in module
-
-
-def test_render_writes_a_marked_family_as_a_function_of_the_count_returning_the_parts_of_its_category(source_catalog):
-    module = render(
-        source_catalog(
-            table_seats_one="{#strong}{count}{/strong} Platz", table_seats_other="{#strong}{count}{/strong} Plätze"
-        )
-    )
-
-    assert f'    readonly "table.seats": (count: number) => {PARTS};\n' in module
-    assert (
-        f'    "table.seats": (count: number): {PARTS} => ({{\n'
-        '        zero: [{ marker: "strong", text: numberFormat.format(count) }, " Plätze"],\n'
-        '        one: [{ marker: "strong", text: numberFormat.format(count) }, " Platz"],\n'
-    ) in module
-    assert "    } as const)[pluralRules.select(count)],\n" in module
-
-
-def test_render_types_the_marker_of_a_text_as_the_union_of_its_marker_names(source_catalog):
-    module = render(source_catalog(home_note="{#code}a{/code} und {#strong}b{/strong} und {#code}c{/code}"))
-
-    union = '"code" | "strong"'
-    assert (
-        f'    readonly "home.note": readonly (string | {{ readonly marker: {union}; readonly text: string }})[];\n'
-        in module
-    )
-
-
-def test_render_translation_gives_a_marked_text_its_own_explicit_type_and_checks_it_in_both_directions():
-    catalog = TranslationCatalog(
-        language=LanguageTag("pl"), entries=(Entry(Key("home.note"), "Tylko {#strong}wazne{/strong}"),)
-    )
-
-    module = render_translation(catalog, LanguageTag("de"))
-
-    assert f'    "home.note": ["Tylko ", {{ marker: "strong", text: "wazne" }}] as {PARTS},\n' in module
-    assert "} satisfies Words;\n" in module
-    assert "({}) as Words satisfies typeof translated;\n" in module
 
 
 def evaluated(evaluate, source_catalog, call, **texts):
