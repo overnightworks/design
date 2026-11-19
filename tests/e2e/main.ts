@@ -250,12 +250,18 @@ if (query.has('words')) {
 		props: { links: legalLinks, words }
 	});
 } else if (query.has('sign-in-card')) {
-	// The markup contract of a page that cannot render Svelte, beside the component's own card.
+	// The markup contract of a page that cannot render Svelte, beside the component's own card: a card of wrapper
+	// elements, as a templated login page writes it, in a container wider than the component's card.
 	const words = await loadKitWords(pageLanguage);
 	const signedOut = query.get('sign-in-card') === 'signed-out';
-	document.body.innerHTML = signedOut
-		? `<div id="written"><main class="sign-in-card"><h1>${words['signIn.loggedOut']}</h1><a class="sign-in-action primary" href="/login">${words['signIn.logIn']}</a></main></div><div id="component"></div>`
-		: `<div id="written"><main class="sign-in-card"><h1>${words['signIn.noAccess']}</h1><button class="sign-in-action secondary" type="button">${words['signIn.logOut']}</button></main></div><div id="component"></div>`;
+	document.body.innerHTML = `<div id="written" style="width: 480px"><main class="sign-in-card">
+		<div><h1>${words['signIn.loggedOut']}</h1></div>
+		<div><form action="/login" method="post">
+			<div><label for="name">Name</label> <input id="name" name="name"></div>
+			<div><a class="sign-in-action primary" href="/login">${words['signIn.logIn']}</a> <button class="sign-in-action secondary" type="submit">${words['signIn.logOut']}</button></div>
+		</form></div>
+		<div><div id="limited" style="width: 140px"><a class="sign-in-action secondary" href="/other">Continue with another account</a></div></div>
+	</main></div><div id="component"></div>`;
 	mount(SignInPage, {
 		target: document.getElementById('component')!,
 		props: {
