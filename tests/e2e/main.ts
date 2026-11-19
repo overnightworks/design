@@ -254,7 +254,7 @@ if (query.has('words')) {
 	// elements, as a templated login page writes it, in a container wider than the component's card.
 	const words = await loadKitWords(pageLanguage);
 	const signedOut = query.get('sign-in-card') === 'signed-out';
-	document.body.innerHTML = `<div id="written" style="width: 480px"><main class="sign-in-card">
+	document.body.innerHTML = `<div id="written" style="width: 480px; max-width: 100%"><main class="sign-in-card">
 		<div><h1>${words['signIn.loggedOut']}</h1></div>
 		<div><form action="/login" method="post">
 			<div><label for="name">Name</label> <input id="name" name="name"></div>

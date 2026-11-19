@@ -148,7 +148,7 @@ The classes arrange neither the card nor what it holds, so the card works as the
       <div><label for="name">Name</label> <input id="name" name="name" /></div>
       <div>
         <a class="sign-in-action primary" href="/login">Anmelden</a>
-        <button class="sign-in-action secondary" type="submit">Abmelden</button>
+        <button class="sign-in-action secondary" type="button">In einem Tab öffnen</button>
       </div>
     </form>
   </div>
