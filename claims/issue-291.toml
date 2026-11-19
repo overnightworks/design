@@ -1,0 +1,8 @@
+claim_id = "31854985b30442b0ae8a5f24aea33611"
+agent = "Claude 27a67e6a-d638-4888-bce6-c323fa029369"
+role = "builder"
+base = "b764e1f810ae9b131c5dc8a8276264751b02fbc0"
+branch = "claude/issue-291-merged-coverage-report"
+scope = [".github/dependabot.yml", ".github/workflows/ci.yml", "AGENTS.md", "docs/ARCHITECTURE.md", "package.json", "pnpm-lock.yaml", "tests/e2e", "vitest.config.ts"]
+opened_commit = "eadf371ecd0637d981db124165091aa108a1043e"
+whole_reason = "One measurement path through the unit config, the consumer build, the specs' fixture and CI; it only works end to end."
