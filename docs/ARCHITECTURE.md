@@ -3,40 +3,42 @@
 ## 1. Context and Scope
 
 design is the family look that overnightworks products share: one stylesheet,
-its fonts and nine Svelte components, and the generator that turns an app's
-translation catalogs into modules. It runs no service. Outside it: the
-product apps that load the stylesheet (and, for SvelteKit apps, the components),
-the Keycloak themes and the legal pages, which take the wheel's stylesheet and fonts through the
-repository that builds them, the GitHub release that distributes it, and the shared quality gate that checks every pull request and every release.
-Page layout and product-specific JavaScript stay in the products.
-`TurnOutcome` is generated from agents' release wheel, pinned by url and sha256 in `scripts/agents_vocabulary_pin.toml`; CI fails when regenerating it changes the type.
+its fonts and the Svelte components the [README](../README.md#components) lists,
+and the generator that turns an app's translation catalogs into modules. It runs
+no service. Outside it: the product apps that load the stylesheet (and, for
+SvelteKit apps, the components), the Keycloak themes and the legal pages, which
+platform builds from the wheel's static files, the GitHub release that
+distributes it, and the shared quality gate that checks every pull request and
+every release. Page layout and product-specific JavaScript stay in the products.
+`TurnOutcome` is generated from agents' release wheel, pinned by url and sha256 in
+`scripts/agents_vocabulary_pin.toml`; CI fails when regenerating it changes the type.
 
 ```mermaid
 flowchart LR
   design[design repository]
   gate[quality gate]
   release[GitHub release]
-  py[Python apps]
   kit[SvelteKit apps]
+  platform[platform]
   kc[Keycloak themes and legal pages]
   gate -- checks every pull request and release --> design
   design -- release.yml --> release
-  release -- wheel, pinned by URL and hash --> py
   release -- tarball, pinned by URL --> kit
   release -- wheel with the extra catalogs (or po to only read PO files), pinned the same way --> build[app build runs design-catalogs on its catalogs]
-  py -- copies design.css and fonts under a versioned path --> kc
+  release -- wheel, pinned by URL and hash --> platform
+  platform -- copies the wheel's static files under a versioned path --> kc
 ```
 
 ## 2. Building Block View
 
-One stylesheet source is packaged twice, so a Python app and a SvelteKit app
-get identical CSS and fonts. The components exist only in the tarball.
+One stylesheet source is packaged twice, so every consumer gets identical CSS
+and fonts. The components exist only in the tarball.
 
 ```mermaid
 flowchart TB
   subgraph source[src]
     css[design/static: design.css and fonts]
-    comp[lib: SignInPage, AccountMenu, AgentControl, HearingSwitch, EarMark, HelperChat, LegalLinks, TurnState, Marked, AiMark and types]
+    comp[lib: the Svelte components and types]
     gen[design/catalogs: the catalog generator]
     cat[catalogs: the kit's words, de source and en]
   end
@@ -51,63 +53,38 @@ flowchart TB
 ```
 
 - **Stylesheet and fonts** (`design.css`, [`stylesheet.md`](stylesheet.md)): the family
-  tokens, the `@font-face` rules and the classes `as-typed` and `legal`.
-- **Components**: `SignInPage` and `AccountMenu` render the page and the panel,
-  and both render `LegalLinks`. `AgentControl` is the panel of rows with which a
-  person calls an agent and asks it to leave; each row leads with `AiMark`, the
-  "AI" pill before an agent's name, which takes no props. The app owns the
-  trigger and the popover, and the control holds no state of the call beyond the one
-  timer per row that ends the display of an outcome after a fixed duration.
-  `HearingSwitch` is one controlled chip with a switch for an agent's hearing or sight
-  (`hear`, `listen`, `see`), in full or `compact`; it
-  takes its on colour from the app's `--accent`, and the app owns where the chips
-  stand and what a switch does. `TurnState` is the muted mark with the kit's word for a stated turn outcome
-  that sits beside an agent's name; it renders nothing without an outcome and holds no state,
-  and `AgentControl`'s `here` row draws it from the row's `turnState`. `EarMark` is the round ear with the agent's name in a pill
-  that shows an agent hears a person; it takes its ring from `--accent`, holds no state,
-  and the app owns when it shows, where it stands and how several stack. `HelperChat` renders a
-  helper conversation from props alone, generic over the app's message type, with `AiMark`
-  leading each helper message; the app owns the turn and the network, the data behind its
-  mentions, the scroll memory and everything it places through the part's snippets, and the
-  part takes `--accent` and `--on-accent` from the app. `Marked`
-  renders the list of parts that `design-catalogs` generates for a marked sentence:
-  one snippet per marker name chooses the element, and the component adds no
-  element, white space, words or styles. `SignInPage`, `AccountMenu`,
-  `AgentControl`, `HearingSwitch`, `EarMark`, `HelperChat`, `LegalLinks` and `TurnState` take the kit's words as the required prop
-  `words`, which the app loads with `loadKitWords` for its page's language; no
-  component holds an English default or reads a language. Each prop's meaning is a docstring in
-  [`src/lib/types.ts`](../src/lib/types.ts).
+  tokens, the `@font-face` rules, the heading rule for `h1` and `h2` and the classes
+  `as-typed` and `legal`.
+- **Components** ([README](../README.md#components)): props and behaviour are the
+  docstrings of [`src/lib/types.ts`](../src/lib/types.ts); the words and the facts
+  beyond the types are in [`stylesheet.md`](stylesheet.md). The app passes the
+  kit's words as the required prop `words`, loaded with `loadKitWords`; no
+  component holds an English default or reads a language.
 - **Catalog generator** (`design.catalogs`, [`languages.md`](languages.md)): the
   command `design-catalogs` reads an app's gettext catalogs and writes a typed
   TypeScript module per language and, if the app declares one, a Python module;
-  `--check` fails on a broken catalog or a module that is stale. The optional table
-  `[tool.design-catalogs]` in the `pyproject.toml` of the shipped unit's directory
-  (the root for an app of one unit) names the source language and the paths. It is
-  in the wheel only, behind the extra `catalogs` (which requires the extra `po`, Babel), and runs at build time,
-  never in a server or a browser.
+  `--check` fails on a broken catalog or a stale module. It is in the wheel only,
+  behind the extra `catalogs` (which requires the extra `po`, Babel), and runs at
+  build time, never in a server or a browser.
 - **The kit's words** (`src/catalogs`): the catalogs are the one source of two
   outputs, `src/lib/words` for the tarball and `src/design/words.py` for the wheel,
   which the kit's own `design-catalogs` generates and `--check` gates in CI. The
   catalogs belong to neither `src/lib` nor `src/design` and ship in neither
-  artefact. The package root and the export `overnightworks-design/words` offer the
-  generated loader as `loadKitWords`, with the types `KitWords` and `KitLanguage`, from
-  one hand-written module of the kit; the export carries no component, so plain Node
-  loads it, which the root with its `.svelte` files does not. The loader takes the
-  language its caller passes and the kit reads none itself. The Python module is for an
-  app's tests, not its server, and needs no Babel.
-- **Wheel**: the stylesheet and fonts for apps without a JavaScript bundler, the
-  generator and the kit's Python words. It holds no `.svelte`.
-- **Tarball**: the stylesheet, fonts, components and the kit's words per language,
-  each language its own chunk, also as the export `overnightworks-design/words`;
-  `svelte` is its only dependency, as a peer.
-- **Token list**: the sorted custom-property names of the stylesheet, from
-  `scripts/list_tokens`.
+  artefact. The package root and the export `overnightworks-design/words` offer
+  the generated loader as `loadKitWords`, from one hand-written module of the kit;
+  the export carries no component, so plain Node loads it, which the root with its
+  `.svelte` files does not. The kit reads no language itself. The Python module is
+  for an app's tests, not its server, and needs no Babel.
+- **Wheel**: the stylesheet and fonts for consumers without a JavaScript bundler,
+  the generator and the kit's Python words. It holds no `.svelte`.
+- **Tarball**: the stylesheet, fonts, components and the kit's words, each
+  language its own chunk; `svelte` is its only dependency, as a peer.
+- **Token list**: the sorted custom-property names, from `scripts/list_tokens`.
 
 ## 3. Runtime View
 
-The core flow is how one change reaches every app. The operator dispatches
-`release.yml`; the [release step](../AGENTS.md) and what follows it are in
-`AGENTS.md`.
+The core flow is how one change reaches every app; the [release
+step](../AGENTS.md) and what follows it are in `AGENTS.md`.
 
 ```mermaid
 sequenceDiagram
@@ -132,10 +109,11 @@ sequenceDiagram
 ## 4. Deployment View
 
 design itself is not deployed. A GitHub-hosted runner builds the artefacts from
-the gated commit, and a GitHub release holds them. The apps'
-builds download them: Python servers serve the wheel's `design.css`, and
-SvelteKit builds bundle the tarball's stylesheet and components into the app.
-In the browser the result is static CSS, fonts and component markup.
+the gated commit, and a GitHub release holds them. The consumers'
+builds download them: platform copies the wheel's static files into the
+Keycloak themes and the legal pages, and SvelteKit builds bundle the tarball's
+stylesheet and components into the app. In the browser the result is static CSS,
+fonts and component markup.
 
 ## 5. Crosscutting Concepts
 
@@ -153,15 +131,14 @@ to commits and whose only write grant is the tag job's. The
 are quality's to name.
 
 **Trust of the generator.** It runs in an app's build on that app's own committed
-catalogs, which are as trusted as its code. It reads no network and no secret.
-A catalog text is quoted into the modules, as a JSON string in TypeScript and with
-`repr` in Python, so no text can leave its literal. A translation holds only text and
-marker names; the page owns every element and target.
+catalogs, which are as trusted as its code, and reads no network and no secret.
+A catalog text is quoted into the modules (a JSON string in TypeScript, `repr` in
+Python), so no text can leave its literal; the page owns every element and target.
 
 **Ownership of the components.** A component owns its markup and look. The app
-owns what needs a decision about its product: routes, the trigger and popover
-of the account menu, storing the theme and setting `data-theme`, how logging out
-works, how a sign-in starts, wording of failures, legal link targets, the app colour and loading
+owns what needs a decision about its product: routes, the trigger and popover,
+storing the theme and setting `data-theme`, how logging out works, how a sign-in
+starts, wording of failures, legal link targets, the app colour and loading
 `design.css`. The components store, fetch and close nothing and write no
 `data-theme`.
 
@@ -170,24 +147,16 @@ for the wheel, the tarball and the generator, with 100 % branch coverage of
 `src/design`, and ruff. The generated TypeScript is run in Node and type-checked,
 the generated Python is imported and passed through ruff, and the pin by hash is
 proven by installing the built wheel through a URL with a wrong sha256, which
-fails. The release gate and a check of the
-built file list guard `release.yml`. Two Playwright
-consumers are built for production from the packed tarball and paint the page
-in a browser. The shared quality gate adds the secret scan, the
-workflow-security scan and SonarCloud for CSS, HTML, Python and TypeScript. It
-does not analyse `.svelte` files; the checks above and the gate's size ratchet
-cover them.
+fails. The release gate and a check of the built file list guard `release.yml`.
+Two Playwright consumers are built for production from the packed tarball and
+paint the page in a browser. The shared quality gate adds the secret scan, the
+workflow-security scan and SonarCloud for CSS, HTML, Python and TypeScript.
 
 ## 6. Constraints and reasons
 
 - The stylesheet and fonts exist once and are packaged in both forms, so no app
   sees a different look from its packaging.
-- Releases are immutable, enforced by GitHub; a broken release gets the next
-  patch tag.
-- Pins carry a content hash, so a changed or substituted artefact fails the
-  consumer's build instead of shipping.
-- `svelte` is the tarball's only dependency, as a peer, so the app's own Svelte
-  runs the components.
+- A broken release gets the next patch tag; releases are immutable.
 - `release.yml` builds everything before it tags, so a failed build leaves
   nothing to undo.
 
@@ -195,43 +164,36 @@ cover them.
 
 - A custom element, or pages the kit renders on the server, instead of Svelte
   components: every app is on one stack, SvelteKit, and non-Svelte consumers (the
-  Keycloak themes and the legal pages) take only the stylesheet. Reopens if an app that cannot run
-  Svelte needs a component.
-- Each consumer keeping its own copy of a shared rule set, such as the legal
-  row's CSS: copies drift, so one rule set lives in `design.css`. Reopens only if
-  a consumer cannot load `design.css`.
+  Keycloak themes and the legal pages) take only the stylesheet. Reopens if an app
+  that cannot run Svelte needs a component.
+- Each consumer keeping its own copy of a shared rule set, such as the legal row's
+  CSS: copies drift. Reopens only if a consumer cannot load `design.css`.
 - A template fragment the kit ships for one provider (a Keycloak FTL or HTML
-  fragment): it carries one provider's template format for one consumer and still
-  needs the rules in the stylesheet, so such a page writes the documented markup.
-  Reopens if several consumers share one template format.
+  fragment): it carries one provider's template format and still needs the rules
+  in the stylesheet, so such a page writes the documented markup. Reopens if
+  several consumers share one template format.
 - The generator as a script in the npm tarball: it would carry Python inside an
-  npm package with no dependency resolution, so every app would declare Babel
-  itself and the copies would drift. Reopens only if an app cannot install the
-  wheel in its build.
+  npm package, so every app would declare Babel itself and the copies would drift.
+  Reopens only if an app cannot install the wheel in its build.
 - Babel as a plain dependency of the wheel: its locale data would reach every
-  Python server that takes the wheel only for `design.css`, so Babel stays behind
-  the extra `po`, which the extra `catalogs` requires.
+  app that takes the wheel for its static files.
 - Babel's catalog update, and a hash of the source text, for freshness: the update
-  matches entries by text across keys and drops plural categories the source lacks,
-  and a hash records what a translation's `msgid` already holds, readably. A
-  translation is current when its `msgid` equals the source's text for its key.
-- Every language bundled in the components behind a `language` prop: every app
-  would ship all languages, and a component would choose one itself.
-- An optional `words` prop with an English default, a Svelte context and a
-  component that loads its own words: the default shows one language on another
-  language's page, and each hides where the app's language is decided, which the
-  app owns (LANG-17).
+  matches entries by text across keys and drops plural categories the source lacks.
+  A translation is current when its `msgid` equals the source's text for its key.
+- Every language bundled in the components behind a `language` prop, an optional
+  `words` prop with an English default, a Svelte context and a component that
+  loads its own words: each ships every language or shows one on another's page,
+  and hides where the app's language is decided, which the app owns (LANG-17).
 - The app's generator merging the kit's words from the installed wheel into the
-  app's modules: one load call and no pin skew, but an app build coupled to the
-  wheel version, a rule against key collisions and the generator as a
-  precondition for taking the kit.
+  app's modules: it couples an app build to the wheel version and makes the
+  generator a precondition for taking the kit.
 - Git pins (`github:overnightworks/design#vX.Y.Z`) instead of release assets for
   the npm package and the wheel as a runtime dependency: a git pin loses the
-  content hash a consumer's lock checks, sha256 in the wheel URL and sha512 in
-  pnpm's lock. Reopens if a git pin can carry a checked content hash. The
-  generator, a dev dependency, may be taken by git tag, which `uv lock` records
-  as a commit.
+  content hash a consumer's lock checks. Reopens if a git pin can carry a checked
+  content hash. The generator, a dev dependency, may be taken by git tag, which
+  `uv lock` records as a commit.
 
 ## 8. Risks and Technical Debt
 
-- SonarCloud does not analyse `.svelte` files.
+- SonarCloud does not analyse `.svelte` files; the checks above and the gate's
+  size ratchet cover them.

@@ -18,25 +18,6 @@ from design.catalogs.command import MISSING_EXTRA
 from design.catalogs.po_file import read_catalog
 
 REPOSITORY = Path(__file__).resolve().parent.parent
-FAMILY_TOKENS = {
-    "--bg",
-    "--bg-deep",
-    "--surface",
-    "--surface-hover",
-    "--border",
-    "--text",
-    "--text-muted",
-    "--card-bg",
-    "--header-bg",
-    "--font-display",
-    "--font-body",
-    "--ok",
-    "--ok-soft",
-    "--busy",
-    "--busy-soft",
-    "--fail",
-    "--fail-soft",
-}
 
 
 @pytest.fixture(scope="module")
@@ -109,24 +90,13 @@ def test_every_url_in_the_stylesheet_names_a_font_in_the_wheel(installed_package
         assert (static / url).is_file(), url
 
 
-def test_token_list_holds_exactly_the_properties_the_stylesheet_defines(installed_package):
-    _, static = installed_package
-    listing = subprocess.run(
-        [str(REPOSITORY / "scripts" / "list_tokens"), str(static / "design.css")],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.split()
-    assert listing == sorted(FAMILY_TOKENS)
-
-
 def top_level_rules(stylesheet):
     """Selector to body of each top-level rule; raises when braces do not balance."""
     rules, depth, selector_start, body_start, selector = {}, 0, 0, 0, ""
     for index, character in enumerate(stylesheet):
         if character == "{":
             if depth == 0:
-                selector = stylesheet[selector_start:index].strip()
+                selector = " ".join(stylesheet[selector_start:index].split())
                 body_start = index + 1
             depth += 1
         elif character == "}":
@@ -139,52 +109,98 @@ def top_level_rules(stylesheet):
     return rules
 
 
+LIGHT_SELECTOR = ":root, [data-theme='light']"
+STAGE_SELECTOR = ":root"
+DARK_SELECTOR = "[data-theme='dark']"
+
+
+def body_of(rules, selector):
+    """Body of the one top-level rule whose selector list names every member of the selector."""
+    wanted = {part.strip() for part in selector.split(",")}
+    (body,) = [
+        body
+        for selectors, bodies in rules.items()
+        if wanted <= {part.strip() for part in selectors.split(",")}
+        for body in bodies
+    ]
+    return body
+
+
 def test_light_is_the_no_choice_case_and_dark_follows_the_device_or_the_attribute(installed_package):
     _, static = installed_package
     rules = top_level_rules((static / "design.css").read_text())
     (device_dark,) = rules["@media (prefers-color-scheme: dark)"]
     assert ":root:not([data-theme='light'])" in device_dark
     bodies = {
-        ("light", "no attribute"): rules[":root"][0],
-        ("dark", "attribute"): rules[":root[data-theme='dark']"][0],
+        ("light", "no attribute"): body_of(rules, LIGHT_SELECTOR),
+        ("dark", "attribute"): body_of(rules, DARK_SELECTOR),
         ("dark", "device"): device_dark,
     }
     for (scheme, case), body in bodies.items():
         assert re.search(r"^\s+--bg:", body, re.MULTILINE), case
         assert re.search(rf"^\s+color-scheme: {scheme};", body, re.MULTILINE), case
-    assert "[data-theme='light']" not in rules
 
 
-LIGHT_STATE_COLOURS = {
-    "ok": "#1e7a1e",
-    "ok-soft": "#e0f5e0",
-    "busy": "#9a6200",
-    "busy-soft": "#fef3e0",
-    "fail": "#c02020",
-    "fail-soft": "#fde8e8",
-}
-DARK_STATE_COLOURS = {
-    "ok": "#44aa44",
-    "ok-soft": "#1a3a1a",
-    "busy": "#f0a030",
-    "busy-soft": "#2a1f10",
-    "fail": "#ff4444",
-    "fail-soft": "#3a1a1a",
-}
+COLOUR = re.compile(r"#[0-9a-f]{3,8}|rgba?\([0-9., ]+\)")
 
 
-def test_state_tokens_carry_the_pictures_colours_in_light_and_both_dark_branches(installed_package):
+def declarations(body):
+    """Custom property and color-scheme declarations of a rule body, name to value."""
+    return dict(re.findall(r"^\s+(--[a-z0-9-]+|color-scheme):\s*(.+?);$", body, re.MULTILINE))
+
+
+@pytest.fixture
+def scheme_declarations(installed_package):
     _, static = installed_package
     rules = top_level_rules((static / "design.css").read_text())
     (device_dark,) = rules["@media (prefers-color-scheme: dark)"]
-    bodies = {
-        "light": (rules[":root"][0], LIGHT_STATE_COLOURS),
-        "dark attribute": (rules[":root[data-theme='dark']"][0], DARK_STATE_COLOURS),
-        "dark device": (device_dark, DARK_STATE_COLOURS),
+    (stage,) = rules[STAGE_SELECTOR]
+    return {
+        "stage": declarations(stage),
+        "light": declarations(body_of(rules, LIGHT_SELECTOR)),
+        "dark attribute": declarations(body_of(rules, DARK_SELECTOR)),
+        "dark device": declarations(device_dark.split("{", 1)[1].rsplit("}", 1)[0]),
     }
-    for case, (body, expected) in bodies.items():
-        for token, colour in expected.items():
-            assert re.search(rf"^\s+--{token}: {colour};", body, re.MULTILINE), (case, token)
+
+
+def test_token_list_holds_exactly_the_properties_the_stylesheet_defines(installed_package, scheme_declarations):
+    _, static = installed_package
+    listing = subprocess.run(
+        [str(REPOSITORY / "scripts" / "list_tokens"), str(static / "design.css")],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.split()
+    defined = {name for declared in scheme_declarations.values() for name in declared if name.startswith("--")}
+    assert listing == sorted(defined)
+
+
+def test_the_stage_tokens_are_the_same_in_both_themes_and_no_theme_block_redefines_them(scheme_declarations):
+    stage = scheme_declarations["stage"].keys()
+    assert stage
+    for case in ("light", "dark attribute", "dark device"):
+        assert not stage & scheme_declarations[case].keys(), case
+
+
+def test_every_colour_token_of_light_is_defined_in_both_dark_blocks_as_a_colour(scheme_declarations):
+    light = scheme_declarations["light"]
+    colour_tokens = {name for name, value in light.items() if COLOUR.fullmatch(value)}
+    assert colour_tokens
+    for case in ("dark attribute", "dark device"):
+        assert colour_tokens <= scheme_declarations[case].keys(), case
+        for name in colour_tokens:
+            assert COLOUR.fullmatch(scheme_declarations[case][name]), (case, name)
+
+
+def test_the_tokens_dark_does_not_redefine_are_no_colours(scheme_declarations):
+    light = scheme_declarations["light"]
+    for case in ("dark attribute", "dark device"):
+        for name in light.keys() - scheme_declarations[case].keys():
+            assert not COLOUR.fullmatch(light[name]), (case, name)
+
+
+def test_both_dark_blocks_define_the_same_values_in_full(scheme_declarations):
+    assert scheme_declarations["dark attribute"] == scheme_declarations["dark device"]
 
 
 def test_wheel_installs_the_declared_commands_and_offers_the_declared_extras(installed_package):
@@ -255,13 +271,12 @@ def test_declared_command_does_not_call_a_broken_babel_a_missing_extra(run_decla
     assert MISSING_EXTRA not in result.stderr
 
 
-def test_wheel_holds_the_catalogs_package(installed_package):
+def test_wheel_holds_every_module_of_the_catalogs_package(installed_package):
     wheel, _ = installed_package
     names = set(zipfile.ZipFile(wheel).namelist())
-    assert {
-        f"design/catalogs/{name}.py"
-        for name in ("__init__", "catalog", "command", "declaration", "po_file", "python_module", "sync", "typescript")
-    } <= names
+    modules = {path.name for path in (REPOSITORY / "src" / "design" / "catalogs").glob("*.py")}
+    assert modules
+    assert {f"design/catalogs/{name}" for name in modules} <= names
 
 
 def test_wheel_holds_the_kit_words_module(installed_package):

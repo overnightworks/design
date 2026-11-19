@@ -8,17 +8,43 @@ markup against the kit.
 The wheel's `design.css` owns the family tokens and the
 `@font-face` rules for Oswald and Open Sans. The token names are the release's
 `design-<version>-tokens.txt`, which `scripts/list_tokens` prints for any stylesheet.
-Light is under `:root`; dark sits under the device media query guarded by
-`:root:not([data-theme='light'])` and under `:root[data-theme='dark']`, so with
-no choice the page follows the device and either attribute forces its theme.
-Each theme sets `color-scheme`, so an app sets none. Everything
+Light is under `:root` and `[data-theme='light']`; dark sits under the device media
+query guarded by `:root:not([data-theme='light'])` and under `[data-theme='dark']`,
+so with no choice the page follows the device and either attribute on the root
+forces its theme. Each theme sets `color-scheme`, so an app sets none. Everything
 domain-specific stays with the app.
 
-It also owns two classes. The first, `as-typed`, turns the case transform and the
-letter-spacing off. Text the app writes keeps the family's uppercase. Text a
-person typed (a name, slug or address) keeps its case, also in `h1`, `h2` and
-the page head's `h3`. An app marks such text with `as-typed` on the element that
-holds only the typed text: a `span` inside the heading, because a heading's own
+The stage and glass tokens are the exception to the themes: `--stage`,
+`--on-stage`, `--on-stage-soft`, `--glass` and `--glass-dark` are the same in
+both, because a video stage is dark in either. `HearingSwitch` and `EarMark`
+read them.
+
+The same attribute on any other element marks a surface that is dark (or light) in
+either device mode, such as a game table or video stage. The nearest marked
+ancestor wins at any depth, under either device mode. The limits:
+
+- The region resolves the design tokens and `color-scheme`, but it paints nothing
+  itself. The app sets `color: var(--text)` and `background: var(--bg)` on the
+  region, because the page's computed values do not recompute inside it.
+- The app's own tokens (`--primary`, `--accent`, `--on-accent`) and any token the
+  app derives at `:root` from design tokens stay root-only. Inside a region they
+  keep their root values, so the kit's parts show the root's accent unless the app
+  writes its own values under the region's `[data-theme]`.
+- A rule keyed to the root's attribute or to the device media query follows the
+  root or the device, not the nearest region. `:root[data-theme='dark'] x` matches
+  only when the root carries the attribute, so it also styles an `x` inside a
+  light region of that root and never one inside a dark region of a light or
+  unmarked root. A `@media (prefers-color-scheme: dark)` rule matches by the device
+  alone, so on a dark device it styles content in every region, light or dark,
+  whatever the root, and on a light device it styles none.
+
+It also owns a heading rule and two classes. The rule sets `h1` and `h2` in the
+family display font (`--font-display`), spaced and uppercase, so text the app
+writes keeps the family's uppercase without a rule of its own. The first class,
+`as-typed`, turns the case transform and the letter-spacing off. Text a person
+typed (a name, slug or address) keeps its case, also in `h1`, `h2` and the page
+head's `h3`. An app marks such text with `as-typed` on the element that holds
+only the typed text: a `span` inside the heading, because a heading's own
 selector may outrank a single class on the heading itself. The second, `legal`, is the look of the legal row, described under [Writing the legal row by hand](#writing-the-legal-row-by-hand).
 
 ```html
@@ -42,7 +68,7 @@ Sign-in wording is identical in every app. The kit's catalogs carry these string
 
 ## The components' words
 
-The tarball's `SignInPage`, `AccountMenu`, `AgentControl`, `HearingSwitch`, `EarMark`, `HelperChat`, `LegalLinks` and `TurnState` components take their words from the kit's catalogs: the app loads them with `loadKitWords` for the page's language and passes them as the required prop `words`, see the [README](../README.md#the-kits-words); [Languages](languages.md) requires that the kit ships its words per language.
+The tarball's components that take `words` (the README lists them) take their words from the kit's catalogs: the app loads them with `loadKitWords` for the page's language and passes them as the required prop `words`, see [Languages](languages.md#the-kits-words-in-an-app), which requires that the kit ships its words per language.
 
 `SignInPage` shows the strings above, the failure banner of a login that failed, the sentence of no access, which names the app, the sentence of a sign-in that did not finish, the words of the signing-in state and the words of the window-blocked state. The list above binds the sign-in words in the kit's catalogs; the de strings of the other words are not ruled.
 
@@ -52,13 +78,22 @@ The tarball's `SignInPage`, `AccountMenu`, `AgentControl`, `HearingSwitch`, `Ear
 
 `AgentControl` shows the three action words, the two accessible-name patterns (which include the agent's name), the empty sentence (an empty list shows `agent.placeFull` instead when the app sets `full`, and shows no empty sentence while a refusal is set, so the refusal stands alone), the two outcome words for a call that ended without an answer or while the agent is busy (a third outcome, owner away, reuses the `owner-absent` refusal sentence), and the five refusal sentences, one for each of `not-allowed`, `owner-absent`, `place-full`, `agent-unavailable` and `try-again`. The de words are ruled: "Rufen", "Wird gerufen…", "Keine Antwort", "Gerade beschäftigt", "Bitten zu gehen", "Mozart rufen", "Mozart bitten zu gehen", "Gerade ist kein Agent erreichbar." and the refusals "Du darfst diesen Agenten nicht rufen.", "Sein Besitzer ist nicht hier.", "Hier ist kein Platz für einen weiteren Agenten.", "Der Agent ist gerade nicht erreichbar." and "Das hat nicht geklappt. Versuch es noch einmal." A `here` row draws its ask-to-leave button only when the app passes `onSendAway`; without it the row shows the AI mark and the name. A `here` row with `turnState` also draws `TurnState` beside the name.
 
-`HearingSwitch` shows one label, "Agent may hear me" for `hear` and "I want to hear the agent" for `listen`; the label is the chip's accessible name. The `see` kind shows the short word "See" and is named by the full "Agent may see me". The de words are ruled: "Agent darf mich hören", "Ich will den Agenten hören", and for `see` "Agent darf mich sehen" with the short "Sehen" (hopin's CALL-62). The en words are not ruled. With `compact` the chip is only its 26 px track, the icon on the knob and the label visually hidden but still the accessible name. Under a coarse pointer every chip, compact or not, takes a box of at least 44 x 44 px of layout, margin included, with the drawn chip centred in it, and that whole box is its hit area, so it overlaps no neighbour.
+`HearingSwitch` shows one label, "Agent may hear me" for `hear` and "I want to hear the agent" for `listen`; the label is the chip's accessible name. The `see` kind shows the short word "See" and is named by the full "Agent may see me". The de words are ruled: "Agent darf mich hören", "Ich will den Agenten hören", and for `see` "Agent darf mich sehen" with the short "Sehen". The en words are not ruled. With `compact` the chip is only its 26 px track, the icon on the knob and the label visually hidden but still the accessible name. Under a coarse pointer every chip, compact or not, takes a box of at least 44 x 44 px of layout, margin included, with the drawn chip centred in it, and that whole box is its hit area, so it overlaps no neighbour.
 
 `EarMark` shows the agent's name in a pill and names the mark with two accessible-name patterns, which the title repeats: "{agent} hört dich" on the person's own tile and "{agent} hört {name}" on another person's. The de words and the en words, "{agent} hears you" and "{agent} hears {name}", are ruled.
 
 `TurnState` shows one word for each stated turn outcome: `not_enabled` "Nicht freigeschaltet" / "Not enabled", `busy` "Gerade ausgelastet" / "At capacity right now", `budget_spent` "Budget aufgebraucht" / "Out of budget" and `unavailable` "Gerade gestört" / "Not working right now". The words are not ruled; `turnState.busy` is not the call outcome `agent.busy`. The mark is decorative and the part has no role or live region, because it states a standing condition.
 
 `HelperChat` shows eight words: the send button's name "Senden" / "Send", the thinking line "{name} denkt nach…" / "{name} is thinking…", the tool-call row "Werkzeug benutzt: {tool}" / "ran tool: {tool}", the loading state "Chat wird geladen…" / "Loading chat…", the composer's accessible name "Nachricht an {name}" / "Message to {name}" and the message list's accessible name "Unterhaltung mit {name}" / "Conversation with {name}", the visually hidden speaker line that begins every message "{name}:" and the person's name in it "Du" / "You". `{name}` is the helper's name, which the app passes as `helperName`. The empty hint, the placeholder, the failure sentence and the messages are the app's.
+
+## What the components do beyond their types
+
+`src/lib/types.ts` documents each component's props and behaviour. These facts are not in it:
+
+- `AgentControl` shows an `ended` row's outcome for four seconds, the same in every app, then draws the row like an `available` row. While a call is under way the app passes the row as `inviting`, so an ended outcome that repeats after a new call restarts the four seconds; the same ended outcome passed again with no state change in between shows nothing new. The kit invents no reason: it shows the outcome the app passes. An `ended` row shows the outcome muted, with a small icon and no key, in place of the waiting text.
+- `HearingSwitch` and `EarMark` always sit on a video, so the glass and the light ink are their own. The app decides when a tile is too narrow for the full `HearingSwitch`, where the chips stand and what a switch does; the app mounts `EarMark` only while the agent hears that person and stacks the marks of several agents.
+- `HelperChat` sets its messages in an `ol` with `role="list"` named by `helperChat.listLabel` and the helper's name, each message an `li` that begins with a visually hidden speaker line (`helperChat.speaker` with `helperChat.you` or the helper's name), also on a message without a bubble. The list has no live region, so the thinking line's `role="status"` is the only announcement, and the scrolling element has no role.
+- `Marked` renders the parts that `design-catalogs` generates ([Languages](languages.md), LANG-25) and adds no element, white space, words or styles.
 
 The tarball's `AiMark` component takes no words: its text is "AI" in every language, so a caller passes nothing. Its size is fixed, not relative to the place it stands in.
 
@@ -80,10 +115,10 @@ Every legal row lists Impressum, Datenschutz and Nutzungsbedingungen, in that or
 
 Two kinds of page show no legal links: full-screen presentation views (presenter and projector), and pages that send themselves on, such as webauth's end-session page.
 
-hopin and hal deviate by name:
+hopin, platform's sign-in theme and hal deviate by name:
 
 - hopin: a running call shows no account menu, so its links stand in `LegalLinks` with `place='menu'` in the call's More menu.
-- hal: its account console shows no legal links, and its central sign-in pages show the row inside the card, in Keycloak's card-footer slot.
+- The central sign-in pages, which platform serves as its Keycloak theme, show the row inside the card, in Keycloak's card-footer slot. hal's account console shows no legal links.
 
 ## Writing the legal row by hand
 
@@ -97,11 +132,11 @@ A page that belongs to no single app, such as Keycloak's central sign-in pages, 
 
 `LegalLinks` takes `place`: `'page'` (the default) for a row on a page, `'menu'` for the look of a row inside a menu, whose links open in a new tab.
 
-hal's [docs/keycloak.md](https://github.com/overnightworks/hal/blob/main/docs/keycloak.md#theme-and-language) gives the reasons for hal's deviations above.
+platform's Keycloak theme takes `design.css` and the fonts from the release wheel; hal's [docs/keycloak.md](https://github.com/overnightworks/hal/blob/main/docs/keycloak.md#theme-and-language) gives the reasons for hal's deviation above.
 
 ## What it leaves to each product
 
-- **Wording.** The kit's catalogs carry the components' words and the app's catalogs every other string; the stylesheet has none. Only the sign-in, AgentControl, HearingSwitch and EarMark wording lists above are ruled here.
+- **Wording.** The kit's catalogs carry the components' words and the app's catalogs every other string; the stylesheet has none. Only the wording lists above that say so are ruled here.
 - **Page layout and markup.** App bar, page structure, forms and any markup outside the components stay in the product, as do the legal row's spacing and placement around it. A product keeps its own selectors off the legal row: a rule that reaches the row or its links through an ancestor (`.top nav a`, say) can change the kit's look.
 - **The app colour.** `--primary`, `--accent` and `--on-accent`; `design.css` defines none of them. `HearingSwitch` draws its on state, `EarMark` its ring, and `HelperChat` its Send button and the person's bubbles in `--accent` with `--on-accent`.
 - **Meaning that differs.** State words (reachable vs ready vs active) and which state a domain shows.

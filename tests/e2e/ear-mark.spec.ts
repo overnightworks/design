@@ -35,6 +35,23 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 		});
 
 		for (const colorScheme of colorSchemes) {
+			test(`puts the disc and the pill on the stage glass and the name in the on-stage ink in ${colorScheme}`, async ({
+				page
+			}) => {
+				await page.emulateMedia({ colorScheme });
+				await open(page, 'one');
+				const tokens = await resolveStyle(page, { 'background-color': 'var(--glass-dark)', color: 'var(--on-stage)' }, [
+					'background-color',
+					'color'
+				]);
+				const mark = page.getByRole('img');
+				await expect(discOf(mark)).toHaveCSS('background-color', tokens['background-color']);
+				await expect(pillOf(mark)).toHaveCSS('background-color', tokens['background-color']);
+				await expect(pillOf(mark)).toHaveCSS('color', tokens.color);
+			});
+		}
+
+		for (const colorScheme of colorSchemes) {
 			for (const width of widths) {
 				test(`draws a round disc ringed in the app accent with the name pill beside it, in ${colorScheme} at ${width} px`, async ({
 					page

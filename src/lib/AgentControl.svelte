@@ -6,8 +6,10 @@
 <script lang="ts">
 	import { SvelteSet } from 'svelte/reactivity';
 	import AiMark from './AiMark.svelte';
+	import FailBanner from './FailBanner.svelte';
 	import TurnState from './TurnState.svelte';
 	import type { AgentControlOutcome, AgentControlProps, AgentControlRefusal } from './types.ts';
+	import WaitingDots from './WaitingDots.svelte';
 	import type { Words as KitWords } from './words/de.ts';
 
 	const refusalKeys = {
@@ -57,10 +59,7 @@
 
 <div class="agent-control">
 	{#if refusal}
-		<div class="banner" role="alert">
-			<span class="fail-shape"><i></i></span>
-			<span>{words[refusalKeys[refusal]]}</span>
-		</div>
+		<div class="refusal"><FailBanner text={words[refusalKeys[refusal]]} /></div>
 	{/if}
 	{#if rows.length === 0}
 		{#if !refusal}
@@ -101,7 +100,7 @@
 						</span>
 					{:else if row.state === 'inviting'}
 						<span class="pending" role="status">
-							<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>{words['agent.calling']}
+							<WaitingDots />{words['agent.calling']}
 						</span>
 					{:else if onSendAway}
 						{@const sendAway = onSendAway}
@@ -219,67 +218,8 @@
 		stroke-linecap: round;
 		stroke-linejoin: round;
 	}
-	.dots {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-	}
-	.dots i {
-		width: 6px;
-		height: 6px;
-		border-radius: 50%;
-		background: currentColor;
-		opacity: 0.6;
-	}
-	@media (prefers-reduced-motion: no-preference) {
-		.dots i {
-			animation: hop 1.2s ease-in-out infinite;
-		}
-		.dots i:nth-child(2) {
-			animation-delay: 0.12s;
-		}
-		.dots i:nth-child(3) {
-			animation-delay: 0.24s;
-		}
-	}
-	@keyframes hop {
-		0%,
-		60%,
-		100% {
-			translate: 0 0;
-			opacity: 0.45;
-		}
-		30% {
-			translate: 0 -5px;
-			opacity: 1;
-		}
-	}
-	.banner {
-		display: flex;
-		gap: 10px;
-		align-items: flex-start;
+	.refusal {
 		margin: 6px 14px 4px;
-		padding: 10px 12px;
-		border: 1px solid var(--fail);
-		border-left-width: 3px;
-		border-radius: 4px;
-		background: var(--fail-soft);
-		font-size: 13.5px;
-		text-align: left;
-		color: var(--text);
-	}
-	.fail-shape {
-		margin-top: 3px;
-		display: inline-flex;
-		color: var(--fail);
-	}
-	.fail-shape i {
-		width: 12px;
-		height: 12px;
-		flex: none;
-		display: inline-block;
-		background: var(--fail);
-		clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
 	}
 	.empty {
 		margin: 0;

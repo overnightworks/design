@@ -4,13 +4,8 @@ The standard by which every app is built so that a further language is added wit
 rebuild. Read it when you cut an app's epic for it, build against it or judge an app's
 conformance. A rule is cited by its ID, such as `LANG-9`.
 
-This document is a requirement. Each rule becomes checkable with the owner's release that
-ships its part.
-
-Source: the operator's rulings on overnightworks/marketplace#542, overnightworks/design#162 and
-overnightworks/design#168.
-A rule marked **ruled** quotes one; a rule marked **proposed** is this document's proposal,
-judged by plan review, and changes with it.
+This document is a requirement. A rule under **Ruled** is the operator's ruling; a rule
+under **Proposed** is this document's proposal, judged by plan review, and changes with it.
 
 **Done** means a further language is a new catalog file and its translations. No code changes.
 Around the app it also takes the kit's words for that language, the identity provider's
@@ -24,7 +19,7 @@ locale and the legal reading versions: configuration and texts, not code.
 - **webauth** owns handing the account's language to the app and the language resolver.
 - **quality** owns the check rule that enforces it.
 - **platform** owns the legal pages and the identity provider's locales and pages.
-- **Speech:** LANG-5 binds speech too; what is open for it is in overnightworks/speech#279.
+- **Speech:** LANG-5 binds speech too.
 
 ## How the parts meet
 
@@ -46,28 +41,26 @@ flowchart LR
 
 ### Ruled
 
-- **LANG-1** (line 1) Each language has one gettext catalog. A generated, typed message
+- **LANG-1** Each language has one gettext catalog. A generated, typed message
   module is the only way a page reads a text. The server sends message tokens. Checks hold
   all of it.
-- **LANG-2** (line 2) A person's language is the account's locale at the identity provider,
+- **LANG-2** A person's language is the account's locale at the identity provider,
   else the browser's. The sign-in wiring hands it to the app. No app stores a person's
   language or offers its own language switch; the person changes it at the identity
   provider's account.
-- **LANG-3** (line 3) The kit ships its components' words in every language, the sign-in
+- **LANG-3** The kit ships its components' words in every language, the sign-in
   page, the no-access page and the account menu's log-out included.
-- **LANG-4** (line 5) The German version of a legal text binds. Each further language gets a
-  reading version that says so. To be checked legally before the first one ships.
-
-  **Ruled (design#162 line 1):** the approach (the German version binds, reading versions say
-  so) is checked legally once before the first reading version ships. The reading versions are
-  translated by a model like every other text (LANG-6), with no human review as a condition.
-- **LANG-5** (line 6) An agent answers and speaks in the language the person wrote or asked
+- **LANG-4** The German version of a legal text binds. Each further language gets a
+  reading version that says so. The approach is checked legally once before the first reading version ships. The
+  reading versions are translated by a model like every other text (LANG-6), with no human
+  review as a condition.
+- **LANG-5** An agent answers and speaks in the language the person wrote or asked
   in. No app fixes a language for its agents.
-- **LANG-6** (added requirement, with a newer word) A model writes each translation once from
+- **LANG-6** A model writes each translation once from
   the German source, to the best of its knowledge. No human review is a condition, and no
   check blocks a build for a missing sign-off. A correction comes later as an ordinary
   change. A check fails when a translation is older than its source.
-- **LANG-7** (added requirement) Behaviour tests run in one language and find elements by
+- **LANG-7** Behaviour tests run in one language and find elements by
   catalog key. A further language costs a static catalog check and one render pass per
   surface.
 
@@ -79,8 +72,8 @@ flowchart LR
   TypeScript and a Python module, `--check`) and webauth's small resolver (LANG-16). No
   translation tool and no test helpers. The generator ships in design's Python wheel, used at
   build time only, with Babel as its dependency. The check rule that requires it lives in
-  quality (line 7). Libraries weighed and rejected:
-  - Paraglide JS: no gettext `.po`, so it fails line 1; Python reads its messages only as raw
+  quality. Libraries weighed and rejected:
+  - Paraglide JS: no gettext `.po`, so it fails LANG-1; Python reads its messages only as raw
     JSON.
   - Lingui: reads `.po` and emits typed modules, but puts ICU syntax into `msgstr`, which
     Python cannot format without a C++ binding, and adds a runtime and macro dependency to
@@ -91,9 +84,8 @@ flowchart LR
   adds a runtime edge to every app server and a webauth-to-design direction, while every app
   server already depends on webauth.
 
-  **Ruled (design#162 line 3):** the generator with its catalog checks ships from design; the
-  language resolver lives in webauth; the markup scan and the rule that requires the checks live
-  in quality. The libraries and the rejected alternatives stay proposed.
+  The generator with its catalog checks ships from design; the language resolver lives in
+  webauth; the markup scan and the rule that requires the checks live in quality.
 - **LANG-9** A catalog key is a neutral identifier that names what the text is for, never the
   sentence: one namespace level, the surface, then a camelCase name (`table.seatFree`). A
   text on two surfaces gets two keys: that means words that merely coincide in the source
@@ -236,8 +228,8 @@ flowchart LR
   a changed `msgid` to the source's text, keeps the old `msgstr` and marks it fuzzy, removes
   keys the source dropped, and gives a plural family exactly the categories of its language.
   It keeps the header, the order of the entries and the comments and flags of the entries it keeps,
-  writes nothing for a catalog that already follows its source (the README names what Babel's
-  writer normalises in one it rewrites), and writes catalogs only: the modules follow from
+  writes nothing for a catalog that already follows its source (Using the generator names what
+  Babel's writer normalises in one it rewrites), and writes catalogs only: the modules follow from
   `design-catalogs` once the translations are written, so a change goes in the order sync,
   translate, generate, check. Fuzzy means "stale,
   to be re-translated", not "awaits a human" (LANG-6). The agent that changes a source text
@@ -249,7 +241,7 @@ flowchart LR
   generated modules beside the code that imports them, in the unit's directory, unless the
   unit's declaration, which the generator and quality's rule read, names other paths. The
   declaration is the optional table `[tool.design-catalogs]` in the `pyproject.toml` of the
-  unit's directory (design's README). A file in the module directory that no catalog
+  unit's directory (see Using the generator). A file in the module directory that no catalog
   produces is a stray, which `--check` fails; a dotfile (`.gitkeep`) is no stray.
 - **LANG-24** The rule for new text: no new literal sentence in markup, no sentence from the
   server. Literal strings in script (toasts, confirm dialogs) are bound by it too, but no
@@ -279,8 +271,12 @@ flowchart LR
   ```
 
   A Svelte page renders the parts with the kit's `Marked` component, one snippet per marker
-  name ([README](../README.md#marked)). It does what this each block does, with text
-  interpolation only, but writes it on one line so that it adds no white space:
+  name. It renders the list in place with no element and no white space of its own; a
+  missing snippet, a snippet written in place for a name the sentence lacks and a snippet
+  that takes the text as a string are type errors, which holds only while the parts keep
+  their literal marker names (a list whose marker is typed `string` accepts a record of any
+  keys, so a missing snippet fails at render time). It does what this each block does, with
+  text interpolation only, but writes it on one line so that it adds no white space:
 
   ```svelte
   <script lang="ts">
@@ -339,26 +335,217 @@ One question governs this section: what does a further language add that a test 
 - **Not tested per language:** flows, permissions, state, and the output of `Intl`.
   The wording of a translation is corrected later as an ordinary change (LANG-6).
 
-## Adoption trigger
+## Using the generator
 
-**Ruled (line 4):** every covered app holds an epic. Apps that can convert quickly do so now.
-songmaker starts too.
+For the engineer of an app who takes `design-catalogs`. The rules are above; this section
+is how the command, the loader and the kit's words are used.
 
-**Proposed:** design ships the shared generator first (skat's generator moved into design and
-widened to LANG-9 to LANG-11). An app's first catalog slice follows that release, and no app
-extends a generator of its own meanwhile. An app may start these slices before that release:
-server sentences to tokens against a typed key list, one owner for the date and sort locale.
-An app whose responses must keep a sentence for agents moves its server sentences to tokens
-once the generated key type exists, so it builds no key list by hand.
+### Taking it
 
-**Ruled (design#162 line 2):** the rule for new text (LANG-24) binds an app from its first
-catalog slice; until then, new texts go into one named constants owner per app.
+`design-catalogs` is in the wheel only, and it needs Babel, which only the extras install:
+`catalogs` is the one an app that runs the generator takes, and it requires `po`, the
+extra that carries the Babel bound. An app that takes the wheel for `design.css` gets no
+Babel. An app pins the wheel with the extra `catalogs` in its dev group, by release URL
+and sha256, which the release notes give:
 
-**Ruled (design#168 line 2):** a new interface text goes into the app's frontend constants owner;
-a new server sentence is a named constant in its module until that module moves to tokens.
+```toml
+[dependency-groups]
+dev = ["overnightworks-design[catalogs] @ https://github.com/overnightworks/design/releases/download/v<version>/overnightworks_design-<version>-py3-none-any.whl#sha256=<sha256>"]
+```
 
-An app's slices after the first convert the surfaces and the server's sentences into
-tokens, then add the first further language.
+Pinning by git tag is an equal form of taking the generator; `uv lock` records the commit
+of the tag:
+
+```toml
+[dependency-groups]
+dev = ["overnightworks-design[catalogs] @ git+https://github.com/overnightworks/design@v<version>"]
+```
+
+### The commands
+
+- `design-catalogs` reads one `<tag>.po` per language and writes one TypeScript module per
+  language, the loader `index.ts` beside them and, where the app declares one, a Python
+  module. A text marks a part the page sets apart as `{#name}…{/name}` (LANG-25), and the
+  module returns the sentence as a list of parts that the kit's `Marked` renders.
+- `design-catalogs --check` writes nothing and fails on a broken catalog, a missing, empty,
+  fuzzy or outdated translation, a module or loader that is missing or differs from its
+  catalogs, and a file in the module directory that no catalog produces.
+- `design-catalogs --sync` brings every translation catalog in line with the source by key
+  (LANG-22) and writes catalogs only. A catalog the sync has to change keeps its header and
+  the order of its entries and is rewritten through Babel's writer: its lines are wrapped
+  at the fixed width, line endings become LF, a `#|` previous-msgid comment turns into a
+  translator comment (`# | msgid "..."`), obsolete (`#~`) entries lose their flags and
+  extracted comments, and the file ends in a blank line. A catalog already in line with its
+  source is not touched, and a second run changes no byte. It needs no network.
+
+A change to the source texts goes in this order: sync, translate, generate, check. Change
+the source catalog, run `design-catalogs --sync`, write the translations and clear the
+fuzzy marks, run `design-catalogs` for the modules, and `design-catalogs --check` in the
+app's lint and CI. `--sync` leaves empty and fuzzy entries behind, so `--check` fails until
+the translations are written.
+
+Each run is in the directory that holds its declaration: the repository's root for an app
+of one unit. A separately shipped unit in the same repository has its own declaration, its
+own run and its own `--check`; its words never enter another unit's catalog. The optional
+table `[tool.design-catalogs]` in that directory's `pyproject.toml` overrides the
+defaults; paths are relative to that directory and stay inside it, the TypeScript
+directory is not the catalogs directory, the Python module lies outside both, and an
+unknown key or a wrong type fails:
+
+```toml
+[tool.design-catalogs]
+source = "de"                           # the source language
+catalogs = "frontend/src/lib/catalogs"  # <tag>.po per language
+typescript = "frontend/src/lib/words"   # <tag>.ts per language
+python = "src/app/words.py"             # no default: without it, no Python module
+```
+
+### The generated modules
+
+The loader names the languages, which always equal the catalog files, and loads the words
+of one language as its own chunk through dynamic imports. Every specifier between the
+generated modules ends in `.js`, as standard ESM needs, so their compiled JavaScript loads
+under plain Node without a rewrite; a bundler, Vitest, Playwright and TypeScript with
+`moduleResolution: bundler` map the ending to the `.ts` file. `loadWords` is called only
+with a member of `languages`: an unknown language is a type error, and at run time the
+promise rejects. The page reads `<html lang>` once, when it starts:
+
+```ts
+import { languages, loadWords, sourceLanguage } from "./words";
+const tag = document.documentElement.lang;
+const language = languages.find((candidate) => candidate === tag) ?? sourceLanguage;
+const words = await loadWords(language);
+```
+
+That snippet's module is the page's one entry module, which no second chunk imports at the
+same time, so it may await at its top level. A module that two chunks import never awaits
+at its top level: some Safari versions reject it.
+
+The Python module holds `Key` and `Language`, `SOURCE_LANGUAGE`, `LANGUAGES`, `WORDS`,
+`plural_category(language, count)` and `text`, for the app's Python tests and server. It
+needs no Babel at run time. A text names its gaps as `{name}`; a plural family is one key
+whose entries are the CLDR categories of each language. `text("de", "chat.greeting",
+name="Eva")` fills the gaps and raises on a missing or an unknown one, and on an unknown
+language or key; `text("de", "table.seats", count=3, name="Eva")` names a family by its
+key, chooses the sentence by the count and fills `count` as plain digits. The page gets
+the same from the TypeScript module, a family as `words["table.seats"](3, { name })`.
+
+What the generated files mean for an app's tooling:
+
+- The Python module is `# fmt: off`, with single-quoted texts and lines longer than the
+  line length. An app whose ruff selects the line length (`E501`) or the quote rules (`Q`)
+  ignores them for that file:
+
+  ```toml
+  [tool.ruff.lint.per-file-ignores]
+  "src/app/words.py" = ["E501", "Q"]
+  ```
+
+- The module keeps one literal per key, so a text several keys share repeats, as the
+  standard wants a key per place. An app that SonarCloud analyses excludes the module in
+  `sonar-project.properties`, as the repeated literals trip `python:S1192`:
+
+  ```properties
+  # generated by design-catalogs, gated by design-catalogs --check
+  sonar.exclusions=src/app/words.py
+  ```
+
+- An app with 100 % coverage thresholds omits the generated Python module from its
+  measured set, because the module carries the paths for gaps and plural families whether
+  or not the app's catalog uses them. It also excludes the loader `index.ts` from frontend
+  coverage until a second language calls it.
+- The TypeScript modules use four spaces and double quotes; an app whose prettier settings
+  differ adds the words directory (`frontend/src/lib/words/`) to `.prettierignore`.
+
+### Reading catalogs from Python
+
+`design.catalogs` has two pure functions beside the command, for a tool that reads
+catalogs exactly as `design-catalogs` does. They take text and bytes and touch no file:
+the caller reads the files. `parse_catalog` needs Babel, the extra `po`, which a tool that
+only reads PO files takes without adopting the generator; `catalog_directory` does not.
+
+- `catalog_directory(pyproject_text: str | None) -> PurePosixPath` takes the text of a
+  `pyproject.toml`, or `None` where there is none, and returns the catalogs directory it
+  declares, relative to that file's directory. Without the table, or without a file, it
+  returns the default directory. Text that is not TOML, or a table the command refuses,
+  raises `DeclarationError`.
+- `parse_catalog(content: bytes, name: str) -> ParsedCatalog` applies the command's strict
+  parse to the bytes of one `.po` file: strict UTF-8, closed strings and Babel's
+  invalid-file errors. `ParsedCatalog.language` is the header's `Language`, or `None`, and
+  `ParsedCatalog.entries` holds every entry in file order as a `CatalogEntry`: `msgctxt`,
+  `msgid`, `msgid_plural` (or `None`), `msgstr` (one string per form, empty ones included)
+  and `fuzzy`. The header and obsolete (`#~`) entries are not entries. A malformed file
+  raises `CatalogFileError`, whose message names `name` and, where known, the line.
+
+### The kit's words in an app
+
+The components that take `words` are listed in the README. Each takes them as the required
+prop `words: KitWords`, holds no default and reads no language itself, so a page cannot
+show one language on another's page. To override one word, pass a spread typed as
+`KitWords`: `words={{ ...kitWords, "account.logOut": "Exit" }}`. The tarball ships the
+words per language, each as its own chunk, and the package root and the export
+`overnightworks-design/words` offer:
+
+- `loadKitWords(language)`: the words of one language, as a promise. The caller passes the
+  language.
+- `KitLanguage`: the languages the kit ships.
+- `KitWords`: the shape of one language's words.
+
+The export `overnightworks-design/words` holds these three and nothing else, no component,
+so a plain Node process can import it, which the package root cannot: the root re-exports
+`.svelte` files, which Node does not load. A Playwright spec names the kit's texts from it:
+
+```ts
+// tests/sign-in.spec.ts
+import { expect, test } from "@playwright/test";
+import { loadKitWords } from "overnightworks-design/words";
+
+test("the sign-in page offers the kit's log-in text", async ({ page }) => {
+  const words = await loadKitWords("en");
+  await page.goto("/en/");
+  await expect(page.getByText(words["signIn.logIn"])).toBeVisible();
+});
+```
+
+The wheel's `design.words` is the same words in Python, for an app's tests and not for its
+server; it needs no Babel and no extra.
+
+An app loads the kit's words for the page's language as it loads its own (LANG-19). A
+prerendering `load` serves each language once; an app-owned module beside the generated
+words directory checks that the kit ships every language the app offers. The `void` keeps
+typescript-eslint's `no-unused-expressions` rule quiet, which flags a bare `satisfies`
+statement:
+
+```ts
+// src/lib/languages.ts
+import type { KitLanguage } from "overnightworks-design";
+import { languages } from "./words";
+
+void (languages satisfies readonly KitLanguage[]); // a language the kit lacks fails the type check
+```
+
+```ts
+// src/routes/[language]/+page.ts
+import { languages } from "$lib/words";
+
+export const entries = () => languages.map((language) => ({ language }));
+```
+
+```ts
+// src/routes/[language]/+layout.ts
+import { loadKitWords } from "overnightworks-design";
+import { languages, loadWords } from "$lib/words";
+
+export const prerender = true;
+
+export const load = async ({ params }) => {
+  const language = languages.find((candidate) => candidate === params.language) ?? languages[0];
+  return { words: await loadWords(language), kitWords: await loadKitWords(language) };
+};
+```
+
+The root layout awaits both loaders in its `load`, as the example does, and never at the
+top level of a module.
 
 ## Deviations
 
@@ -367,6 +554,6 @@ works") requires. The request names enduring harm: a lost capability, recurring 
 unmet operational constraint or a credible risk, with its uncertainty stated. design's head
 reviews it. Only the operator rules it, and the ruling is recorded here.
 
-Ruled today (source: songmaker#2976, line 1): songmaker keeps English as its source
+Ruled today: songmaker keeps English as its source
 catalog, and German is generated from it as its first added language. Its keys are neutral
 identifiers (LANG-9), so the source can change later without a code change.
