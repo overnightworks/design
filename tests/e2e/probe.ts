@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 /** Resolves CSS declarations such as `{ color: 'var(--text)' }` to the computed values of the named properties. */
 export function resolveStyle(
@@ -19,3 +19,7 @@ export function resolveStyle(
 		[declarations, properties] as const
 	);
 }
+
+/** The computed value of a length or number property of one element, as a number. */
+export const numberOf = (element: Locator, property: string): Promise<number> =>
+	element.evaluate((node, name) => parseFloat(getComputedStyle(node).getPropertyValue(name)), property);

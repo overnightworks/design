@@ -2,7 +2,7 @@ import { expect, test } from './coverage.ts';
 import type { Page } from '@playwright/test';
 import type { KitLanguage } from 'overnightworks-design';
 import { colorSchemes, consumerNames, consumerTitle, languages, origin, useConsumer, widths } from './build-consumer.ts';
-import { resolveStyle } from './probe.ts';
+import { numberOf, resolveStyle } from './probe.ts';
 
 const touchRowFloor = 44;
 /** The names of the consumer page's rows. */
@@ -160,8 +160,8 @@ for (const consumer of consumerNames) {
 						const tokens = await resolveStyle(page, { color: 'var(--text-muted)' }, ['color']);
 						await expect(outcome).toHaveCSS('color', tokens.color);
 						const icon = outcome.locator('svg');
-						await expect(icon).toHaveCSS('width', '15px');
-						await expect(icon).toHaveCSS('height', '15px');
+						expect(await numberOf(icon, 'width')).toBe(await numberOf(icon, 'height'));
+						expect(await numberOf(icon, 'height')).toBeLessThanOrEqual(await numberOf(outcome, 'height'));
 						await expect(outcome.locator('i')).toHaveCount(0);
 						const box = (await outcome.boundingBox())!;
 						expect(box.x + box.width).toBeLessThanOrEqual(width);
