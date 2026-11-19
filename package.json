@@ -34,7 +34,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:consumer": "rm -rf coverage/drive && playwright test --config tests/e2e/playwright.config.ts",
-    "coverage:merge": "nyc report --temp-dir coverage/drive --report-dir coverage/remapped --reporter json --extension .svelte --extension .ts && nyc report --temp-dir coverage/remapped --report-dir coverage --reporter lcov --reporter text --extension .svelte --extension .ts"
+    "coverage:merge": "nyc report --temp-dir coverage/drive --report-dir coverage/remapped --reporter json --extension .svelte --extension .ts && nyc report --temp-dir coverage/remapped --report-dir coverage --reporter lcov --reporter text --reporter json-summary --extension .svelte --extension .ts && node scripts/compare-coverage-merge.mjs"
   },
   "packageManager": "pnpm@12.21.0",
   "devEngines": {
