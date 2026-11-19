@@ -17,7 +17,7 @@ const knobTransform = (track: Locator) => track.evaluate((node) => getComputedSt
 
 for (const consumer of consumerNames) {
 	test.describe(consumerTitle('the hearing switch', consumer), () => {
-		const { wordsOf, open: openAt } = useConsumer(consumer);
+		const { en, wordsOf, open: openAt } = useConsumer(consumer);
 
 		const chipOf = (page: Page, kind: 'hear' | 'listen' | 'see', language: KitLanguage = 'en') =>
 			page.getByRole('switch', { name: wordsOf[language][nameKeys[kind]], exact: true });
@@ -290,7 +290,7 @@ for (const consumer of consumerNames) {
 
 		test('shows the chip in the en words by its icon and label only', async ({ page }) => {
 			await open(page);
-			await expect(chipOf(page, 'hear')).toHaveText(wordsOf.en['hearing.agentMayHearMe']);
+			await expect(chipOf(page, 'hear')).toHaveText(en['hearing.agentMayHearMe']);
 			await expect(chipOf(page, 'hear').locator('svg')).toHaveCount(1);
 		});
 	});

@@ -32,7 +32,7 @@ const computedOf = (element: Locator, properties: readonly string[]) =>
 
 for (const consumer of consumerNames) {
 	test.describe(consumerTitle('the sign-in card', consumer), () => {
-		const { wordsOf, route } = useConsumer(consumer);
+		const { en, route } = useConsumer(consumer);
 
 		for (const colorScheme of colorSchemes) {
 			test(`a hand-written card looks like the component's in ${colorScheme}`, async ({ page }) => {
@@ -42,7 +42,7 @@ for (const consumer of consumerNames) {
 
 				const written = page.locator('#written').getByRole('main');
 				const component = page.locator('#component').getByRole('main');
-				await expect(written.getByRole('heading')).toHaveText(wordsOf.en['signIn.loggedOut']);
+				await expect(written.getByRole('heading')).toHaveText(en['signIn.loggedOut']);
 				expect(await computedOf(written, cardProperties)).toEqual(await computedOf(component, cardProperties));
 			});
 
@@ -57,8 +57,8 @@ for (const consumer of consumerNames) {
 					await route(page.context());
 					await page.goto(`${origin}/?sign-in-card=${state}`);
 
-					const written = page.locator('#written').getByRole(role, { name: wordsOf.en[name], exact: true });
-					const component = page.locator('#component').getByRole(role, { name: wordsOf.en[name], exact: true });
+					const written = page.locator('#written').getByRole(role, { name: en[name], exact: true });
+					const component = page.locator('#component').getByRole(role, { name: en[name], exact: true });
 					const resting = await computedOf(component, actionProperties);
 					expect(await computedOf(written, actionProperties)).toEqual(resting);
 

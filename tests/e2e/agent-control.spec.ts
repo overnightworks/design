@@ -13,9 +13,13 @@ const reportsOf = (page: Page) => page.evaluate(() => window.reports);
 
 for (const consumer of consumerNames) {
 	test.describe(consumerTitle('the agent control', consumer), () => {
-		const { wordsOf, route, open: openAt } = useConsumer(consumer);
-		const callMozart = () => wordsOf.en['agent.callLabel']({ name: mozart });
-		const askLeonardoToLeave = () => wordsOf.en['agent.askToLeaveLabel']({ name: leonardo });
+		const { en, wordsOf, route, open: openAt } = useConsumer(consumer);
+		let callMozart: string;
+		let askLeonardoToLeave: string;
+		test.beforeAll(() => {
+			callMozart = en['agent.callLabel']({ name: mozart });
+			askLeonardoToLeave = en['agent.askToLeaveLabel']({ name: leonardo });
+		});
 
 		async function open(page: Page, variant = '', language: KitLanguage = 'en'): Promise<void> {
 			await openAt(page, `agents=${variant}`, language);
@@ -41,7 +45,7 @@ for (const consumer of consumerNames) {
 						['border-top-color', 'background-color', 'color']
 					);
 					const alert = page.getByRole('alert');
-					await expect(alert).toHaveText(wordsOf.en['agent.ownerAbsent']);
+					await expect(alert).toHaveText(en['agent.ownerAbsent']);
 					await expect(alert).toHaveCSS('border-top-color', tokens['border-top-color']);
 					await expect(alert).toHaveCSS('background-color', tokens['background-color']);
 
@@ -52,7 +56,7 @@ for (const consumer of consumerNames) {
 						await expect(mark).toHaveCSS('border-top-style', 'solid');
 					}
 					await expect(page.getByRole('status').locator('i').first()).toBeVisible();
-					await expect(page.getByRole('button', { name: callMozart() })).toHaveCSS(
+					await expect(page.getByRole('button', { name: callMozart })).toHaveCSS(
 						'border-top-style',
 						'solid'
 					);
@@ -64,7 +68,7 @@ for (const consumer of consumerNames) {
 			test(`keeps every action inside the viewport with a long name at ${width} px`, async ({ page }) => {
 				await page.setViewportSize({ width, height: 800 });
 				await open(page);
-				for (const name of [callMozart(), askLeonardoToLeave()]) {
+				for (const name of [callMozart, askLeonardoToLeave]) {
 					const box = (await page.getByRole('button', { name }).boundingBox())!;
 					expect(box.x).toBeGreaterThanOrEqual(0);
 					expect(box.x + box.width).toBeLessThanOrEqual(width);
@@ -113,9 +117,9 @@ for (const consumer of consumerNames) {
 
 		test('reports the key of a call and of a send-away once each and keeps the page', async ({ page }) => {
 			await open(page);
-			await page.getByRole('button', { name: callMozart() }).click();
+			await page.getByRole('button', { name: callMozart }).click();
 			expect(await reportsOf(page)).toEqual(['call:key-mozart']);
-			await page.getByRole('button', { name: askLeonardoToLeave() }).click();
+			await page.getByRole('button', { name: askLeonardoToLeave }).click();
 			expect(await reportsOf(page)).toEqual(['call:key-mozart', 'leave:key-leonardo']);
 			await expect(page.getByRole('dialog')).toHaveCount(0);
 			expect(page.url()).toBe(`${origin}/?agents=`);
@@ -124,7 +128,7 @@ for (const consumer of consumerNames) {
 		test('gives the waiting row no button and keeps the dots still under reduced motion', async ({ page }) => {
 			await open(page);
 			const waiting = page.getByRole('status');
-			await expect(waiting).toHaveText(wordsOf.en['agent.calling']);
+			await expect(waiting).toHaveText(en['agent.calling']);
 			await expect(waiting.getByRole('button')).toHaveCount(0);
 			const dot = waiting.locator('i').first();
 			await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -151,7 +155,7 @@ for (const consumer of consumerNames) {
 						await page.goto(`${origin}/?agents=${variant}`);
 						const row = page.getByRole('listitem').first();
 						const outcome = row.getByRole('status');
-						await expect(outcome).toHaveText(wordsOf.en[key]);
+						await expect(outcome).toHaveText(en[key]);
 						await expect(row.getByRole('button')).toHaveCount(0);
 						const tokens = await resolveStyle(page, { color: 'var(--text-muted)' }, ['color']);
 						await expect(outcome).toHaveCSS('color', tokens.color);
@@ -185,15 +189,15 @@ for (const consumer of consumerNames) {
 			await page.emulateMedia({ reducedMotion: 'reduce' });
 			await route(page.context());
 			await page.goto(`${origin}/?agents=ended-busy`);
-			const outcome = page.getByRole('status').filter({ hasText: wordsOf.en['agent.busy'] });
+			const outcome = page.getByRole('status').filter({ hasText: en['agent.busy'] });
 			await expect(outcome).toBeVisible();
 			const boxBefore = await outcome.boundingBox();
 			expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
 			await expect(outcome.locator('i')).toHaveCount(0);
 			expect(await outcome.boundingBox()).toEqual(boxBefore);
-			const call = page.getByRole('button', { name: callMozart() });
+			const call = page.getByRole('button', { name: callMozart });
 			await expect(call).toBeVisible({ timeout: 10_000 });
-			await expect(page.getByRole('status').filter({ hasText: wordsOf.en['agent.busy'] })).toHaveCount(0);
+			await expect(page.getByRole('status').filter({ hasText: en['agent.busy'] })).toHaveCount(0);
 			await call.click();
 			expect(await reportsOf(page)).toEqual(['call:key-mozart']);
 		});
@@ -201,9 +205,9 @@ for (const consumer of consumerNames) {
 		test('is operable by keyboard in reading order', async ({ page }) => {
 			await open(page);
 			await page.keyboard.press('Tab');
-			await expect(page.getByRole('button', { name: callMozart() })).toBeFocused();
+			await expect(page.getByRole('button', { name: callMozart })).toBeFocused();
 			await page.keyboard.press('Tab');
-			await expect(page.getByRole('button', { name: askLeonardoToLeave() })).toBeFocused();
+			await expect(page.getByRole('button', { name: askLeonardoToLeave })).toBeFocused();
 			await page.keyboard.press('Enter');
 			expect(await reportsOf(page)).toEqual(['leave:key-leonardo']);
 		});
@@ -240,7 +244,7 @@ for (const consumer of consumerNames) {
 		test('draws only the empty sentence when no agent is listed', async ({ page }) => {
 			await route(page.context());
 			await page.goto(`${origin}/?agents=empty`);
-			await expect(page.getByText(wordsOf.en['agent.empty'])).toBeVisible();
+			await expect(page.getByText(en['agent.empty'])).toBeVisible();
 			await expect(page.getByRole('button')).toHaveCount(0);
 			await expect(page.getByRole('list')).toHaveCount(0);
 		});
@@ -248,8 +252,8 @@ for (const consumer of consumerNames) {
 		test('draws the place-full sentence in place of the empty sentence when the place is full', async ({ page }) => {
 			await route(page.context());
 			await page.goto(`${origin}/?agents=empty-full`);
-			await expect(page.getByText(wordsOf.en['agent.placeFull'])).toBeVisible();
-			await expect(page.getByText(wordsOf.en['agent.empty'])).toHaveCount(0);
+			await expect(page.getByText(en['agent.placeFull'])).toBeVisible();
+			await expect(page.getByText(en['agent.empty'])).toHaveCount(0);
 			await expect(page.getByRole('button')).toHaveCount(0);
 			await expect(page.getByRole('list')).toHaveCount(0);
 		});
@@ -261,9 +265,9 @@ for (const consumer of consumerNames) {
 			test(`draws only the ${variant} refusal, once, when no agent is listed`, async ({ page }) => {
 				await route(page.context());
 				await page.goto(`${origin}/?agents=${variant}`);
-				await expect(page.getByRole('alert')).toHaveText(wordsOf.en[key]);
-				await expect(page.getByText(wordsOf.en[key])).toHaveCount(1);
-				await expect(page.getByText(wordsOf.en['agent.empty'])).toHaveCount(0);
+				await expect(page.getByRole('alert')).toHaveText(en[key]);
+				await expect(page.getByText(en[key])).toHaveCount(1);
+				await expect(page.getByText(en['agent.empty'])).toHaveCount(0);
 				await expect(page.getByRole('button')).toHaveCount(0);
 				await expect(page.getByRole('list')).toHaveCount(0);
 			});
