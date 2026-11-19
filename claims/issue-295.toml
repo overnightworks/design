@@ -1,8 +1,0 @@
-claim_id = "ca203c9d52f346039ace47425cf463b2"
-agent = "Claude 27a67e6a-d638-4888-bce6-c323fa029369"
-role = "builder"
-base = "79c29cceac4be625311e8f06fd593369f24d288f"
-branch = "claude/issue-295-python-suites-once"
-scope = ["tests/catalogs", "tests/conftest.py", "tests/test_npm_package.py", "tests/test_wheel.py"]
-opened_commit = "eb4e77149cbebb2e1ee2c3cd221cb88edab55ba5"
-whole_reason = "One reading of the Python suites against the rule that each behaviour is proven once; the files share fixtures."
