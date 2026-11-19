@@ -196,6 +196,17 @@ def test_main_fails_naming_a_catalog_that_is_not_utf8_without_a_traceback(
     assert not module_for(language).exists()
 
 
+def test_main_writes_the_translation_typed_by_the_source_and_the_loader_of_the_languages_the_catalogs_name(
+    clean_translation, module_for
+):
+    assert main([]) == 0
+
+    translation = module_for("pl").read_text(encoding="utf-8")
+    assert 'import type { Words } from "./de.js";' in translation
+    assert '    "table.seatFree": "Wolne",' in translation
+    assert 'export const languages = ["de", "pl"] as const;' in module_for("index").read_text(encoding="utf-8")
+
+
 def test_main_writes_the_python_module_of_every_language_where_the_declaration_names_one(
     clean_translation, python_module, import_module
 ):

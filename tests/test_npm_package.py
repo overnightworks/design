@@ -468,6 +468,39 @@ def test_a_consumer_extends_the_helper_message_and_gives_a_failed_history_its_fa
     )
 
 
+def test_a_consumer_cannot_loosen_what_the_agent_components_require_of_it(consumer):
+    consumer.check(
+        f"import type {{ AgentControlProps, EarMarkProps, HearingSwitchProps, HelperChatProps, HelperMessage, "
+        f"KitWords }} from '{consumer.name}';\n"
+        "declare const words: KitWords;\n"
+        "const control = { onCall: (key: string) => void key, rows: [], words };\n"
+        "export const withoutSendAway: AgentControlProps = control;\n"
+        "// @ts-expect-error the rows are required\n"
+        "export const noRows: AgentControlProps = { onCall: control.onCall, words };\n"
+        "// @ts-expect-error full is a boolean\n"
+        "export const fullWord: AgentControlProps = { ...control, full: 'yes' };\n"
+        "const hearing = { kind: 'hear', on: true, onChange: (on: boolean) => void on, words } as const;\n"
+        "export const hear: HearingSwitchProps = hearing;\n"
+        "// @ts-expect-error the switch is controlled: on is required\n"
+        "export const uncontrolled: HearingSwitchProps = { kind: 'hear', onChange: hearing.onChange, words };\n"
+        "// @ts-expect-error a press reports a boolean\n"
+        "export const wrongReport: HearingSwitchProps = { ...hearing, onChange: (on: string) => void on };\n"
+        "export const own: EarMarkProps = { agent: 'Mozart', words };\n"
+        "// @ts-expect-error the agent's name is required\n"
+        "export const nameless: EarMarkProps = { words };\n"
+        "// @ts-expect-error person is a string or absent\n"
+        "export const wrongPerson: EarMarkProps = { agent: 'Mozart', person: 1, words };\n"
+        "const chat = { messages: [], running: false, history: { state: 'ready' }, helperName: 'M', emptyHint: '', "
+        "placeholder: '', draft: '', onDraft: (draft: string, caret: number) => void caret, "
+        "onSend: (text: string) => void text, words } as const;\n"
+        "export const props: HelperChatProps<HelperMessage> = chat;\n"
+        "// @ts-expect-error the draft is required\n"
+        "export const noDraft: HelperChatProps<HelperMessage> = { ...chat, draft: undefined };\n"
+        "// @ts-expect-error send reports a string\n"
+        "export const wrongSend: HelperChatProps<HelperMessage> = { ...chat, onSend: (text: number) => void text };\n"
+    )
+
+
 MARKED_PAGE = """<script lang="ts">
   import { Marked } from '%s';
   const note: readonly (string | { readonly marker: "strong" | "link"; readonly text: string })[] = [];
