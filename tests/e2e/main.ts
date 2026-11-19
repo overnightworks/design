@@ -249,6 +249,24 @@ if (query.has('words')) {
 		target: document.getElementById('component')!,
 		props: { links: legalLinks, words }
 	});
+} else if (query.has('sign-in-card')) {
+	// The markup contract of a page that cannot render Svelte, beside the component's own card.
+	const words = await loadKitWords(pageLanguage);
+	const signedOut = query.get('sign-in-card') === 'signed-out';
+	document.body.innerHTML = signedOut
+		? `<div id="written"><main class="sign-in-card"><h1>${words['signIn.loggedOut']}</h1><a class="sign-in-action primary" href="/login">${words['signIn.logIn']}</a></main></div><div id="component"></div>`
+		: `<div id="written"><main class="sign-in-card"><h1>${words['signIn.noAccess']}</h1><button class="sign-in-action secondary" type="button">${words['signIn.logOut']}</button></main></div><div id="component"></div>`;
+	mount(SignInPage, {
+		target: document.getElementById('component')!,
+		props: {
+			appName: 'Probe',
+			state: signedOut
+				? { page: 'signed-out', signInHref: '/login' }
+				: { page: 'no-access', logOutAction: '/logout' },
+			legalLinks: legalLinks.slice(0, 2),
+			words
+		}
+	});
 } else if (query.has('marked')) {
 	mount(MarkedSentence, { target: document.body });
 } else if (query.has('helper')) {
