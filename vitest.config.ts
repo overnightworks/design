@@ -4,11 +4,13 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
 	test: {
 		coverage: {
-			provider: 'v8',
-			reporter: ['lcov', 'text-summary'],
+			// Istanbul counts the branches the instrumented consumer build counts in the browser, so `pnpm run coverage:merge` can add the two reports up.
+			provider: 'istanbul',
+			reporter: [['json', { file: 'unit.json' }], 'text-summary'],
+			reportsDirectory: 'coverage/remapped',
 			include: ['src/lib/**'],
 			// The generated words hold data and one loader line; the consumer build proves them.
-			exclude: ['**/*.test.ts', 'src/lib/words/**']
+			exclude: ['**/*.test.*', 'src/lib/words/**']
 		},
 		projects: [
 			{

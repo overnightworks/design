@@ -149,7 +149,14 @@ the generated Python is imported and passed through ruff, and the pin by hash is
 proven by installing the built wheel through a URL with a wrong sha256, which
 fails. The release gate and a check of the built file list guard `release.yml`.
 Two Playwright consumers are built for production from the packed tarball and
-paint the page in a browser. The shared quality gate adds the secret scan, the
+paint the page in a browser. The components' branches are measured over both
+layers: Vitest counts them with Istanbul, and the consumer build the browser
+tests drive carries Istanbul counters that each spec collects. `coverage:merge`
+remaps the browser counters onto `src/lib` and merges both reports with `nyc`
+into the `lcov.info` the quality gate reads. Only the consumer's copy of the kit
+carries counters; the tarball and the wheel are built without them. A `.ts`
+module of `src/lib` is measured by Vitest alone, because the tarball ships it
+transpiled without a source map; none has a branch today. The shared quality gate adds the secret scan, the
 workflow-security scan and SonarCloud for CSS, HTML, Python and TypeScript.
 
 ## 6. Constraints and reasons

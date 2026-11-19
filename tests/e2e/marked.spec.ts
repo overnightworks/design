@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './coverage.ts';
 import { buildConsumer, origin, routeTo, type ConsumerName } from './build-consumer.ts';
 
 const widths = [390, 1280] as const;

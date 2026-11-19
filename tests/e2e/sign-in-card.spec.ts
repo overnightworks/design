@@ -1,4 +1,5 @@
-import { expect, test, type Locator } from '@playwright/test';
+import { expect, test } from './coverage.ts';
+import type { Locator } from '@playwright/test';
 import type { KitWords } from 'overnightworks-design';
 import { buildConsumer, loadKitWordsUnderNode, origin, routeTo, type ConsumerName } from './build-consumer.ts';
 

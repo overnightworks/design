@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { expect, test } from '@playwright/test';
+import { expect, test } from './coverage.ts';
 import type { KitLanguage } from 'overnightworks-design';
 import { loadWords } from '../../src/lib/words/index.ts';
 import { buildConsumer, loadKitWordsUnderNode, origin, routeTo } from './build-consumer.ts';
