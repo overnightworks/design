@@ -11,10 +11,13 @@ const vitest = branchesOf('coverage/unit-summary.json');
 const merged = branchesOf('coverage/coverage-summary.json');
 
 // One remapper only holds if the lockfile carries one copy of the library, the fork Vitest and nyc share.
+const remapperPackages = ['istanbul-lib-source-maps@', '@vitest/istanbul-lib-source-maps@'];
 const remappers = new Set(
-	[...readFileSync('pnpm-lock.yaml', 'utf8').matchAll(/^ {2}'?((?:@vitest\/)?istanbul-lib-source-maps@[^':(]+)[^:]*:/gm)].map(
-		(match) => match[1]
-	)
+	readFileSync('pnpm-lock.yaml', 'utf8')
+		.split('\n')
+		.filter((line) => line.startsWith('  ') && !line.startsWith('   ') && line.endsWith(':'))
+		.map((line) => line.slice(2, -1).replace(/'/g, '').split('(')[0])
+		.filter((key) => remapperPackages.some((name) => key.startsWith(name)))
 );
 
 const problems = [];
