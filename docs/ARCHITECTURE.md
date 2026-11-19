@@ -156,7 +156,7 @@ remaps the browser counters onto `src/lib` and merges both reports with `nyc`
 into the `lcov.info` the quality gate reads. Only the consumer's copy of the kit
 carries counters; the tarball and the wheel are built without them. A `.ts`
 module of `src/lib` is measured by Vitest alone, because the tarball ships it
-transpiled without a source map. The shared quality gate adds the secret scan, the
+transpiled without a source map; none has a branch today. The shared quality gate adds the secret scan, the
 workflow-security scan and SonarCloud for CSS, HTML, Python and TypeScript.
 
 ## 6. Constraints and reasons
