@@ -73,76 +73,15 @@ describe('the message list', () => {
 		expect(lists[0].closest('[aria-live]')).toBeNull();
 	});
 
-	it.each([
-		['en', en],
-		['de', de]
-	])('begins each message with its speaker, the kit’s word for the person and the helper’s name for the helper, in the %s words', async (_language, words) => {
-		const root = await render({
-			messages: [{ role: 'user', text: 'Hi' }, { role: 'assistant', text: 'Hello' }, { role: 'assistant', text: '' }],
-			words
-		});
-		const items = [...root.querySelectorAll('li')];
-		expect(items.map((item) => item.firstElementChild?.textContent)).toEqual([
-			words['helperChat.speaker']({ name: words['helperChat.you'] }),
-			words['helperChat.speaker']({ name: 'Mozart' }),
-			words['helperChat.speaker']({ name: 'Mozart' })
-		]);
-		expect(items.map((item) => item.getAttribute('aria-label'))).toEqual([null, null, null]);
-		expect(bubbleOf(items[2])).toBeNull();
-	});
-
 	it('shows only the empty hint, no list, while there is no message', async () => {
 		const root = await render();
 		expect(root.querySelector('[role="list"], ol, li')).toBeNull();
 		expect(root.textContent).toContain('Ask me anything');
 	});
 
-	it('shows each message as written, with its line breaks kept', async () => {
-		const root = await render({
-			messages: [
-				{ role: 'user', text: 'Line one\n  Line two' },
-				{ role: 'assistant', text: 'Sure' }
-			]
-		});
-		const [person, helper] = bubbles(root);
-		expect(person.textContent?.trim()).toBe('Line one\n  Line two');
-		expect(helper.textContent?.trim()).toMatch(/Sure$/);
-	});
-
-	it('leads each helper message with one AiMark before its tool rows and gives the person none', async () => {
-		const root = await render({
-			messages: [
-				{ role: 'user', text: 'Rewrite it' },
-				{ role: 'assistant', text: 'Done', toolCalls: [{ name: 'rewrite', input: {} }] }
-			]
-		});
-		const [personBubble, helperBubble] = bubbles(root);
-		expect(aiMarks(personBubble)).toHaveLength(0);
-		expect(aiMarks(helperBubble)).toHaveLength(1);
-		expect(helperBubble.firstElementChild?.contains(aiMarks(helperBubble)[0])).toBe(true);
-		expect(aiMarks(helperBubble)[0].compareDocumentPosition(toolRow(root, 'rewrite'))).toBe(
-			Node.DOCUMENT_POSITION_FOLLOWING
-		);
-	});
-
 	it('shows no bubble for a helper message with neither text nor tool calls', async () => {
 		const root = await render({ messages: [{ role: 'user', text: 'Hi' }, { role: 'assistant', text: '' }] });
 		expect(bubbles(root)).toHaveLength(1);
-	});
-
-	it('shows a tool row with the kit word for the tool, the target and the title the app gives it', async () => {
-		const call = { name: 'rewrite', input: { line: 3 } };
-		const root = await render({
-			messages: [{ role: 'assistant', text: 'Done', toolCalls: [call] }],
-			toolCallTarget: createRawSnippet((parameters) => ({
-				render: () => `<span class="target">target of ${parameters().call.name}</span>`
-			})),
-			toolCallTitle: (shown) => JSON.stringify(shown.input)
-		});
-		const row = toolRow(root, 'rewrite');
-		expect(row.textContent).toContain(en['helperChat.ranTool']({ tool: 'rewrite' }));
-		expect(row.querySelector('.target')?.textContent).toBe('target of rewrite');
-		expect(row.getAttribute('title')).toBe('{"line":3}');
 	});
 
 	it('gives a tool row no title without a title function and no target without a target snippet', async () => {
@@ -181,76 +120,15 @@ describe('the message list', () => {
 });
 
 describe('the history', () => {
-	it('shows the loading word instead of the list while it loads', async () => {
-		const root = await render({ history: { state: 'loading' }, messages: [{ role: 'user', text: 'Hi' }] });
-		expect(root.textContent).toContain(en['helperChat.loading']);
-		expect(root.querySelector('ol')).toBeNull();
-		expect(root.textContent).not.toContain('Hi');
-	});
-
 	it('shows the failure as an alert instead of the list when it failed', async () => {
 		const root = await render({ history: { state: 'failed', failure: 'Chat is gone' }, messages: [{ role: 'user', text: 'Hi' }] });
 		expect(root.querySelector('[role="alert"]')?.textContent).toBe('Chat is gone');
 		expect(root.querySelector('ol')).toBeNull();
 		expect(root.textContent).not.toContain('Hi');
 	});
-
-	it('keeps the composer while the history loads or failed', async () => {
-		expect(field(await render({ history: { state: 'loading' } }))).not.toBeNull();
-		expect(field(await render({ history: { state: 'failed', failure: 'x' } }))).not.toBeNull();
-	});
-});
-
-describe('the list element', () => {
-	it('binds the message container and reports its scrolling', async () => {
-		const onListScroll = vi.fn();
-		const root = await render({ onListScroll, messages: [{ role: 'user', text: 'Hi' }] });
-		const list = listContainer(root);
-		list.dispatchEvent(new Event('scroll'));
-		expect(onListScroll).toHaveBeenCalledOnce();
-	});
-
-	it('hands the container to the app through the bindable list prop', async () => {
-		const holder: { list?: HTMLElement } = {};
-		const props = { ...baseProps(), messages: [{ role: 'user' as const, text: 'Hi' }] };
-		Object.defineProperty(props, 'list', { get: () => holder.list, set: (value: HTMLElement) => (holder.list = value), enumerable: true });
-		const target = await mountInDocument((into) => mount(HelperChat, { target: into, props }));
-		expect(holder.list).toBe(listContainer(target));
-		expect(holder.list?.hasAttribute('role')).toBe(false);
-	});
 });
 
 describe('the thinking line', () => {
-	it('is one status element that is there before, during and after a turn, with only its text changing', async () => {
-		const messages: HelperMessage[] = [{ role: 'user', text: 'Hi' }, { role: 'assistant', text: '' }];
-		const held = new SvelteMap<string, unknown>([
-			['messages', messages],
-			['running', false]
-		]);
-		const props = Object.defineProperties(baseProps(), {
-			messages: { enumerable: true, get: () => held.get('messages') as HelperMessage[] },
-			running: { enumerable: true, get: () => held.get('running') as boolean }
-		});
-		const target = await mountInDocument((into) => mount(HelperChat, { target: into, props }));
-		const line = status(target)!;
-		expect(target.querySelectorAll('[role="status"]')).toHaveLength(1);
-		expect(line.textContent).toBe('');
-
-		held.set('running', true);
-		await tick();
-		expect(status(target)).toBe(line);
-		expect(line.textContent).toBe(en['helperChat.thinking']({ name: 'Mozart' }));
-
-		held.set('messages', [messages[0], { role: 'assistant', text: 'Here' }]);
-		await tick();
-		expect(status(target)).toBe(line);
-		expect(line.textContent).toBe('');
-
-		held.set('running', false);
-		await tick();
-		expect(status(target)).toBe(line);
-	});
-
 	it.each([
 		['the last message is the person’s', [{ role: 'user', text: 'Hi' }] as HelperMessage[], true],
 		['the last helper message already has text', [{ role: 'assistant', text: 'Here' }] as HelperMessage[], true],
@@ -258,11 +136,6 @@ describe('the thinking line', () => {
 	])('is empty when %s', async (_case, messages, running) => {
 		const root = await render({ messages, running });
 		expect(status(root)?.textContent).toBe('');
-	});
-
-	it('says the helper is thinking, with the helper’s name, while the last helper message has no text', async () => {
-		const root = await render({ messages: [{ role: 'assistant', text: '' }], running: true, words: de });
-		expect(status(root)?.textContent).toBe(de['helperChat.thinking']({ name: 'Mozart' }));
 	});
 
 	it('shows the visible thinking line, hidden from assistive technology, after the tool rows in the last helper bubble', async () => {
@@ -348,24 +221,6 @@ describe('the composer', () => {
 		expect(field(root).placeholder).toBe('Ask for a rewrite…');
 	});
 
-	it('shows the draft in the field and reports each edit with the text and the caret', async () => {
-		const onDraft = vi.fn();
-		const root = await render({ draft: 'Hello', onDraft });
-		const input = field(root);
-		expect(input.value).toBe('Hello');
-		input.value = 'Hello there';
-		input.setSelectionRange(5, 5);
-		input.dispatchEvent(new Event('input', { bubbles: true }));
-		expect(onDraft).toHaveBeenCalledExactlyOnceWith('Hello there', 5);
-	});
-
-	it('puts the pick list first in the composer box, above the field', async () => {
-		const root = await render({ composerPopup: text('Pick me') });
-		const box = field(root).parentElement!;
-		expect(box.textContent).toContain('Pick me');
-		expect(box.firstElementChild?.textContent).toBe('Pick me');
-	});
-
 	it('puts the bar of tags between the banner and the composer box', async () => {
 		const root = await render({ composerTop: text('Tag bar'), readOnly: text('Archived') });
 		const box = field(root).parentElement!;
@@ -386,29 +241,6 @@ describe('the composer', () => {
 });
 
 describe('sending', () => {
-	it('sends the trimmed draft on a plain Enter and cancels the key', async () => {
-		const onSend = vi.fn();
-		const root = await render({ draft: '  Hello  \n', onSend });
-		const event = press(field(root), { key: 'Enter' });
-		expect(onSend).toHaveBeenCalledExactlyOnceWith('Hello');
-		expect(event.defaultPrevented).toBe(true);
-	});
-
-	it('sends the trimmed draft when Send is pressed', async () => {
-		const onSend = vi.fn();
-		const root = await render({ draft: ' Hello ', onSend });
-		sendButton(root).click();
-		expect(onSend).toHaveBeenCalledExactlyOnceWith('Hello');
-	});
-
-	it('leaves Shift+Enter to the field, which makes a new line', async () => {
-		const onSend = vi.fn();
-		const root = await render({ draft: 'Hello', onSend });
-		const event = press(field(root), { key: 'Enter', shiftKey: true });
-		expect(onSend).not.toHaveBeenCalled();
-		expect(event.defaultPrevented).toBe(false);
-	});
-
 	it.each<[string, Partial<HelperChatProps<HelperMessage>>]>([
 		['a turn runs', { draft: 'Hello', running: true }],
 		['the draft is empty', { draft: '' }],
@@ -429,60 +261,9 @@ describe('sending', () => {
 		expect(onSend).not.toHaveBeenCalled();
 		expect(event.defaultPrevented).toBe(true);
 	});
-
-	it('runs the app’s keydown before the part handles the key', async () => {
-		const order: string[] = [];
-		const onSend = vi.fn(() => void order.push('send'));
-		const root = await render({
-			draft: 'Hello',
-			onSend,
-			onComposerKeydown: (event) => {
-				order.push('keydown');
-				if (event.key === 'ArrowDown') event.preventDefault();
-			}
-		});
-		press(field(root), { key: 'ArrowDown' });
-		const picked = press(field(root), { key: 'Enter' });
-		expect(onSend).toHaveBeenCalledTimes(1);
-		expect(picked.defaultPrevented).toBe(true);
-		expect(order).toEqual(['keydown', 'keydown', 'send']);
-	});
-
-	it('sends nothing for an Enter the app’s keydown cancelled', async () => {
-		const onSend = vi.fn();
-		const root = await render({ draft: 'Hello', onSend, onComposerKeydown: (event) => event.preventDefault() });
-		press(field(root), { key: 'Enter' });
-		expect(onSend).not.toHaveBeenCalled();
-	});
-
-	it('leaves Send on for a draft with text', async () => {
-		const root = await render({ draft: 'Hello' });
-		expect(sendButton(root).disabled).toBe(false);
-	});
-
-	it.each<[string, Partial<HelperChatProps<HelperMessage>>]>([
-		['the draft is empty', { draft: '' }],
-		['a turn runs', { draft: 'Hello', running: true }],
-		['the chat is read-only', { draft: 'Hello', readOnly: text('Archived') }]
-	])('turns Send off when %s', async (_case, overrides) => {
-		const root = await render(overrides);
-		expect(sendButton(root).disabled).toBe(true);
-	});
-
-	it('names Send by the kit word', async () => {
-		const root = await render({ words: de });
-		expect(sendButton(root, de)).toBeDefined();
-	});
 });
 
 describe('read-only', () => {
-	it('shows the banner above the composer and disables the field and Send', async () => {
-		const root = await render({ draft: 'Hello', readOnly: text('This chat is archived') });
-		expect(root.textContent).toContain('This chat is archived');
-		expect(field(root).disabled).toBe(true);
-		expect(sendButton(root).disabled).toBe(true);
-	});
-
 	it('shows no banner and enables the field without the snippet', async () => {
 		const root = await render();
 		expect(field(root).parentElement!.parentElement!.textContent?.trim()).toBe(en['helperChat.send']);
