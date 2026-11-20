@@ -1,0 +1,8 @@
+claim_id = "ecee85fd96dd430dbaba97e2cbaa784a"
+agent = "Claude 03452198-e0e1-4b0d-ab98-b4c0e01346f2"
+role = "builder"
+base = "67f9ee53e764dcfe6bc619669a9523d7982f2d5c"
+branch = "claude/issue-313-agent-control-full-with-rows"
+scope = ["docs/stylesheet.md", "package.json", "pyproject.toml", "src/lib/AgentControl.svelte", "src/lib/types.ts", "tests/e2e/agent-control.spec.ts", "tests/e2e/main.ts", "uv.lock"]
+opened_commit = "cfa90dc96a6167e61eceddada56db81619b5e090"
+whole_reason = "The state, its proof, its documentation and the version bump that ships it go together."
