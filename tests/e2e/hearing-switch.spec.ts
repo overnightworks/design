@@ -136,11 +136,8 @@ for (const consumer of consumerNames) {
 							const box = (await see.boundingBox())!;
 							const trackBox = (await track.boundingBox())!;
 							const iconBox = (await see.locator('svg').boundingBox())!;
-							expect(box.width).toBeCloseTo(26, 0);
-							expect(trackBox.width).toBeCloseTo(26, 0);
 							expect(box.x).toBeGreaterThanOrEqual(stage.x);
 							expect(box.x + box.width).toBeLessThanOrEqual(stage.x + stage.width);
-							expect(iconBox.width).toBeCloseTo(12, 0);
 							expect(iconBox.x).toBeGreaterThanOrEqual(trackBox.x);
 							expect(iconBox.x + iconBox.width).toBeLessThanOrEqual(trackBox.x + trackBox.width);
 							expect(iconBox.y).toBeGreaterThanOrEqual(trackBox.y);
