@@ -276,7 +276,7 @@ for (const consumer of consumerNames) {
 					expect(line!.y).toBeGreaterThanOrEqual(list!.y + list!.height);
 				});
 
-				test(`draws only the place-full refusal, once, above the rows in ${colorScheme} at ${width} px`, async ({
+				test(`draws only the place-full refusal, once, in ${colorScheme} at ${width} px`, async ({
 					page
 				}) => {
 					await page.emulateMedia({ colorScheme });
