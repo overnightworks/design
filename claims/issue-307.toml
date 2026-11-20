@@ -1,0 +1,8 @@
+claim_id = "6de58fc198ff4bbd8cfd35c9bfd3cae4"
+agent = "Claude 27a67e6a-d638-4888-bce6-c323fa029369"
+role = "builder"
+base = "9939274a3de0300d5d2943072f9dcea2da690ed6"
+branch = "claude/issue-307-mirror-tests-menu-signin"
+scope = ["src/lib/AccountMenu.test.ts", "src/lib/FailBanner.test.ts", "src/lib/HearingSwitch.test.ts", "src/lib/SignInPage.test.ts", "src/lib/TurnState.test.ts"]
+opened_commit = "3c1169c0f891574e99274306a3dc46b46857ab72"
+whole_reason = "One sentence over the unit test files of several components: each loses only the tests a browser spec already proves."
