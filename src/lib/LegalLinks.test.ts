@@ -1,31 +1,19 @@
-import { mount, tick, unmount } from 'svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { mount } from 'svelte';
+import { describe, expect, it } from 'vitest';
 import LegalLinks from './LegalLinks.svelte';
+import { mountInDocument } from './mountInDocument.test.helper.ts';
 import type { LegalLink } from './types.ts';
 import { loadWords, type Language } from './words/index.ts';
 
 const words = { en: await loadWords('en'), de: await loadWords('de') };
 
-const mounted: { target: HTMLElement; component: ReturnType<typeof mount> }[] = [];
-
-async function render(
+function render(
 	links: readonly LegalLink[],
 	options: { place?: 'page'; newTab?: boolean } | { place: 'menu' } = {},
 	language: Language = 'en'
 ): Promise<HTMLElement> {
-	const target = document.createElement('div');
-	document.body.append(target);
-	mounted.push({ target, component: mount(LegalLinks, { target, props: { links, words: words[language], ...options } }) });
-	await tick();
-	return target;
+	return mountInDocument((into) => mount(LegalLinks, { target: into, props: { links, words: words[language], ...options } }));
 }
-
-afterEach(async () => {
-	for (const { target, component } of mounted.splice(0)) {
-		await unmount(component);
-		target.remove();
-	}
-});
 
 describe('LegalLinks', () => {
 	it('renders one link per entry in the given order with its label and href', async () => {

@@ -1,23 +1,11 @@
-import { mount, tick, unmount } from 'svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { mount } from 'svelte';
+import { describe, expect, it } from 'vitest';
 import AiMark from './AiMark.svelte';
-
-const mounted: { target: HTMLElement; component: ReturnType<typeof mount> }[] = [];
+import { mountInDocument } from './mountInDocument.test.helper.ts';
 
 async function render(props: Record<string, string> = {}, place?: HTMLElement): Promise<HTMLElement> {
-	const target = place ?? document.createElement('div');
-	if (!place) document.body.append(target);
-	mounted.push({ target, component: mount(AiMark, { target, props }) });
-	await tick();
-	return target;
+	return mountInDocument((into) => mount(AiMark, { target: into, props }), place);
 }
-
-afterEach(async () => {
-	for (const { target, component } of mounted.splice(0)) {
-		await unmount(component);
-		target.remove();
-	}
-});
 
 describe('AiMark', () => {
 	it.each<Record<string, string>>([{}, { text: 'Agent', label: 'KI' }])(

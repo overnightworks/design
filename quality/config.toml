@@ -1,6 +1,11 @@
 [gate]
 mandatory_jobs = ["checks"]
 
+[[layout.allow]]
+path = "src/lib/mountInDocument.test.helper.ts"
+rule = "test-layout"
+reason = "mounts and unmounts the components of eleven unit test files, not one module of src/lib"
+
 [[root.allow]]
 entry = "tsconfig.json"
 reason = "svelte-check and the editor find the TypeScript configuration at the root"

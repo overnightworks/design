@@ -1,14 +1,13 @@
-import { createRawSnippet, mount, tick, unmount } from 'svelte';
+import { createRawSnippet, mount, tick } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import HelperChat from './HelperChat.svelte';
+import { mountInDocument } from './mountInDocument.test.helper.ts';
 import type { HelperChatProps, HelperMessage } from './types.ts';
 import { loadWords } from './words/index.ts';
 
 const en = await loadWords('en');
 const de = await loadWords('de');
-
-const mounted: { target: HTMLElement; component: ReturnType<typeof mount> }[] = [];
 
 const text = (content: string) => createRawSnippet(() => ({ render: () => `<span>${content}</span>` }));
 const button = (content: string) => createRawSnippet(() => ({ render: () => `<button type="button">${content}</button>` }));
@@ -29,12 +28,8 @@ function baseProps(overrides: Partial<HelperChatProps<HelperMessage>> = {}): Hel
 	};
 }
 
-async function render(overrides: Partial<HelperChatProps<HelperMessage>> = {}): Promise<HTMLElement> {
-	const target = document.createElement('div');
-	document.body.append(target);
-	mounted.push({ target, component: mount(HelperChat, { target, props: baseProps(overrides) }) });
-	await tick();
-	return target;
+function render(overrides: Partial<HelperChatProps<HelperMessage>> = {}): Promise<HTMLElement> {
+	return mountInDocument((into) => mount(HelperChat, { target: into, props: baseProps(overrides) }));
 }
 
 const field = (root: HTMLElement) => root.querySelector('textarea')!;
@@ -60,13 +55,6 @@ function press(target: HTMLElement, init: KeyboardEventInit): KeyboardEvent {
 	target.dispatchEvent(event);
 	return event;
 }
-
-afterEach(async () => {
-	for (const { target, component } of mounted.splice(0)) {
-		await unmount(component);
-		target.remove();
-	}
-});
 
 describe('the message list', () => {
 	it('shows the empty hint while there is no message and no hint once there is one', async () => {
@@ -182,15 +170,12 @@ describe('the message list', () => {
 
 	it('hands the app’s own message type to its snippets', async () => {
 		type AppMessage = HelperMessage & { readonly id: string };
-		const target = document.createElement('div');
-		document.body.append(target);
 		const props: HelperChatProps<AppMessage> = {
 			...baseProps(),
 			messages: [{ role: 'assistant', text: 'Hi', id: 'm-7' }],
 			problemLine: createRawSnippet((parameters) => ({ render: () => `<p class="problem">${parameters().message.id}</p>` }))
 		};
-		mounted.push({ target, component: mount(HelperChat<AppMessage>, { target, props }) });
-		await tick();
+		const target = await mountInDocument((into) => mount(HelperChat<AppMessage>, { target: into, props }));
 		expect(target.querySelector('.problem')?.textContent).toBe('m-7');
 	});
 });
@@ -226,13 +211,10 @@ describe('the list element', () => {
 	});
 
 	it('hands the container to the app through the bindable list prop', async () => {
-		const target = document.createElement('div');
-		document.body.append(target);
 		const holder: { list?: HTMLElement } = {};
 		const props = { ...baseProps(), messages: [{ role: 'user' as const, text: 'Hi' }] };
 		Object.defineProperty(props, 'list', { get: () => holder.list, set: (value: HTMLElement) => (holder.list = value), enumerable: true });
-		mounted.push({ target, component: mount(HelperChat, { target, props }) });
-		await tick();
+		const target = await mountInDocument((into) => mount(HelperChat, { target: into, props }));
 		expect(holder.list).toBe(listContainer(target));
 		expect(holder.list?.hasAttribute('role')).toBe(false);
 	});
@@ -245,14 +227,11 @@ describe('the thinking line', () => {
 			['messages', messages],
 			['running', false]
 		]);
-		const target = document.createElement('div');
-		document.body.append(target);
 		const props = Object.defineProperties(baseProps(), {
 			messages: { enumerable: true, get: () => held.get('messages') as HelperMessage[] },
 			running: { enumerable: true, get: () => held.get('running') as boolean }
 		});
-		mounted.push({ target, component: mount(HelperChat, { target, props }) });
-		await tick();
+		const target = await mountInDocument((into) => mount(HelperChat, { target: into, props }));
 		const line = status(target)!;
 		expect(target.querySelectorAll('[role="status"]')).toHaveLength(1);
 		expect(line.textContent).toBe('');
@@ -317,13 +296,10 @@ describe('the thinking line', () => {
 		['stops', true, false]
 	])('keeps the one status element and shows the visible line only while thinking when a turn %s on an unchanged empty helper message', async (_case, before, after) => {
 		const held = new SvelteMap<string, boolean>([['running', before]]);
-		const target = document.createElement('div');
-		document.body.append(target);
 		const props = Object.defineProperties(baseProps({ messages: [{ role: 'user', text: 'Hi' }, { role: 'assistant', text: '' }] }), {
 			running: { enumerable: true, get: () => held.get('running')! }
 		});
-		mounted.push({ target, component: mount(HelperChat, { target, props }) });
-		await tick();
+		const target = await mountInDocument((into) => mount(HelperChat, { target: into, props }));
 		const line = status(target)!;
 		expect(visibleLine(target) !== null).toBe(before);
 
@@ -340,14 +316,11 @@ describe('the thinking line', () => {
 			['history', { state: 'ready' }],
 			['messages', [{ role: 'user', text: 'Hi' }, { role: 'assistant', text: '' }]]
 		]);
-		const target = document.createElement('div');
-		document.body.append(target);
 		const props = Object.defineProperties(baseProps({ running: true }), {
 			history: { enumerable: true, get: () => held.get('history') as HelperChatProps<HelperMessage>['history'] },
 			messages: { enumerable: true, get: () => held.get('messages') as HelperMessage[] }
 		});
-		mounted.push({ target, component: mount(HelperChat, { target, props }) });
-		await tick();
+		const target = await mountInDocument((into) => mount(HelperChat, { target: into, props }));
 		const line = status(target)!;
 		expect(line.textContent).toBe(en['helperChat.thinking']({ name: 'Mozart' }));
 

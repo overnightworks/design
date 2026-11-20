@@ -1,32 +1,21 @@
-import { mount, tick, unmount } from 'svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { mount } from 'svelte';
+import { describe, expect, it } from 'vitest';
 import EarMark from './EarMark.svelte';
+import { mountInDocument } from './mountInDocument.test.helper.ts';
 import type { EarMarkProps } from './types.ts';
 import { loadWords } from './words/index.ts';
 
 const en = await loadWords('en');
 const de = await loadWords('de');
 
-const mounted: { target: HTMLElement; component: ReturnType<typeof mount> }[] = [];
-
 function baseProps(overrides: Partial<EarMarkProps> = {}): EarMarkProps {
 	return { agent: 'Mozart', words: en, ...overrides };
 }
 
 async function render(overrides: Partial<EarMarkProps> = {}): Promise<HTMLElement> {
-	const target = document.createElement('div');
-	document.body.append(target);
-	mounted.push({ target, component: mount(EarMark, { target, props: baseProps(overrides) }) });
-	await tick();
+	const target = await mountInDocument((into) => mount(EarMark, { target: into, props: baseProps(overrides) }));
 	return target.querySelector<HTMLElement>('[role="img"]')!;
 }
-
-afterEach(async () => {
-	for (const { target, component } of mounted.splice(0)) {
-		await unmount(component);
-		target.remove();
-	}
-});
 
 describe('the mark', () => {
 	it('is one image, named and titled alike', async () => {

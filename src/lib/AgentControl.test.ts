@@ -1,33 +1,24 @@
-import { mount, tick, unmount } from 'svelte';
+import { mount, tick } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import AgentControl, { outcomeMilliseconds } from './AgentControl.svelte';
+import { mountInDocument, unmountMounted } from './mountInDocument.test.helper.ts';
 import type { AgentControlOutcome, AgentControlProps, AgentControlRefusal } from './types.ts';
 import { loadWords } from './words/index.ts';
 
 const en = await loadWords('en');
 const de = await loadWords('de');
 
-const mounted: { target: HTMLElement; component: ReturnType<typeof mount> }[] = [];
-
 function baseProps(overrides: Partial<AgentControlProps> = {}): AgentControlProps {
 	return { rows: [], onCall: () => {}, onSendAway: () => {}, words: en, ...overrides };
 }
 
-async function render(overrides: Partial<AgentControlProps> = {}): Promise<HTMLElement> {
-	const target = document.createElement('div');
-	document.body.append(target);
-	mounted.push({ target, component: mount(AgentControl, { target, props: baseProps(overrides) }) });
-	await tick();
-	return target;
+function render(overrides: Partial<AgentControlProps> = {}): Promise<HTMLElement> {
+	return mountInDocument((into) => mount(AgentControl, { target: into, props: baseProps(overrides) }));
 }
 
-afterEach(async () => {
+afterEach(() => {
 	vi.useRealTimers();
-	for (const { target, component } of mounted.splice(0)) {
-		await unmount(component);
-		target.remove();
-	}
 });
 
 const refusalWords: [AgentControlRefusal, keyof typeof en][] = [
@@ -158,16 +149,13 @@ describe('ended rows', () => {
 	async function renderChangingRows(initial: AgentControlProps['rows']) {
 		vi.useFakeTimers();
 		const state = new SvelteMap([['rows', initial]]);
-		const target = document.createElement('div');
-		document.body.append(target);
 		const props = {
 			...baseProps(),
 			get rows() {
 				return state.get('rows')!;
 			}
 		};
-		mounted.push({ target, component: mount(AgentControl, { target, props }) });
-		await tick();
+		const target = await mountInDocument((into) => mount(AgentControl, { target: into, props }));
 		return {
 			control: target,
 			setRows: async (rows: AgentControlProps['rows']) => {
@@ -273,10 +261,7 @@ describe('ended rows', () => {
 		expect(vi.getTimerCount()).toBe(0);
 		await setRows([ended('busy')]);
 		expect(vi.getTimerCount()).toBe(1);
-		for (const { target, component } of mounted.splice(0)) {
-			await unmount(component);
-			target.remove();
-		}
+		await unmountMounted();
 		expect(vi.getTimerCount()).toBe(0);
 	});
 });

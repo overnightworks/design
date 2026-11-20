@@ -1,6 +1,7 @@
-import { mount, tick, unmount } from 'svelte';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { mount, tick } from 'svelte';
+import { describe, expect, it, vi } from 'vitest';
 import HearingSwitch from './HearingSwitch.svelte';
+import { mountInDocument } from './mountInDocument.test.helper.ts';
 import type { HearingKind, HearingSwitchProps } from './types.ts';
 import { loadWords } from './words/index.ts';
 
@@ -18,26 +19,14 @@ const kinds: HearingKind[] = ['hear', 'listen', 'see'];
 /** The visible label is the name for hear and listen, the short word for see. */
 const visibleKeys = { ...nameKeys, see: 'hearing.seeShort' } as const;
 
-const mounted: { target: HTMLElement; component: ReturnType<typeof mount> }[] = [];
-
 function baseProps(overrides: Partial<HearingSwitchProps> = {}): HearingSwitchProps {
 	return { kind: 'hear', on: true, onChange: () => {}, words: en, ...overrides };
 }
 
 async function render(overrides: Partial<HearingSwitchProps> = {}): Promise<HTMLButtonElement> {
-	const target = document.createElement('div');
-	document.body.append(target);
-	mounted.push({ target, component: mount(HearingSwitch, { target, props: baseProps(overrides) }) });
-	await tick();
+	const target = await mountInDocument((into) => mount(HearingSwitch, { target: into, props: baseProps(overrides) }));
 	return target.querySelector('button')!;
 }
-
-afterEach(async () => {
-	for (const { target, component } of mounted.splice(0)) {
-		await unmount(component);
-		target.remove();
-	}
-});
 
 describe('the chip', () => {
 	it.each<[HearingKind, boolean]>([

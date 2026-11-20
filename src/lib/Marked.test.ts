@@ -1,23 +1,12 @@
-import { mount, tick, unmount } from 'svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { mount } from 'svelte';
+import { describe, expect, it } from 'vitest';
 import Page, { sentences } from './Marked.test.svelte';
-
-const mounted: { target: HTMLElement; component: ReturnType<typeof mount> }[] = [];
+import { mountInDocument } from './mountInDocument.test.helper.ts';
 
 async function render(parts: (typeof sentences)[number]['parts']): Promise<HTMLElement> {
-	const target = document.createElement('div');
-	document.body.append(target);
-	mounted.push({ target, component: mount(Page, { target, props: { parts } }) });
-	await tick();
+	const target = await mountInDocument((into) => mount(Page, { target: into, props: { parts } }));
 	return target.querySelector('p')!;
 }
-
-afterEach(async () => {
-	for (const { target, component } of mounted.splice(0)) {
-		await unmount(component);
-		target.remove();
-	}
-});
 
 describe('Marked', () => {
 	it.each(sentences)('reads as the sentence and puts each marked part in its snippet’s element (%#)', async ({
