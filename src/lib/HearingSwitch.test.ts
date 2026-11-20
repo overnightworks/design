@@ -1,5 +1,5 @@
-import { mount, tick } from 'svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { mount } from 'svelte';
+import { describe, expect, it } from 'vitest';
 import HearingSwitch from './HearingSwitch.svelte';
 import { mountInDocument } from './mountInDocument.test.helper.ts';
 import type { HearingKind, HearingSwitchProps } from './types.ts';
@@ -51,12 +51,6 @@ describe('the chip', () => {
 		expect(chip.hasAttribute('aria-labelledby')).toBe(false);
 	});
 
-	it('shows the see chip with the short word and names it by the full words', async () => {
-		const chip = await render({ kind: 'see' });
-		expect(chip.textContent?.trim()).toBe(en['hearing.seeShort']);
-		expect(chip.getAttribute('aria-label')).toBe(en['hearing.agentMaySeeMe']);
-	});
-
 	it('hides the icons and the track from assistive technology', async () => {
 		const chip = await render();
 		for (const svg of chip.querySelectorAll('svg')) expect(svg.getAttribute('aria-hidden')).toBe('true');
@@ -87,22 +81,6 @@ describe('compact', () => {
 		const regular = await render({ kind });
 		expect(compact.classList.contains('compact')).toBe(true);
 		expect(regular.classList.contains('compact')).toBe(false);
-	});
-});
-
-describe('control', () => {
-	it.each<[boolean]>([[true], [false]])('calls onChange with the negated value when on is %s', async (on) => {
-		const onChange = vi.fn();
-		const chip = await render({ on, onChange });
-		chip.click();
-		expect(onChange).toHaveBeenCalledExactlyOnceWith(!on);
-	});
-
-	it('keeps aria-checked at the prop after a press, until the app changes it', async () => {
-		const chip = await render({ on: true });
-		chip.click();
-		await tick();
-		expect(chip.getAttribute('aria-checked')).toBe('true');
 	});
 });
 

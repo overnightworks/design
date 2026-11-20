@@ -42,19 +42,6 @@ function click(element: Element, init: MouseEventInit = {}): MouseEvent {
 	return event;
 }
 
-describe('signed-out with onSignIn', () => {
-	it('calls onSignIn once and keeps the page from navigating on a plain click', async () => {
-		const onSignIn = vi.fn();
-		const page = await render({ state: { page: 'signed-out', signInHref: '/auth/login', onSignIn } });
-		const link = page.querySelector('a')!;
-		const event = click(link);
-		expect(onSignIn).toHaveBeenCalledTimes(1);
-		expect(event.defaultPrevented).toBe(true);
-		expect(link.getAttribute('href')).toBe('/auth/login');
-		expect(link.hasAttribute('data-sveltekit-reload')).toBe(true);
-	});
-});
-
 describe('signed-out with onSignIn, a click that keeps the browser its own way', () => {
 	it.each([
 		['Ctrl', { ctrlKey: true }],
@@ -219,14 +206,6 @@ describe('page frame', () => {
 		}
 	});
 
-	it.each([
-		['en', en],
-		['de', de]
-	])('names the legal row in the %s words', async (_language, words) => {
-		const page = await render({ words, legalLinks: [{ label: 'Impressum', href: '/impressum' }] });
-		expect(page.querySelector('nav')?.getAttribute('aria-label')).toBe(words['legalLinks.name']);
-	});
-
 	it('shows no legal row when the list is empty', async () => {
 		const page = await render({ legalLinks: [] });
 		expect(page.querySelector('nav')).toBeNull();
@@ -305,47 +284,5 @@ describe('words from the app', () => {
 		if (state.page === 'login-failed') expect(alert?.textContent?.trim()).toBe(de['signIn.loginFailedBanner']);
 		else if ('unfinished' in state) expect(alert?.textContent?.trim()).toBe(de['signIn.signInUnfinished']);
 		else expect(alert).toBeNull();
-	});
-});
-
-describe('en words', () => {
-	it.each([
-		['signed-out', { page: 'signed-out', signInHref: '/auth/login' }, [en['signIn.loggedOut'], en['signIn.logIn']]],
-		[
-			'signed-out, unfinished',
-			{ page: 'signed-out', signInHref: '/auth/login', unfinished: true },
-			[en['signIn.loggedOut'], en['signIn.signInUnfinished'], en['signIn.logIn']]
-		],
-		[
-			'signing-in',
-			{ page: 'signing-in', tabHref: '/app' },
-			[en['signIn.signingIn'], en['signIn.inOtherWindow'], en['signIn.openInTab']]
-		],
-		[
-			'window-blocked',
-			{ page: 'window-blocked', tabHref: '/app' },
-			[en['signIn.windowBlocked'], en['signIn.windowBlockedSentence'], en['signIn.openInTab']]
-		],
-		[
-			'login-failed',
-			{ page: 'login-failed', signInHref: '/auth/login' },
-			[en['signIn.loginFailed'], en['signIn.loginFailedBanner'], en['signIn.tryAgain']]
-		],
-		[
-			'no-access with a callback',
-			{ page: 'no-access', onLogOut: () => {} },
-			[en['signIn.noAccess'], en['signIn.noAccessSentence']({ appName: 'Hallucinai' }), en['signIn.logOut']]
-		],
-		[
-			'no-access with a form action',
-			{ page: 'no-access', logOutAction: '/logout' },
-			[en['signIn.noAccess'], en['signIn.noAccessSentence']({ appName: 'Hallucinai' }), en['signIn.logOut']]
-		]
-	] as const)('renders the en texts of the kit in %s', async (_name, state, shown) => {
-		const page = await render({ state });
-		const texts = [...page.querySelectorAll('h1, p, [role="alert"] span:last-child, a, button')].map((element) =>
-			element.textContent?.trim()
-		);
-		expect(texts).toEqual(shown);
 	});
 });

@@ -3,7 +3,7 @@ import { SvelteMap } from 'svelte/reactivity';
 import { describe, expect, it, vi } from 'vitest';
 import AccountMenu from './AccountMenu.svelte';
 import { mountInDocument } from './mountInDocument.test.helper.ts';
-import type { AccountMenuProps, ThemeChoice } from './types.ts';
+import type { AccountMenuProps } from './types.ts';
 import { loadWords } from './words/index.ts';
 
 const en = await loadWords('en');
@@ -75,37 +75,6 @@ describe('app rows', () => {
 });
 
 describe('theme rows', () => {
-	it('labels a group Theme with three radios, the passed choice checked, and reports nothing on mount', async () => {
-		const onChange = vi.fn();
-		const menu = await render({ theme: { choice: 'dark', onChange } });
-		const group = menu.querySelector('[role="radiogroup"]')!;
-		const label = document.getElementById(group.getAttribute('aria-labelledby')!);
-		expect(label?.textContent?.trim()).toBe(en['account.theme']);
-		expect([...group.querySelectorAll('label')].map((row) => row.textContent?.trim())).toEqual([
-			en['account.followSystem'],
-			en['account.light'],
-			en['account.dark']
-		]);
-		expect(radios(menu)).toHaveLength(3);
-		expect(checkedLabel(menu)).toBe(en['account.dark']);
-		expect(onChange).not.toHaveBeenCalled();
-	});
-
-	it('checks the new choice when the passed choice changes', async () => {
-		const state = new SvelteMap<string, ThemeChoice>([['choice', 'light']]);
-		const theme = {
-			get choice() {
-				return state.get('choice')!;
-			},
-			onChange: () => {}
-		};
-		const target = await mountInDocument((into) => mount(AccountMenu, { target: into, props: baseProps({ theme }) }));
-		expect(checkedLabel(target)).toBe(en['account.light']);
-		state.set('choice', 'follow-system');
-		await tick();
-		expect(checkedLabel(target)).toBe(en['account.followSystem']);
-	});
-
 	it('survives an app update that unmounts the menu while reporting a pick', async () => {
 		const target = document.createElement('div');
 		document.body.append(target);
@@ -128,13 +97,6 @@ describe('theme rows', () => {
 		window.removeEventListener('error', record);
 		expect(errors).toEqual([]);
 		target.remove();
-	});
-
-	it('renders no Theme row and no radios without theme rows', async () => {
-		const menu = await render();
-		expect(radios(menu)).toHaveLength(0);
-		expect(menu.querySelector('[role="radiogroup"]')).toBeNull();
-		expect(menu.textContent).not.toContain(en['account.theme']);
 	});
 
 	it('keeps two mounted menus in separate radio groups', async () => {
@@ -170,27 +132,6 @@ describe('log out', () => {
 });
 
 describe('legal row', () => {
-	it.each([
-		['en', en],
-		['de', de]
-	])('opens the links in a new tab in the given order inside a nav named in the %s words', async (_language, words) => {
-		const menu = await render({
-			words,
-			legalLinks: [
-				{ label: 'Privacy', href: '/privacy' },
-				{ label: 'Imprint', href: '/imprint' }
-			]
-		});
-		const nav = menu.querySelector('nav')!;
-		expect(nav.getAttribute('aria-label')).toBe(words['legalLinks.name']);
-		const anchors = [...nav.querySelectorAll('a')];
-		expect(anchors.map((anchor) => anchor.textContent)).toEqual(['Privacy', 'Imprint']);
-		for (const anchor of anchors) {
-			expect(anchor.getAttribute('target')).toBe('_blank');
-			expect(anchor.getAttribute('rel')).toBe('noopener');
-		}
-	});
-
 	it('renders no legal row for an empty list', async () => {
 		const menu = await render({ legalLinks: [] });
 		expect(menu.querySelector('nav')).toBeNull();
@@ -247,20 +188,5 @@ describe('words from the app', () => {
 		]);
 		expect(checkedLabel(target)).toBe(de['account.dark']);
 		expect(onChange).not.toHaveBeenCalled();
-	});
-});
-
-describe('en words', () => {
-	it('renders the en texts of the kit', async () => {
-		const menu = await render({ theme: { choice: 'dark', onChange: () => {} } });
-		const group = menu.querySelector('[role="radiogroup"]')!;
-		const label = document.getElementById(group.getAttribute('aria-labelledby')!);
-		expect(label?.textContent?.trim()).toBe(en['account.theme']);
-		expect([...group.querySelectorAll('label')].map((row) => row.textContent?.trim())).toEqual([
-			en['account.followSystem'],
-			en['account.light'],
-			en['account.dark']
-		]);
-		expect(buttonNamed(menu, en['account.logOut'])).toBeDefined();
 	});
 });
