@@ -1,8 +1,0 @@
-claim_id = "885efb3b8125494f9a2c9357ee571eae"
-agent = "Claude 27a67e6a-d638-4888-bce6-c323fa029369"
-role = "builder"
-base = "79c29cceac4be625311e8f06fd593369f24d288f"
-branch = "claude/issue-298-unit-test-arrangement"
-scope = ["quality/config.toml", "sonar-project.properties", "src/lib", "vitest.config.ts"]
-opened_commit = "4729dedc7215dbccce74959a0ddf3d99be17d6f9"
-whole_reason = "The eleven unit test files and the server-render tests share one arrangement; the helper and its users change together."
