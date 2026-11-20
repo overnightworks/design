@@ -1,4 +1,6 @@
 overrides:
+  # nyc remaps the browser counters with the library Vitest remaps with, so both reports hold the same branch entries; the range is the one @vitest/coverage-istanbul declares, which keeps one copy in the lockfile. nyc loads the fork's ES module through require.
+  'nyc>istanbul-lib-source-maps': 'npm:@vitest/istanbul-lib-source-maps@^2.1.0'
   deepmerge: '-'
   glob: '^14.0.2'
   minimatch: '^11.0.1'

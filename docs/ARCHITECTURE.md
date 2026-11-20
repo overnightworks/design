@@ -153,7 +153,19 @@ paint the page in a browser. The components' branches are measured over both
 layers: Vitest counts them with Istanbul, and the consumer build the browser
 tests drive carries Istanbul counters that each spec collects. `coverage:merge`
 remaps the browser counters onto `src/lib` and merges both reports with `nyc`
-into the `lcov.info` the quality gate reads. Only the consumer's copy of the kit
+into the `lcov.info` the quality gate reads. Both layers see one branch once:
+`nyc` remaps with the same library Vitest remaps with (a pnpm override), and
+Vitest compiles the client components for production like the consumer build,
+so the unit layer tests the compile the browser runs. The merge keys a branch by
+its first arm, so a remapper that drops arms would let one report's shape cut the
+other's hits. After the merge, `coverage:merge` fails when the merged report
+counts fewer branches, or fewer covered branches, than Vitest's own, or when the
+lockfile holds two source-map remappers. It compares numbers and cannot see one
+arm traded for another at equal counts, or browser hits dropped for the nested
+`{:else if}`s that share a first arm (AgentControl). An `{#if}` whose test is a
+bare prop or derived value has no client entry in any report, because the
+compiler's source map has no segment for it; only its server-compile entry
+shows. Only the consumer's copy of the kit
 carries counters; the tarball and the wheel are built without them. A `.ts`
 module of `src/lib` is measured by Vitest alone, because the tarball ships it
 transpiled without a source map; none has a branch today. The shared quality gate adds the secret scan, the
