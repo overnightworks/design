@@ -126,6 +126,11 @@ describe('ended rows', () => {
 		};
 	}
 
+	it.each(['no-answer', 'busy', 'owner-absent'] as const)('hides the icon of the %s outcome from assistive technology', async (outcome) => {
+		const control = await render({ rows: [ended(outcome)] });
+		expect(statusOf(control)?.querySelectorAll('svg[aria-hidden="true"]')).toHaveLength(1);
+	});
+
 	it('keeps the row callable until the app changes it', async () => {
 		const control = await renderWithTimers({ rows: [ended('no-answer')] });
 		await vi.advanceTimersByTimeAsync(outcomeMilliseconds * 5);
