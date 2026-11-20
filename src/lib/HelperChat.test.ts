@@ -42,8 +42,7 @@ const visibleLine = (root: HTMLElement) => root.querySelector('ol [aria-hidden="
 // AiMark.svelte holds the word as a constant for every language, so no catalog key exists (gap named on #276).
 const aiMarkWord = 'AI';
 
-// The bubble, the AI mark, the tool row and the list container have no role (gaps named on #276): the bubble is the item's content after its speaker, the mark the element worded with the AI mark word, the tool row the parent of the kit's tool word, the container the parent of the message list.
-const listContainer = (root: HTMLElement) => root.querySelector('ol')!.parentElement!;
+// The bubble, the AI mark and the tool row have no role (gaps named on #276): the bubble is the item's content after its speaker, the mark the element worded with the AI mark word, the tool row the parent of the kit's tool word.
 const bubbleOf = (item: Element) => (item.lastElementChild === item.firstElementChild ? null : item.lastElementChild);
 const bubbles = (root: HTMLElement) => [...root.querySelectorAll('li')].map(bubbleOf).filter((bubble) => bubble !== null);
 const aiMarks = (scope: Element) => [...scope.querySelectorAll('span')].filter((candidate) => candidate.textContent === aiMarkWord && candidate.children.length === 0);
