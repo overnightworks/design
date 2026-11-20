@@ -100,7 +100,7 @@ function rowsOfVariant(variant: string): AgentRow[] {
 
 function refusalOfVariant(variant: string): AgentControlRefusal | undefined {
 	if (variant === 'refusal' || variant === 'empty-refusal') return 'owner-absent';
-	return variant === 'empty-place-full' ? 'place-full' : undefined;
+	return variant === 'empty-place-full' || variant === 'full-place-full' ? 'place-full' : undefined;
 }
 
 function mountAgentControl(variant: string, words: KitWords): void {
@@ -109,7 +109,7 @@ function mountAgentControl(variant: string, words: KitWords): void {
 		target: document.body,
 		props: {
 			rows: rowsOfVariant(variant),
-			full: variant === 'empty-full' || variant === 'empty-place-full',
+			full: ['empty-full', 'empty-place-full', 'full', 'full-place-full'].includes(variant),
 			refusal: refusalOfVariant(variant),
 			onCall: (key: string) => void window.reports.push(`call:${key}`),
 			onSendAway: (key: string) => void window.reports.push(`leave:${key}`),

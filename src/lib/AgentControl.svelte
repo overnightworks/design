@@ -119,6 +119,9 @@
 				</li>
 			{/each}
 		</ul>
+		{#if full && !refusal}
+			<p class="empty">{words['agent.placeFull']}</p>
+		{/if}
 	{/if}
 </div>
 

@@ -161,12 +161,14 @@ export type AgentControlRefusal =
 export interface AgentControlProps {
 	/**
 	 * An empty list draws only the empty sentence, or only the refusal when one is set. The sentence
-	 * is `agent.placeFull` when `full` is set, `agent.empty` otherwise.
+	 * is `agent.placeFull` when `full` is set, `agent.empty` otherwise. Rows are drawn unchanged.
 	 */
 	rows: readonly AgentRow[];
 	/**
 	 * The place holds no further agent. With no rows, the empty sentence says so instead of saying
-	 * that no agent is reachable. The app decides when the place is full; rows are drawn unchanged.
+	 * that no agent is reachable; with rows, `agent.placeFull` shows once below them. A refusal
+	 * replaces the sentence, so it never stands twice. The app decides when the place is full and
+	 * which rows it lists then.
 	 */
 	full?: boolean;
 	/** Called with the row's key by the button of an `available` row. */
