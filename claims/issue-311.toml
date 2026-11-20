@@ -1,0 +1,7 @@
+claim_id = "09a8ce11a0de4e92801df1d5c4db79bf"
+agent = "Claude 03452198-e0e1-4b0d-ab98-b4c0e01346f2"
+role = "builder"
+base = "6f3c89938870c567d740f1450fe27e06a4c0462e"
+branch = "claude/issue-311-hearing-switch-size-pins"
+scope = ["tests/e2e/hearing-switch.spec.ts"]
+opened_commit = "a4cd5f9026e1e0f85611fac0dfee0193fafc09ff"
