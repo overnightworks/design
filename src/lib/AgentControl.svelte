@@ -69,13 +69,14 @@
 		<ul>
 			{#each rows as row (row.key)}
 				{@const outcome = row.state === 'ended' ? row.outcome : undefined}
+				{@const outcomeLapsed = lapsed.has(row.key)}
 				<li class="agent" use:outcomeTimer={{ key: row.key, outcome }}>
 					<AiMark />
 					<span class="who">
 						<span class="name">{row.name}</span
 						>{#if row.state === 'here'}<TurnState outcome={row.turnState} {words} />{/if}
 					</span>
-					{#if row.state === 'available' || (row.state === 'ended' && lapsed.has(row.key))}
+					{#if row.state === 'available' || (row.state === 'ended' && outcomeLapsed)}
 						<button
 							class="act"
 							type="button"

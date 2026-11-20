@@ -32,9 +32,9 @@
     "prepack": "pnpm run package",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage --project client && vitest run --project server",
     "test:consumer": "rm -rf coverage/drive && playwright test --config tests/e2e/playwright.config.ts",
-    "coverage:merge": "nyc report --temp-dir coverage/drive --report-dir coverage/remapped --reporter json --extension .svelte --extension .ts && nyc report --temp-dir coverage/remapped --report-dir coverage --reporter lcov --reporter text --reporter json-summary --extension .svelte --extension .ts && node scripts/compare_coverage_merge.mjs"
+    "coverage:merge": "nyc report --temp-dir coverage/drive --report-dir coverage/remapped --reporter json --extension .svelte --extension .ts && nyc report --temp-dir coverage/remapped --report-dir coverage --reporter lcov --reporter text --reporter json-summary --extension .svelte --extension .ts && nyc check-coverage --temp-dir coverage/remapped --branches 100 --extension .svelte --extension .ts && node scripts/compare_coverage_merge.mjs"
   },
   "packageManager": "pnpm@12.21.0",
   "devEngines": {
