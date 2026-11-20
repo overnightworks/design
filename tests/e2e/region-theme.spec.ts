@@ -1,10 +1,9 @@
 import { expect, test } from './coverage.ts';
 import type { Page } from '@playwright/test';
 import {
-  buildConsumer,
-  origin,
-  routeTo,
-  type ConsumerName,
+  consumerNames,
+  consumerTitle,
+  useConsumer,
 } from "./build-consumer.ts";
 
 const themes = ["light", "dark"] as const;
@@ -56,11 +55,10 @@ async function resolvedByRootTheme(
 
 async function openPage(
   page: Page,
-  outDir: string,
+  open: (page: Page, query: string) => Promise<void>,
   rootChoice: Theme | undefined,
 ): Promise<void> {
-  await routeTo(page.context(), outDir);
-  await page.goto(`${origin}/?typed`);
+  await open(page, "typed");
   await page.evaluate((choice) => {
     if (choice) document.documentElement.dataset.theme = choice;
     document.body.insertAdjacentHTML(
@@ -73,15 +71,9 @@ async function openPage(
   }, rootChoice);
 }
 
-for (const consumer of [
-  "imported",
-  "linked",
-] as const satisfies ConsumerName[]) {
-  test.describe(`a themed region in a production consumer that ${consumer === "imported" ? "imports" : "statically links"} design.css`, () => {
-    let outDir: string;
-    test.beforeAll(async () => {
-      outDir = await buildConsumer(consumer);
-    });
+for (const consumer of consumerNames) {
+  test.describe(consumerTitle("a themed region", consumer), () => {
+    const { open } = useConsumer(consumer, { words: false });
 
     for (const deviceScheme of deviceSchemes) {
       for (const rootChoice of rootChoices) {
@@ -90,7 +82,7 @@ for (const consumer of [
             page,
           }) => {
             await page.emulateMedia({ colorScheme: deviceScheme });
-            await openPage(page, outDir, rootChoice);
+            await openPage(page, open, rootChoice);
             const region = await resolved(page, `#${theme}-region`);
             expect(region.colorScheme).toBe(theme);
             expect(await resolved(page, `#${theme}-inner`)).toEqual(region);
@@ -103,7 +95,7 @@ for (const consumer of [
           page,
         }) => {
           await page.emulateMedia({ colorScheme: deviceScheme });
-          await openPage(page, outDir, rootChoice);
+          await openPage(page, open, rootChoice);
           expect(await resolved(page, "#deep")).toEqual(
             await resolvedByRootTheme(page, "dark"),
           );
@@ -117,7 +109,7 @@ for (const consumer of [
         page,
       }) => {
         await page.emulateMedia({ colorScheme: deviceScheme });
-        await openPage(page, outDir, "dark");
+        await openPage(page, open, "dark");
         await page.addStyleTag({ content: ":root { --bg: rgb(1, 2, 3); }" });
         expect(await resolved(page, "html")).toEqual(
           await resolved(page, "#dark-region"),
@@ -128,7 +120,7 @@ for (const consumer of [
         page,
       }) => {
         await page.emulateMedia({ colorScheme: deviceScheme });
-        await openPage(page, outDir, undefined);
+        await openPage(page, open, undefined);
         const root = await resolved(page, "html");
         expect(root.colorScheme).toBe(deviceScheme);
         expect(await resolved(page, "#unmarked p")).toEqual(root);

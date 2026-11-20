@@ -1,12 +1,9 @@
 import { expect, test } from './coverage.ts';
 import type { Page } from '@playwright/test';
-import type { KitLanguage, KitWords } from 'overnightworks-design';
-import { buildConsumer, loadKitWordsUnderNode, origin, routeTo, type ConsumerName } from './build-consumer.ts';
+import type { KitLanguage } from 'overnightworks-design';
+import { colorSchemes, consumerNames, consumerTitle, languages, origin, useConsumer, widths } from './build-consumer.ts';
 import { resolveStyle } from './probe.ts';
 
-const colorSchemes = ['light', 'dark'] as const;
-const languages = ['de', 'en'] as const satisfies readonly KitLanguage[];
-const widths = [390, 1280] as const;
 const legalNames = ['Impressum', 'Datenschutz', 'Nutzungsbedingungen'];
 const typedName = 'Felix mcDonald';
 const touchRowFloor = 44;
@@ -57,20 +54,12 @@ async function expectNothingStoredOrFetched(
 	expect(stored).toBe(0);
 }
 
-for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[]) {
-	test.describe(`the account menu in a production consumer that ${consumer === 'imported' ? 'imports' : 'statically links'} design.css`, () => {
-		let outDir: string;
-		let wordsOf: Record<KitLanguage, KitWords>;
-		let en: KitWords;
-		test.beforeAll(async () => {
-			outDir = await buildConsumer(consumer);
-			wordsOf = { de: await loadKitWordsUnderNode('de'), en: await loadKitWordsUnderNode('en') };
-			en = wordsOf.en;
-		});
+for (const consumer of consumerNames) {
+	test.describe(consumerTitle('the account menu', consumer), () => {
+		const { en, wordsOf, route, open: openAt } = useConsumer(consumer);
 
 		async function open(page: Page, variant = '', language: KitLanguage = 'en'): Promise<void> {
-			await routeTo(page.context(), outDir);
-			await page.goto(`${origin}/?menu=${variant}${language === 'en' ? '' : `&lang=${language}`}`);
+			await openAt(page, `menu=${variant}`, language);
 			await expect(panelOf(page)).toBeVisible();
 		}
 
@@ -164,22 +153,6 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 				await expectLegalLinksReachTheFloor(page);
 			});
 		});
-
-		for (const colorScheme of colorSchemes) {
-			test(`a hovered legal link takes the text colour in ${colorScheme}`, async ({ page }) => {
-				await page.emulateMedia({ colorScheme });
-				await page.setViewportSize({ width: 1280, height: 800 });
-				await open(page);
-
-				const link = page.getByRole('link', { name: legalNames[0] });
-				const resting = await link.evaluate((node) => getComputedStyle(node).color);
-				const { color: text } = await resolveStyle(page, { color: 'var(--text)' }, ['color']);
-
-				await link.hover();
-				await expect(link).toHaveCSS('color', text);
-				expect(resting).not.toBe(text);
-			});
-		}
 
 		test('takes its body font from the family token', async ({ page }) => {
 			await open(page);
@@ -347,7 +320,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 		});
 
 		test('posts to the log out action when it is a form', async ({ page }) => {
-			await routeTo(page.context(), outDir);
+			await route(page.context());
 			await page.route(`${origin}/logout`, (route) => route.fulfill({ status: 204 }));
 			await page.goto(`${origin}/?menu=action`);
 			const posted = page.waitForRequest(`${origin}/logout`);

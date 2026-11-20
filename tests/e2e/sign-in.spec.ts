@@ -1,28 +1,16 @@
 import { expect, test } from './coverage.ts';
 import type { Locator } from '@playwright/test';
-import type { KitLanguage, KitWords } from 'overnightworks-design';
-import { buildConsumer, loadKitWordsUnderNode, origin, routeTo, type ConsumerName } from './build-consumer.ts';
+import { colorSchemes, consumerNames, consumerTitle, languages, origin, useConsumer, widths } from './build-consumer.ts';
 import { resolveStyle } from './probe.ts';
 
-const colorSchemes = ['light', 'dark'] as const;
-const widths = [390, 1280] as const;
-const languages = ['de', 'en'] as const satisfies readonly KitLanguage[];
-
-for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[]) {
-	test.describe(`a production consumer that ${consumer === 'imported' ? 'imports' : 'statically links'} design.css`, () => {
-		let outDir: string;
-		let en: KitWords;
-		let wordsOf: Record<KitLanguage, KitWords>;
-		test.beforeAll(async () => {
-			outDir = await buildConsumer(consumer);
-			wordsOf = { de: await loadKitWordsUnderNode('de'), en: await loadKitWordsUnderNode('en') };
-			en = wordsOf.en;
-		});
+for (const consumer of consumerNames) {
+	test.describe(consumerTitle('the sign-in page', consumer), () => {
+		const { en, wordsOf, route } = useConsumer(consumer);
 
 		for (const colorScheme of colorSchemes) {
 			test(`paints the sign-in grid, glows and legal row in ${colorScheme}`, async ({ page }) => {
 				await page.emulateMedia({ colorScheme });
-				await routeTo(page, outDir);
+				await route(page);
 				await page.goto(`${origin}/`);
 
 				const card = page.getByRole('main');
@@ -53,7 +41,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 		}
 
 		test('starts the app\'s own sign-in on a plain click and does not navigate', async ({ page }) => {
-			await routeTo(page, outDir);
+			await route(page);
 			await page.goto(`${origin}/?on-sign-in`);
 
 			await page.getByRole('link', { name: en['signIn.logIn'] }).click();
@@ -68,7 +56,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			['a middle click', (link: Locator) => link.click({ button: 'middle' }), false]
 		] as const) {
 			test(`leaves ${name} on the sign-in link to the browser`, async ({ page }) => {
-				await routeTo(page, outDir);
+				await route(page);
 				await page.goto(`${origin}/?on-sign-in`);
 
 				await click(page.getByRole('link', { name: en['signIn.logIn'] }));
@@ -81,7 +69,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 		test('keeps the dots of the waiting shape still under reduced motion and moves them otherwise', async ({
 			page
 		}) => {
-			await routeTo(page, outDir);
+			await route(page);
 			await page.goto(`${origin}/?signing-in`);
 			const dot = page.locator('main i').first();
 			await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -96,7 +84,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 					page
 				}) => {
 					await page.setViewportSize({ width, height: 800 });
-					await routeTo(page, outDir);
+					await route(page);
 					const kit = wordsOf[language];
 					for (const [variant, heading, action, alert] of [
 						['', kit['signIn.loggedOut'], kit['signIn.logIn'], undefined],
@@ -131,7 +119,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 					test(`fits the ${variant} card at ${width} px in ${colorScheme}`, async ({ page }) => {
 						await page.setViewportSize({ width, height: 800 });
 						await page.emulateMedia({ colorScheme });
-						await routeTo(page, outDir);
+						await route(page);
 						await page.goto(`${origin}/?${variant}`);
 
 						const card = page.getByRole('main');
@@ -162,7 +150,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 				page
 			}) => {
 				await page.emulateMedia({ colorScheme });
-				await routeTo(page, outDir);
+				await route(page);
 				const boxLooks = [
 					'display', 'gap', 'align-items', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
 					'border-top-color', 'border-top-width', 'border-left-width', 'border-top-left-radius',
@@ -235,7 +223,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 		}
 
 		test('names the app once in the card for screen readers', async ({ page }) => {
-			await routeTo(page, outDir);
+			await route(page);
 			await page.goto(`${origin}/`);
 
 			const snapshot = await page.getByRole('main').ariaSnapshot();
@@ -243,7 +231,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 		});
 
 		test('takes its display and body fonts from the family tokens', async ({ page }) => {
-			await routeTo(page, outDir);
+			await route(page);
 			await page.goto(`${origin}/`);
 
 			const card = page.getByRole('main');
@@ -262,7 +250,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 		});
 
 		test('sets h1 and h2 in the display font, uppercase and spaced in proportion, from design.css alone', async ({ page }) => {
-			await routeTo(page, outDir);
+			await route(page);
 			await page.goto(`${origin}/?typed`);
 
 			const { 'font-family': display } = await resolveStyle(page, { 'font-family': 'var(--font-display)' }, [
@@ -285,7 +273,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 		});
 
 		test('keeps the case of typed text in an uppercase heading', async ({ page }) => {
-			await routeTo(page, outDir);
+			await route(page);
 			await page.goto(`${origin}/?typed`);
 
 			const heading = page.getByRole('heading', { level: 1 });

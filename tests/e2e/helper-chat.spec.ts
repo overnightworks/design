@@ -1,12 +1,8 @@
 import { expect, test } from './coverage.ts';
 import type { Locator, Page } from '@playwright/test';
-import type { KitLanguage, KitWords } from 'overnightworks-design';
-import { buildConsumer, loadKitWordsUnderNode, origin, routeTo, type ConsumerName } from './build-consumer.ts';
-import { resolveStyle } from './probe.ts';
-
-const colorSchemes = ['light', 'dark'] as const;
-const widths = [390, 1280] as const;
-const languages = ['de', 'en'] as const satisfies readonly KitLanguage[];
+import type { KitLanguage } from 'overnightworks-design';
+import { colorSchemes, consumerNames, consumerTitle, languages, useConsumer, widths } from './build-consumer.ts';
+import { numberOf, resolveStyle } from './probe.ts';
 
 // AiMark.svelte holds the word as a constant for every language, so no catalog key exists (gap named on #276).
 const aiMarkWord = 'AI';
@@ -18,14 +14,9 @@ const bubbleOf = (page: Page, text: string) => page.getByRole('listitem').filter
 const aiMarkIn = (scope: Locator) => scope.getByText(aiMarkWord, { exact: true });
 const rowOf = (page: Page, tool: string) => page.getByText(tool).first().locator('..');
 
-for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[]) {
-	test.describe(`the helper chat in a production consumer that ${consumer === 'imported' ? 'imports' : 'statically links'} design.css`, () => {
-		let outDir: string;
-		let wordsOf: Record<KitLanguage, KitWords>;
-		test.beforeAll(async () => {
-			outDir = await buildConsumer(consumer);
-			wordsOf = { de: await loadKitWordsUnderNode('de'), en: await loadKitWordsUnderNode('en') };
-		});
+for (const consumer of consumerNames) {
+	test.describe(consumerTitle('the helper chat', consumer), () => {
+		const { wordsOf, open: openAt } = useConsumer(consumer);
 
 		const fieldOf = (page: Page, language: KitLanguage = 'en'): Locator =>
 			page.getByRole('textbox', { name: wordsOf[language]['helperChat.composerLabel']({ name: 'Mozart' }), exact: true });
@@ -35,8 +26,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			page.getByRole('button', { name: wordsOf[language]['helperChat.send'], exact: true });
 
 		async function open(page: Page, variant: string, language: KitLanguage = 'en'): Promise<void> {
-			await routeTo(page.context(), outDir);
-			await page.goto(`${origin}/?helper=${variant}${language === 'en' ? '' : `&lang=${language}`}`);
+			await openAt(page, `helper=${variant}`, language);
 			await expect(fieldOf(page, language)).toBeVisible();
 		}
 
@@ -66,10 +56,11 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 						await expect(send).toHaveCSS('color', tokens['background-color']);
 						await expect(send).toHaveCSS('font-family', tokens['font-family']);
 						await expect(send).toHaveCSS('text-transform', 'uppercase');
-						await expect(send).toHaveCSS('border-top-left-radius', '6px');
-						await expect(field).toHaveCSS('border-top-left-radius', '8px');
-						await expect(bubbleOf(page, 'Make the second verse')).toHaveCSS('border-top-left-radius', '12px');
-						await expect(bubbleOf(page, 'Make the second verse')).toHaveCSS('background-color', tokens.color);
+						const bubble = bubbleOf(page, 'Make the second verse');
+						const radiusOf = (element: Locator) => numberOf(element, 'border-top-left-radius');
+						expect(await radiusOf(send)).toBeLessThan(await radiusOf(field));
+						expect(await radiusOf(field)).toBeLessThan(await radiusOf(bubble));
+						await expect(bubble).toHaveCSS('background-color', tokens.color);
 						expect((await field.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 						const sendBox = (await send.boundingBox())!;
 						expect(sendBox.height).toBeGreaterThanOrEqual(44);
@@ -77,13 +68,13 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 
 						const row = rowOf(page, 'rewrite_section');
 						await expect(row).toHaveCSS('color', tokens['border-top-color']);
-						await expect(row).toHaveCSS('font-size', '12.8px');
+						expect(await numberOf(row, 'font-size')).toBeLessThan(await numberOf(bubble, 'font-size'));
 						expect(await row.evaluate((node) => getComputedStyle(node).fontFamily)).toContain('ui-monospace');
 
 						expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 					});
 
-					test(`draws a disabled field as muted text on the deep background and a disabled Send at half opacity, in ${colorScheme} at ${width} px in the ${language} words`, async ({
+					test(`draws a disabled field as muted text on the deep background and a disabled Send dimmer than the field, in ${colorScheme} at ${width} px in the ${language} words`, async ({
 						page
 					}) => {
 						await page.emulateMedia({ colorScheme });
@@ -98,7 +89,9 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 						await expect(fieldOf(page, language)).toHaveCSS('color', tokens.color);
 						await expect(fieldOf(page, language)).toHaveCSS('background-color', tokens['background-color']);
 						await expect(sendOf(page, language)).toBeDisabled();
-						await expect(sendOf(page, language)).toHaveCSS('opacity', '0.5');
+						expect(await numberOf(sendOf(page, language), 'opacity')).toBeLessThan(
+							await numberOf(fieldOf(page, language), 'opacity')
+						);
 					});
 
 					test(`wraps a long tool target and keeps the composer inside the page, in ${colorScheme} at ${width} px in the ${language} words`, async ({

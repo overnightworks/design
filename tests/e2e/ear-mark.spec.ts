@@ -1,28 +1,18 @@
 import { expect, test } from './coverage.ts';
 import type { Locator, Page } from '@playwright/test';
-import type { KitLanguage, KitWords } from 'overnightworks-design';
-import { buildConsumer, loadKitWordsUnderNode, origin, routeTo, type ConsumerName } from './build-consumer.ts';
+import type { KitLanguage } from 'overnightworks-design';
+import { colorSchemes, consumerNames, consumerTitle, languages, useConsumer, widths } from './build-consumer.ts';
 import { resolveStyle } from './probe.ts';
-
-const colorSchemes = ['light', 'dark'] as const;
-const widths = [390, 1280] as const;
-const languages = ['de', 'en'] as const satisfies readonly KitLanguage[];
 
 const pillOf = (mark: Locator) => mark.locator('span').last();
 const discOf = (mark: Locator) => mark.locator('span').first();
 
-for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[]) {
-	test.describe(`the ear mark in a production consumer that ${consumer === 'imported' ? 'imports' : 'statically links'} design.css`, () => {
-		let outDir: string;
-		let wordsOf: Record<KitLanguage, KitWords>;
-		test.beforeAll(async () => {
-			outDir = await buildConsumer(consumer);
-			wordsOf = { de: await loadKitWordsUnderNode('de'), en: await loadKitWordsUnderNode('en') };
-		});
+for (const consumer of consumerNames) {
+	test.describe(consumerTitle('the ear mark', consumer), () => {
+		const { wordsOf, open: openAt } = useConsumer(consumer);
 
 		async function open(page: Page, variant: string, language: KitLanguage = 'en'): Promise<void> {
-			await routeTo(page.context(), outDir);
-			await page.goto(`${origin}/?ear=${variant}${language === 'en' ? '' : `&lang=${language}`}`);
+			await openAt(page, `ear=${variant}`, language);
 			await expect(page.getByRole('img').first()).toBeVisible();
 		}
 

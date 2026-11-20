@@ -1,9 +1,7 @@
 import { expect, test } from './coverage.ts';
 import type { Locator } from '@playwright/test';
-import type { KitWords } from 'overnightworks-design';
-import { buildConsumer, loadKitWordsUnderNode, origin, routeTo, type ConsumerName } from './build-consumer.ts';
+import { colorSchemes, consumerNames, consumerTitle, origin, useConsumer } from './build-consumer.ts';
 
-const colorSchemes = ['light', 'dark'] as const;
 const sides = ['top', 'right', 'bottom', 'left'] as const;
 const corners = ['top-left', 'top-right', 'bottom-right', 'bottom-left'] as const;
 const boxProperties = [
@@ -32,24 +30,19 @@ const computedOf = (element: Locator, properties: readonly string[]) =>
 		return Object.fromEntries(names.map((name) => [name, style.getPropertyValue(name)]));
 	}, properties);
 
-for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[]) {
-	test.describe(`the sign-in card in a production consumer that ${consumer === 'imported' ? 'imports' : 'statically links'} design.css`, () => {
-		let outDir: string;
-		let words: KitWords;
-		test.beforeAll(async () => {
-			outDir = await buildConsumer(consumer);
-			words = await loadKitWordsUnderNode('en');
-		});
+for (const consumer of consumerNames) {
+	test.describe(consumerTitle('the sign-in card', consumer), () => {
+		const { en, route } = useConsumer(consumer);
 
 		for (const colorScheme of colorSchemes) {
 			test(`a hand-written card looks like the component's in ${colorScheme}`, async ({ page }) => {
 				await page.emulateMedia({ colorScheme });
-				await routeTo(page.context(), outDir);
+				await route(page.context());
 				await page.goto(`${origin}/?sign-in-card=signed-out`);
 
 				const written = page.locator('#written').getByRole('main');
 				const component = page.locator('#component').getByRole('main');
-				await expect(written.getByRole('heading')).toHaveText(words['signIn.loggedOut']);
+				await expect(written.getByRole('heading')).toHaveText(en['signIn.loggedOut']);
 				expect(await computedOf(written, cardProperties)).toEqual(await computedOf(component, cardProperties));
 			});
 
@@ -61,11 +54,11 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 					page
 				}) => {
 					await page.emulateMedia({ colorScheme });
-					await routeTo(page.context(), outDir);
+					await route(page.context());
 					await page.goto(`${origin}/?sign-in-card=${state}`);
 
-					const written = page.locator('#written').getByRole(role, { name: words[name], exact: true });
-					const component = page.locator('#component').getByRole(role, { name: words[name], exact: true });
+					const written = page.locator('#written').getByRole(role, { name: en[name], exact: true });
+					const component = page.locator('#component').getByRole(role, { name: en[name], exact: true });
 					const resting = await computedOf(component, actionProperties);
 					expect(await computedOf(written, actionProperties)).toEqual(resting);
 
@@ -86,7 +79,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 		test.describe('a card of wrapper elements takes no layout from the classes', () => {
 			let written: Locator;
 			test.beforeEach(async ({ page }) => {
-				await routeTo(page.context(), outDir);
+				await route(page.context());
 				await page.goto(`${origin}/?sign-in-card=signed-out`);
 				written = page.locator('#written');
 				await expect(written.getByRole('main')).toBeVisible();

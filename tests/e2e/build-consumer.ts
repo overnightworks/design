@@ -9,6 +9,7 @@ import type { KitLanguage, KitWords } from 'overnightworks-design/words';
 import { createInstrumenter } from 'istanbul-lib-instrument';
 import { build } from 'vite';
 import istanbul from 'vite-plugin-istanbul';
+import { test } from './coverage.ts';
 
 const consumersRoot = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(consumersRoot, '../..');
@@ -133,4 +134,39 @@ export async function loadKitWordsUnderNode(language: KitLanguage): Promise<KitW
 	installPackage();
 	const { loadKitWords } = await import('overnightworks-design/words');
 	return loadKitWords(language);
+}
+
+export const colorSchemes = ['light', 'dark'] as const;
+export const widths = [390, 1280] as const;
+export const languages = ['de', 'en'] as const satisfies readonly KitLanguage[];
+export const consumerNames = ['imported', 'linked'] as const satisfies readonly ConsumerName[];
+
+/** The describe title every spec gives to one of its consumers. */
+export function consumerTitle(subject: string, name: ConsumerName): string {
+	return `${subject} in a production consumer that ${name === 'imported' ? 'imports' : 'statically links'} design.css`;
+}
+
+/**
+ * Builds a consumer once before the tests of the enclosing describe, loads the kit's words in
+ * every language unless the spec reads none, and hands back what the tests drive it with.
+ * The words are filled in place before the first test, so a spec may hold `en` while it defines its tests.
+ * `open` routes the page to the consumer and loads the variant `query` names in `language`.
+ */
+export function useConsumer(name: ConsumerName, { words = true } = {}) {
+	let outDir: string;
+	const wordsOf: Record<KitLanguage, KitWords> = { de: {} as KitWords, en: {} as KitWords };
+	test.beforeAll(async () => {
+		outDir = await buildConsumer(name);
+		if (words) {
+			for (const language of languages) {
+				Object.assign(wordsOf[language], await loadKitWordsUnderNode(language));
+			}
+		}
+	});
+	const route = (target: Page | BrowserContext) => routeTo(target, outDir);
+	async function open(page: Page, query: string, language: KitLanguage = 'en'): Promise<void> {
+		await route(page.context());
+		await page.goto(`${origin}/?${query}${language === 'en' ? '' : `&lang=${language}`}`);
+	}
+	return { wordsOf, en: wordsOf.en, route, open };
 }

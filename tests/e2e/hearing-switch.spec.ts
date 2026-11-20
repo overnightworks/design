@@ -1,12 +1,8 @@
 import { expect, test } from './coverage.ts';
 import type { Locator, Page } from '@playwright/test';
 import type { KitLanguage, KitWords } from 'overnightworks-design';
-import { buildConsumer, loadKitWordsUnderNode, origin, routeTo, type ConsumerName } from './build-consumer.ts';
+import { colorSchemes, consumerNames, consumerTitle, languages, useConsumer, widths } from './build-consumer.ts';
 import { resolveStyle } from './probe.ts';
-
-const colorSchemes = ['light', 'dark'] as const;
-const widths = [390, 1280] as const;
-const languages = ['de', 'en'] as const satisfies readonly KitLanguage[];
 
 const nameKeys = {
 	hear: 'hearing.agentMayHearMe',
@@ -19,23 +15,15 @@ const reportsOf = (page: Page) => page.evaluate(() => window.reports);
 /** The computed `transform` of the knob, the track's `::after`. */
 const knobTransform = (track: Locator) => track.evaluate((node) => getComputedStyle(node, '::after').transform);
 
-for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[]) {
-	test.describe(`the hearing switch in a production consumer that ${consumer === 'imported' ? 'imports' : 'statically links'} design.css`, () => {
-		let outDir: string;
-		let wordsOf: Record<KitLanguage, KitWords>;
-		let en: KitWords;
-		test.beforeAll(async () => {
-			outDir = await buildConsumer(consumer);
-			wordsOf = { de: await loadKitWordsUnderNode('de'), en: await loadKitWordsUnderNode('en') };
-			en = wordsOf.en;
-		});
+for (const consumer of consumerNames) {
+	test.describe(consumerTitle('the hearing switch', consumer), () => {
+		const { en, wordsOf, open: openAt } = useConsumer(consumer);
 
 		const chipOf = (page: Page, kind: 'hear' | 'listen' | 'see', language: KitLanguage = 'en') =>
 			page.getByRole('switch', { name: wordsOf[language][nameKeys[kind]], exact: true });
 
 		async function open(page: Page, variant = '', language: KitLanguage = 'en'): Promise<void> {
-			await routeTo(page.context(), outDir);
-			await page.goto(`${origin}/?hearing=${variant}${language === 'en' ? '' : `&lang=${language}`}`);
+			await openAt(page, `hearing=${variant}`, language);
 			await expect(page.getByRole('switch').first()).toBeVisible();
 		}
 

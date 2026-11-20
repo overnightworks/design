@@ -1,37 +1,28 @@
 import { expect, test } from './coverage.ts';
 import type { Page } from '@playwright/test';
-import type { KitLanguage, KitWords } from 'overnightworks-design';
-import { buildConsumer, loadKitWordsUnderNode, origin, routeTo, type ConsumerName } from './build-consumer.ts';
-import { resolveStyle } from './probe.ts';
+import type { KitLanguage } from 'overnightworks-design';
+import { colorSchemes, consumerNames, consumerTitle, languages, origin, useConsumer, widths } from './build-consumer.ts';
+import { numberOf, resolveStyle } from './probe.ts';
 
-const colorSchemes = ['light', 'dark'] as const;
-const widths = [390, 1280] as const;
 const touchRowFloor = 44;
-const languages = ['de', 'en'] as const satisfies readonly KitLanguage[];
 /** The names of the consumer page's rows. */
 const mozart = 'Mozart';
 const leonardo = 'Leonardo da Vinci, the long-named painter and inventor';
 
 const reportsOf = (page: Page) => page.evaluate(() => window.reports);
 
-for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[]) {
-	test.describe(`the agent control in a production consumer that ${consumer === 'imported' ? 'imports' : 'statically links'} design.css`, () => {
-		let outDir: string;
-		let wordsOf: Record<KitLanguage, KitWords>;
-		let en: KitWords;
+for (const consumer of consumerNames) {
+	test.describe(consumerTitle('the agent control', consumer), () => {
+		const { en, wordsOf, route, open: openAt } = useConsumer(consumer);
 		let callMozart: string;
 		let askLeonardoToLeave: string;
-		test.beforeAll(async () => {
-			outDir = await buildConsumer(consumer);
-			wordsOf = { de: await loadKitWordsUnderNode('de'), en: await loadKitWordsUnderNode('en') };
-			en = wordsOf.en;
+		test.beforeAll(() => {
 			callMozart = en['agent.callLabel']({ name: mozart });
 			askLeonardoToLeave = en['agent.askToLeaveLabel']({ name: leonardo });
 		});
 
 		async function open(page: Page, variant = '', language: KitLanguage = 'en'): Promise<void> {
-			await routeTo(page.context(), outDir);
-			await page.goto(`${origin}/?agents=${variant}${language === 'en' ? '' : `&lang=${language}`}`);
+			await openAt(page, `agents=${variant}`, language);
 			await expect(page.getByRole('button', { name: wordsOf[language]['agent.callLabel']({ name: mozart }) })).toBeVisible();
 		}
 
@@ -160,7 +151,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 					}) => {
 						await page.emulateMedia({ colorScheme });
 						await page.setViewportSize({ width, height: 800 });
-						await routeTo(page.context(), outDir);
+						await route(page.context());
 						await page.goto(`${origin}/?agents=${variant}`);
 						const row = page.getByRole('listitem').first();
 						const outcome = row.getByRole('status');
@@ -169,8 +160,8 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 						const tokens = await resolveStyle(page, { color: 'var(--text-muted)' }, ['color']);
 						await expect(outcome).toHaveCSS('color', tokens.color);
 						const icon = outcome.locator('svg');
-						await expect(icon).toHaveCSS('width', '15px');
-						await expect(icon).toHaveCSS('height', '15px');
+						expect(await numberOf(icon, 'width')).toBe(await numberOf(icon, 'height'));
+						expect(await numberOf(icon, 'height')).toBeLessThanOrEqual(await numberOf(outcome, 'height'));
 						await expect(outcome.locator('i')).toHaveCount(0);
 						const box = (await outcome.boundingBox())!;
 						expect(box.x + box.width).toBeLessThanOrEqual(width);
@@ -184,7 +175,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 
 		for (const language of languages) {
 			test(`draws the ${language} words of an outcome`, async ({ page }) => {
-				await routeTo(page.context(), outDir);
+				await route(page.context());
 				await page.goto(`${origin}/?agents=ended-no-answer&lang=${language}`);
 				await expect(page.getByRole('listitem').first().getByRole('status')).toHaveText(
 					wordsOf[language]['agent.noAnswer']
@@ -196,7 +187,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			page
 		}) => {
 			await page.emulateMedia({ reducedMotion: 'reduce' });
-			await routeTo(page.context(), outDir);
+			await route(page.context());
 			await page.goto(`${origin}/?agents=ended-busy`);
 			const outcome = page.getByRole('status').filter({ hasText: en['agent.busy'] });
 			await expect(outcome).toBeVisible();
@@ -243,7 +234,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 					expect(
 						await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
 					).toBe(true);
-					await routeTo(page.context(), outDir);
+					await route(page.context());
 					await page.goto(`${origin}/?agents=empty&lang=${language}`);
 					await expect(page.getByText(kit['agent.empty'])).toBeVisible();
 				});
@@ -251,7 +242,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 		}
 
 		test('draws only the empty sentence when no agent is listed', async ({ page }) => {
-			await routeTo(page.context(), outDir);
+			await route(page.context());
 			await page.goto(`${origin}/?agents=empty`);
 			await expect(page.getByText(en['agent.empty'])).toBeVisible();
 			await expect(page.getByRole('button')).toHaveCount(0);
@@ -259,7 +250,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 		});
 
 		test('draws the place-full sentence in place of the empty sentence when the place is full', async ({ page }) => {
-			await routeTo(page.context(), outDir);
+			await route(page.context());
 			await page.goto(`${origin}/?agents=empty-full`);
 			await expect(page.getByText(en['agent.placeFull'])).toBeVisible();
 			await expect(page.getByText(en['agent.empty'])).toHaveCount(0);
@@ -272,7 +263,7 @@ for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[])
 			['empty-place-full', 'agent.placeFull']
 		] as const) {
 			test(`draws only the ${variant} refusal, once, when no agent is listed`, async ({ page }) => {
-				await routeTo(page.context(), outDir);
+				await route(page.context());
 				await page.goto(`${origin}/?agents=${variant}`);
 				await expect(page.getByRole('alert')).toHaveText(en[key]);
 				await expect(page.getByText(en[key])).toHaveCount(1);

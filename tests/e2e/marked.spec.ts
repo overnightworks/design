@@ -1,22 +1,18 @@
 import { expect, test } from './coverage.ts';
-import { buildConsumer, origin, routeTo, type ConsumerName } from './build-consumer.ts';
+import { consumerNames, consumerTitle, origin, useConsumer, widths } from './build-consumer.ts';
 
-const widths = [390, 1280] as const;
 const sentence =
 	'Retire 3 takes of this recording; read the full retention rules for recordings before you confirm.';
 const linkName = 'the full retention rules for recordings';
 
-for (const consumer of ['imported', 'linked'] as const satisfies ConsumerName[]) {
-	test.describe(`a marked sentence in a production consumer that ${consumer === 'imported' ? 'imports' : 'statically links'} design.css`, () => {
-		let outDir: string;
-		test.beforeAll(async () => {
-			outDir = await buildConsumer(consumer);
-		});
+for (const consumer of consumerNames) {
+	test.describe(consumerTitle('a marked sentence', consumer), () => {
+		const { route } = useConsumer(consumer, { words: false });
 
 		for (const width of widths) {
 			test(`reads as running text with a reachable link at ${width} px`, async ({ page }) => {
 				await page.setViewportSize({ width, height: 800 });
-				await routeTo(page.context(), outDir);
+				await route(page.context());
 				await page.goto(`${origin}/?marked`);
 
 				const paragraph = page.locator('#sentence');
