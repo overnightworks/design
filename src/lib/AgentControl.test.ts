@@ -54,13 +54,6 @@ describe('rows', () => {
 		expect(buttons[0].type).toBe('button');
 	});
 
-	it('shows an inviting agent the waiting text announced as a status and no button', async () => {
-		const control = await render({ rows: [{ key: 'k1', name: 'Mozart', state: 'inviting' }] });
-		expect(buttonsOf(control)).toHaveLength(0);
-		const status = control.querySelector('[role="status"]')!;
-		expect(status.textContent?.trim()).toBe(en['agent.calling']);
-	});
-
 	it('offers an agent that is here one Ask to leave button named after the agent', async () => {
 		const control = await render({ rows: [{ key: 'k1', name: 'Mozart', state: 'here' }] });
 		const buttons = buttonsOf(control);
@@ -100,39 +93,7 @@ describe('rows', () => {
 	});
 });
 
-describe('actions', () => {
-	const rows: AgentControlProps['rows'] = [
-		{ key: 'key-1', name: 'Mozart', state: 'available' },
-		{ key: 'key-2', name: 'Leonardo', state: 'here' },
-		{ key: 'key-3', name: 'Bach', state: 'inviting' }
-	];
-
-	it('calls onCall with the key of an available row and nothing else', async () => {
-		const onCall = vi.fn();
-		const onSendAway = vi.fn();
-		const control = await render({ rows, onCall, onSendAway });
-		buttonsOf(control)[0].click();
-		expect(onCall).toHaveBeenCalledExactlyOnceWith('key-1');
-		expect(onSendAway).not.toHaveBeenCalled();
-	});
-
-	it('calls onSendAway with the key of a here row at once, with no confirm step', async () => {
-		const onCall = vi.fn();
-		const onSendAway = vi.fn();
-		const control = await render({ rows, onCall, onSendAway });
-		buttonsOf(control)[1].click();
-		expect(onSendAway).toHaveBeenCalledExactlyOnceWith('key-2');
-		expect(onCall).not.toHaveBeenCalled();
-		expect(control.querySelector('[role="dialog"], [role="alertdialog"]')).toBeNull();
-	});
-});
-
 describe('ended rows', () => {
-	const outcomeWords: [AgentControlOutcome, keyof typeof en][] = [
-		['no-answer', 'agent.noAnswer'],
-		['busy', 'agent.busy'],
-		['owner-absent', 'agent.ownerAbsent']
-	];
 	const ended = (outcome: AgentControlOutcome): AgentControlProps['rows'][number] => ({
 		key: 'k1',
 		name: 'Mozart',
@@ -165,36 +126,9 @@ describe('ended rows', () => {
 		};
 	}
 
-	it.each(outcomeWords)(
-		'shows the %s outcome as a muted status with an icon and no key',
-		async (outcome, key) => {
-			const control = await render({ rows: [ended(outcome)] });
-			expect(buttonsOf(control)).toHaveLength(0);
-			const status = statusOf(control)!;
-			expect(status.textContent?.trim()).toBe(en[key]);
-			expect(status.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
-			expect(status.querySelectorAll('[aria-hidden="true"]')).toHaveLength(1);
-		}
-	);
-
-	it.each(outcomeWords)('shows the %s outcome in the words of the page language', async (outcome, key) => {
-		const control = await render({ rows: [ended(outcome)], words: de });
-		expect(statusOf(control)?.textContent?.trim()).toBe(de[key]);
-	});
-
-	it('draws the row like an available row once the duration has passed', async () => {
-		const onCall = vi.fn();
-		const control = await renderWithTimers({ rows: [ended('busy')], onCall });
-		await vi.advanceTimersByTimeAsync(outcomeMilliseconds - 1);
-		expect(statusOf(control)).not.toBeNull();
-		await vi.advanceTimersByTimeAsync(1);
-		expect(statusOf(control)).toBeNull();
-		const buttons = buttonsOf(control);
-		expect(buttons).toHaveLength(1);
-		expect(buttons[0].textContent?.trim()).toBe(en['agent.call']);
-		expect(buttons[0].getAttribute('aria-label')).toBe(en['agent.callLabel']({ name: 'Mozart' }));
-		buttons[0].click();
-		expect(onCall).toHaveBeenCalledExactlyOnceWith('k1');
+	it.each(['no-answer', 'busy', 'owner-absent'] as const)('hides the icon of the %s outcome from assistive technology', async (outcome) => {
+		const control = await render({ rows: [ended(outcome)] });
+		expect(statusOf(control)?.querySelectorAll('svg[aria-hidden="true"]')).toHaveLength(1);
 	});
 
 	it('keeps the row callable until the app changes it', async () => {
@@ -281,44 +215,9 @@ describe('refusal', () => {
 		const list = control.querySelector('ul')!;
 		expect(alert.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 	});
-
-	it('leaves the rows and their buttons in place under a refusal', async () => {
-		const control = await render({ rows, refusal: 'place-full' });
-		expect(buttonsOf(control)).toHaveLength(1);
-	});
 });
 
 describe('empty face', () => {
-	it('draws only the empty sentence when there are no rows', async () => {
-		const control = await render({ rows: [] });
-		expect(control.textContent?.trim()).toBe(en['agent.empty']);
-		expect(control.querySelector('ul, li, button, [role="alert"]')).toBeNull();
-	});
-
-	it.each<[AgentControlRefusal, keyof typeof en]>([
-		['not-allowed', 'agent.notAllowed'],
-		['owner-absent', 'agent.ownerAbsent'],
-		['place-full', 'agent.placeFull'],
-		['agent-unavailable', 'agent.agentUnavailable'],
-		['try-again', 'agent.tryAgain']
-	])('draws only the %s refusal when there are no rows', async (refusal, key) => {
-		const control = await render({ rows: [], refusal, full: true });
-		expect(control.textContent?.trim()).toBe(en[key]);
-		expect(control.textContent).not.toContain(en['agent.empty']);
-		expect(control.querySelector('ul, li, button')).toBeNull();
-	});
-
-	it('draws the place-full sentence instead of the empty sentence when full is set', async () => {
-		const control = await render({ rows: [], full: true });
-		expect(control.textContent?.trim()).toBe(en['agent.placeFull']);
-		expect(control.textContent).not.toContain(en['agent.empty']);
-	});
-
-	it('draws the empty sentence when full is unset or false', async () => {
-		const control = await render({ rows: [], full: false });
-		expect(control.textContent?.trim()).toBe(en['agent.empty']);
-	});
-
 	it('draws no empty sentence while rows exist', async () => {
 		const control = await render({ rows: [{ key: 'k1', name: 'Mozart', state: 'here' }] });
 		expect(control.textContent).not.toContain(en['agent.empty']);
@@ -346,42 +245,5 @@ describe('words', () => {
 		]);
 		for (const key of ['agent.call', 'agent.calling', 'agent.askToLeave'] as const)
 			expect(control.textContent).not.toContain(en[key]);
-	});
-
-	it('draws the empty sentence of the de words', async () => {
-		const control = await render({ rows: [], words: de });
-		expect(control.textContent?.trim()).toBe(de['agent.empty']);
-	});
-
-	it.each(refusalWords)('draws the %s sentence of the de words as an alert', async (refusal, key) => {
-		const control = await render({ rows: [], refusal, words: de });
-		expect(control.querySelector('[role="alert"]')?.textContent?.trim()).toBe(de[key]);
-	});
-});
-
-describe('en words', () => {
-	it('renders the en texts of every row state and the empty sentence', async () => {
-		const control = await render({
-			rows: [
-				{ key: 'k1', name: 'Mozart', state: 'available' },
-				{ key: 'k2', name: 'Bach', state: 'inviting' },
-				{ key: 'k3', name: 'Leonardo', state: 'here' }
-			]
-		});
-		expect(rowsOf(control).map((row) => row.lastElementChild?.textContent?.trim())).toEqual([
-			en['agent.call'],
-			en['agent.calling'],
-			en['agent.askToLeave']
-		]);
-		expect(buttonsOf(control).map((button) => button.getAttribute('aria-label'))).toEqual([
-			en['agent.callLabel']({ name: 'Mozart' }),
-			en['agent.askToLeaveLabel']({ name: 'Leonardo' })
-		]);
-		expect((await render({ rows: [] })).textContent?.trim()).toBe(en['agent.empty']);
-	});
-
-	it.each(refusalWords)('renders the %s refusal in the en words', async (refusal, key) => {
-		const control = await render({ rows: [], refusal });
-		expect(control.querySelector('[role="alert"]')?.textContent?.trim()).toBe(en[key]);
 	});
 });

@@ -148,8 +148,11 @@ for (const consumer of consumerNames) {
 				const words = wordsOf[language];
 				await open(page, 'base', language);
 				const messages = page.getByRole('list', { name: words['helperChat.listLabel']({ name: 'Mozart' }), exact: true }).getByRole('listitem');
-				await expect(messages.filter({ hasText: words['helperChat.speaker']({ name: words['helperChat.you'] }) })).toHaveCount(2);
-				await expect(messages.filter({ hasText: words['helperChat.speaker']({ name: 'Mozart' }) })).toHaveCount(2);
+				const you = words['helperChat.speaker']({ name: words['helperChat.you'] });
+				const mozart = words['helperChat.speaker']({ name: 'Mozart' });
+				await expect(messages).toHaveCount(4);
+				const speakers = await messages.evaluateAll((items) => items.map((item) => item.firstElementChild?.textContent));
+				expect(speakers).toEqual([you, mozart, you, mozart]);
 			});
 		}
 
