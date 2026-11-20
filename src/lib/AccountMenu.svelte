@@ -35,7 +35,7 @@
 	}
 </script>
 
-{#snippet logOutRow(type: 'button' | 'submit')}
+{#snippet logOutRow({ type }: { type: 'button' | 'submit' })}
 	<button class="row" {type} onclick={type === 'button' ? onLogOut : undefined}>
 		<svg viewBox="0 0 24 24" aria-hidden="true"
 			><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path
@@ -89,9 +89,9 @@
 	{/if}
 	<div class="out">
 		{#if logOutAction !== undefined}
-			<form method="post" action={logOutAction}>{@render logOutRow('submit')}</form>
+			<form method="post" action={logOutAction}>{@render logOutRow({ type: 'submit' })}</form>
 		{:else}
-			{@render logOutRow('button')}
+			{@render logOutRow({ type: 'button' })}
 			{#if logOutFailure}
 				<p role="alert">{logOutFailure}</p>
 			{/if}

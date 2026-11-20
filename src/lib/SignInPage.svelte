@@ -14,11 +14,11 @@
 	}
 </script>
 
-{#snippet banner(text: string)}
+{#snippet banner({ text }: { text: string })}
 	<div class="banner-slot"><FailBanner {text} /></div>
 {/snippet}
 
-{#snippet tabLink(tabHref: string)}
+{#snippet tabLink({ tabHref }: { tabHref: string })}
 	<a class="plain-link" href={tabHref} target="_blank" rel="noopener">
 		<svg viewBox="0 0 24 24" aria-hidden="true"
 			><path d="M14 4h6v6M20 4l-8 8" /><path
@@ -29,7 +29,8 @@
 {/snippet}
 
 <svelte:head>
-	<title>{appName}</title>
+	<!-- A template literal: Svelte's client compile guards a bare text expression against undefined, which a typed prop never is. -->
+	<title>{`${appName}`}</title>
 </svelte:head>
 
 <div class="signin">
@@ -41,7 +42,7 @@
 		{#if state.page === 'signed-out'}
 			<h1>{words['signIn.loggedOut']}</h1>
 			{#if state.unfinished}
-				{@render banner(words['signIn.signInUnfinished'])}
+				{@render banner({ text: words['signIn.signInUnfinished'] })}
 			{/if}
 			{@const onSignIn = state.onSignIn}
 			<a
@@ -57,14 +58,14 @@
 				<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2" /><path d="M3.5 9.5h17" /></svg>
 				<WaitingDots />
 			</div>
-			{@render tabLink(state.tabHref)}
+			{@render tabLink({ tabHref: state.tabHref })}
 		{:else if state.page === 'window-blocked'}
 			<h1>{words['signIn.windowBlocked']}</h1>
 			<p>{words['signIn.windowBlockedSentence']}</p>
-			{@render tabLink(state.tabHref)}
+			{@render tabLink({ tabHref: state.tabHref })}
 		{:else if state.page === 'login-failed'}
 			<h1>{words['signIn.loginFailed']}</h1>
-			{@render banner(words['signIn.loginFailedBanner'])}
+			{@render banner({ text: words['signIn.loginFailedBanner'] })}
 			<a class="sign-in-action primary" href={state.signInHref} data-sveltekit-reload>{words['signIn.tryAgain']}</a>
 		{:else}
 			<h1>{words['signIn.noAccess']}</h1>

@@ -77,7 +77,7 @@
 			{:else}
 				<ol role="list" aria-label={words['helperChat.listLabel']({ name: helperName })}>
 					{#each messages as message, index (index)}
-						<li class="message {message.role}">
+						<li class={['message', message.role]}>
 							<span class="visually-hidden">{words['helperChat.speaker']({
 								name: message.role === 'user' ? words['helperChat.you'] : helperName
 							})}</span>

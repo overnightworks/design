@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
 	test: {
 		coverage: {
-			// Istanbul counts the branches the instrumented consumer build counts in the browser, so `pnpm run coverage:merge` can add the two reports up.
+			// Istanbul counts the branches the instrumented consumer build counts in the browser, so `pnpm run coverage:merge` can add the two reports up. Only the client project is counted: the server compile is behaviour proof, run without coverage.
 			provider: 'istanbul',
 			reporter: [['json', { file: 'unit.json' }], ['json-summary', { file: '../unit-summary.json' }], 'text-summary'],
 			reportsDirectory: 'coverage/remapped',
