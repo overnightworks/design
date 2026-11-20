@@ -1,0 +1,8 @@
+claim_id = "5fc62389d8304cb89bff4dfb6adf2017"
+agent = "Claude 27a67e6a-d638-4888-bce6-c323fa029369"
+role = "builder"
+base = "1f73e7f4f1a8b8c31154df615de308ad16a6b2d6"
+branch = "claude/issue-303-browser-compile-threshold"
+scope = ["AGENTS.md", "docs/ARCHITECTURE.md", "package.json", "scripts/compare_coverage_merge.mjs", "src/lib/AccountMenu.svelte", "src/lib/AgentControl.svelte", "src/lib/HelperChat.svelte", "src/lib/SignInPage.svelte", "vitest.config.ts"]
+opened_commit = "383b4dc043600ceddbd4ff70c831cad0fce73f18"
+whole_reason = "The threshold is red until the routes land, so the routes, the count and the check are one change of about 70 production lines."
