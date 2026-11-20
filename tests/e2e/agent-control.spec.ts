@@ -258,6 +258,37 @@ for (const consumer of consumerNames) {
 			await expect(page.getByRole('list')).toHaveCount(0);
 		});
 
+		for (const colorScheme of colorSchemes) {
+			for (const width of widths) {
+				test(`draws the place-full sentence once, muted, below the rows in ${colorScheme} at ${width} px`, async ({
+					page
+				}) => {
+					await page.emulateMedia({ colorScheme });
+					await page.setViewportSize({ width, height: 800 });
+					await open(page, 'full');
+					const tokens = await resolveStyle(page, { color: 'var(--text-muted)' }, ['color']);
+					const sentence = page.getByText(en['agent.placeFull']);
+					await expect(sentence).toHaveCount(1);
+					await expect(sentence).toHaveCSS('color', tokens.color);
+					await expect(page.getByRole('alert')).toHaveCount(0);
+					const list = await page.getByRole('list').boundingBox();
+					const line = await sentence.boundingBox();
+					expect(line!.y).toBeGreaterThanOrEqual(list!.y + list!.height);
+				});
+
+				test(`draws only the place-full refusal, once, in ${colorScheme} at ${width} px`, async ({
+					page
+				}) => {
+					await page.emulateMedia({ colorScheme });
+					await page.setViewportSize({ width, height: 800 });
+					await open(page, 'full-place-full');
+					await expect(page.getByRole('alert')).toHaveText(en['agent.placeFull']);
+					await expect(page.getByText(en['agent.placeFull'])).toHaveCount(1);
+					await expect(page.getByRole('list')).toHaveCount(1);
+				});
+			}
+		}
+
 		for (const [variant, key] of [
 			['empty-refusal', 'agent.ownerAbsent'],
 			['empty-place-full', 'agent.placeFull']
