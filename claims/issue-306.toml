@@ -1,7 +1,0 @@
-claim_id = "0fa179647c2c408595189e205f6d85b0"
-agent = "Claude 27a67e6a-d638-4888-bce6-c323fa029369"
-role = "builder"
-base = "9939274a3de0300d5d2943072f9dcea2da690ed6"
-branch = "claude/issue-306-mirror-tests-chat-control"
-scope = ["src/lib/AgentControl.test.ts", "src/lib/HelperChat.test.ts", "tests/e2e/helper-chat.spec.ts"]
-opened_commit = "8601f00e50f5e0cb19763b79e9088e17255a074e"
