@@ -1,0 +1,7 @@
+claim_id = "dec42826313949fb8c6fef5468984341"
+agent = "Claude 98c71702-cef0-496e-a900-daf1f6e01cf0"
+role = "builder"
+base = "bee26595da819209c136665e9e4d33b357938889"
+branch = "claude/issue-315-design-pins-quality-v0-23-0"
+scope = [".github/workflows/ci.yml", ".github/workflows/code-scanning.yml", ".github/workflows/release.yml"]
+opened_commit = "5003d27397d56ad00ed439daa6ed37b341659ade"
