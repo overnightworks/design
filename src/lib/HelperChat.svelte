@@ -71,7 +71,9 @@
 	{:else if history.state === 'failed'}
 		<p class="failure" role="alert">{history.failure}</p>
 	{:else}
-		<div class="list" bind:this={list} onscroll={onListScroll}>
+		<!-- A scrolling list takes the keyboard focus, so a person without a pointer can scroll it. -->
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+		<div class="list" bind:this={list} onscroll={onListScroll} tabindex="0">
 			{#if messages.length === 0}
 				<p class="subtle">{emptyHint}</p>
 			{:else}
