@@ -61,6 +61,8 @@ for (const consumer of consumerNames) {
 					test(`${part} (${variant || 'default'}) has no WCAG 2.2 AA violation in ${colorScheme}`, async ({ page }) => {
 						await page.emulateMedia({ colorScheme });
 						await open(page, variant);
+						// The consumer mounts its parts after top-level awaits; axe over a body still empty finds nothing.
+						await expect(page.locator('body > :not(script)').first()).toBeVisible();
 						const { violations, incomplete } = await new AxeBuilder({ page }).withTags(wcagTags).analyze();
 						expect(
 							violations.map(({ id, nodes }) => ({
