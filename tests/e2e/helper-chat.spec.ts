@@ -1,8 +1,9 @@
 import { expect, test } from './coverage.ts';
 import type { Locator, Page } from '@playwright/test';
 import type { KitLanguage } from 'overnightworks-design';
+import { expectNoWcagViolations } from './axe.ts';
 import { colorSchemes, consumerNames, consumerTitle, languages, useConsumer, widths } from './build-consumer.ts';
-import { numberOf, resolveStyle } from './probe.ts';
+import { expectFocusRing, numberOf, resolveStyle } from './probe.ts';
 
 // AiMark.svelte holds the word as a constant for every language, so no catalog key exists (gap named on #276).
 const aiMarkWord = 'AI';
@@ -307,5 +308,48 @@ for (const consumer of consumerNames) {
 			await expect(fieldOf(page)).toBeFocused();
 			expect(await reportsOf(page)).toEqual(['send:A first line\nA second line']);
 		});
+
+		test('walks the Tab order from the page start through the message region, the field and Send, and works Send by Enter', async ({ page }) => {
+			await open(page, 'draft');
+			await page.keyboard.press('Tab');
+			await expectFocusRing(page.getByRole('region', { name: wordsOf.en['helperChat.listLabel']({ name: 'Mozart' }), exact: true }));
+			await page.keyboard.press('Tab');
+			await expectFocusRing(fieldOf(page));
+			await page.keyboard.press('Tab');
+			await expectFocusRing(sendOf(page));
+
+			await page.keyboard.press('Enter');
+			expect(await reportsOf(page)).toEqual(['send:A first line\nA second line']);
+		});
+
+		test('works Send by Space', async ({ page }) => {
+			await open(page, 'draft');
+			await sendOf(page).focus();
+			await page.keyboard.press('Space');
+			expect(await reportsOf(page)).toEqual(['send:A first line\nA second line']);
+		});
+
+		test('skips the disabled field and Send in the archived variant and works the banner’s button by keyboard', async ({ page }) => {
+			await open(page, 'archived');
+			const restore = page.getByRole('button', { name: 'Restore it' });
+			await page.keyboard.press('Tab');
+			await expectFocusRing(page.getByRole('region', { name: wordsOf.en['helperChat.listLabel']({ name: 'Mozart' }), exact: true }));
+			await page.keyboard.press('Tab');
+			await expect(restore).toBeFocused();
+
+			await page.keyboard.press('Enter');
+			await page.keyboard.press('Space');
+			expect(await reportsOf(page)).toEqual(['restore', 'restore']);
+		});
+
+		for (const colorScheme of colorSchemes) {
+			test(`has no WCAG 2.2 AA violation around the open mention picker in ${colorScheme}`, async ({ page }) => {
+				await page.emulateMedia({ colorScheme });
+				await open(page, 'base');
+				await fieldOf(page).pressSequentially('@');
+				await expect(page.getByRole('listbox', { name: 'People' }).getByRole('option')).toHaveCount(3);
+				await expectNoWcagViolations(page);
+			});
+		}
 	});
 }
