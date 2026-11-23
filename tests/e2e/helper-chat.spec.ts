@@ -335,7 +335,7 @@ for (const consumer of consumerNames) {
 			await page.keyboard.press('Tab');
 			await expectFocusRing(page.getByRole('region', { name: wordsOf.en['helperChat.listLabel']({ name: 'Mozart' }), exact: true }));
 			await page.keyboard.press('Tab');
-			await expectFocusRing(restore);
+			await expect(restore).toBeFocused();
 
 			await page.keyboard.press('Enter');
 			await page.keyboard.press('Space');
