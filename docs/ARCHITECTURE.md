@@ -150,7 +150,7 @@ proven by installing the built wheel through a URL with a wrong sha256, which
 fails. The release gate and a check of the built file list guard `release.yml`.
 Two Playwright consumers are built for production from the packed tarball and
 paint the page in a browser, and the same consumers gate accessibility: axe checks every variant
-of every part in both themes against WCAG 2.2 AA with no rule disabled, so a part that fails it
+of every part, and a token page of the kit's promised colour pairs, in both themes against WCAG 2.2 AA with no rule disabled, so a part that fails it
 turns CI red. The components' branches are measured on the browser compile, over both
 layers: Vitest's `client` project counts them with Istanbul, and the consumer
 build the browser tests drive carries Istanbul counters that each spec collects.

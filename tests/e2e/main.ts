@@ -239,6 +239,30 @@ if (query.has('words')) {
 } else if (query.has('typed')) {
 	// A person typed the name; the app wrote the words around it.
 	document.body.innerHTML = '<main><h1>Source <span class="as-typed">talks</span></h1><h2>Second</h2></main>';
+} else if (query.has('tokens')) {
+	// One text sample per pair the kit promises at AA; a translucent surface sits on an opaque one.
+	const stateInks = ['--text', '--text-muted', '--ok', '--busy', '--fail'];
+	const neutralSurfaces = ['--bg', '--bg-deep', '--surface', '--surface-hover', '--header-bg'];
+	const softSurfaces = [
+		['--ok-soft', ['--ok', '--text']],
+		['--busy-soft', ['--busy', '--text']],
+		['--fail-soft', ['--fail', '--text']]
+	] as const;
+	const stageInks = ['--on-stage', '--on-stage-soft'];
+	const sample = (surface: string, ink: string, inner = '') =>
+		`<p class="token-sample" style="--token-surface: var(${surface}); --token-ink: var(${ink})">${ink} on ${surface}${inner}</p>`;
+	const samples = [
+		...neutralSurfaces.flatMap((surface) => stateInks.map((ink) => sample(surface, ink))),
+		`<div class="token-sample" style="--token-surface: var(--bg); --token-ink: var(--text)">${stateInks
+			.map((ink) => sample('--card-bg', ink))
+			.join('')}</div>`,
+		...softSurfaces.flatMap(([surface, inks]) => inks.map((ink) => sample(surface, ink))),
+		`<div class="token-sample" style="--token-surface: var(--stage); --token-ink: var(--on-stage)">${['--stage', '--glass', '--glass-dark']
+			.map((surface) => `<div>${stageInks.map((ink) => sample(surface, ink)).join('')}</div>`)
+			.join('')}</div>`,
+		sample('--accent', '--on-accent')
+	];
+	document.body.innerHTML = `<main>${samples.join('')}</main>`;
 } else if (query.has('legal')) {
 	// The markup contract of a page that cannot render Svelte, beside the component's own row.
 	const words = await loadKitWords(pageLanguage);
