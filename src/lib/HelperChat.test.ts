@@ -32,9 +32,6 @@ function render(overrides: Partial<HelperChatProps<HelperMessage>> = {}): Promis
 }
 
 const field = (root: HTMLElement) => root.querySelector('textarea')!;
-const buttonWorded = (root: HTMLElement, word: string) =>
-	[...root.querySelectorAll('button')].find((candidate) => candidate.textContent?.trim() === word)!;
-const sendButton = (root: HTMLElement, words: typeof en = en) => buttonWorded(root, words['helperChat.send']);
 const status = (root: HTMLElement) => root.querySelector('[role="status"]');
 const visibleLine = (root: HTMLElement) => root.querySelector('ol [aria-hidden="true"]');
 
@@ -224,6 +221,16 @@ describe('the composer', () => {
 		const box = field(root).parentElement!;
 		const order = [...box.parentElement!.children].map((child) => (child === box ? 'box' : child.textContent));
 		expect(order).toEqual(['Archived', 'Tag bar', 'box']);
+	});
+
+	it('cancels a press on the composer box but leaves a press on the field to the browser, which places the caret', async () => {
+		const root = await render();
+		const pressed = [root.querySelector('button')!, field(root)].map((target) => {
+			const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+			target.dispatchEvent(down);
+			return down.defaultPrevented;
+		});
+		expect(pressed).toEqual([true, false]);
 	});
 });
 
