@@ -338,7 +338,11 @@ export interface HelperChatProps<Message extends HelperMessage> {
 	composerPick?: HelperPick;
 	/** Between the banner and the composer: a bar of tags. */
 	composerTop?: Snippet;
-	/** The message list's element, for the app's scroll memory. */
+	/**
+	 * The message list's element, for the app's scroll memory. The kit keeps a conversation that sits at its end
+	 * at its end when the composer resizes (the pick list opening or closing), so an app that follows the end
+	 * itself keeps one decider.
+	 */
 	list?: HTMLElement;
 	/** Called when the message list scrolls. */
 	onListScroll?: () => void;
