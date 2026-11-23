@@ -249,8 +249,8 @@ if (query.has('words')) {
 		['--fail-soft', ['--fail', '--text']]
 	] as const;
 	const stageInks = ['--on-stage', '--on-stage-soft'];
-	const sample = (surface: string, ink: string, inner = '') =>
-		`<p class="token-sample" style="--token-surface: var(${surface}); --token-ink: var(${ink})">${ink} on ${surface}${inner}</p>`;
+	const sample = (surface: string, ink: string) =>
+		`<p class="token-sample" style="--token-surface: var(${surface}); --token-ink: var(${ink})">${ink} on ${surface}</p>`;
 	const samples = [
 		...neutralSurfaces.flatMap((surface) => stateInks.map((ink) => sample(surface, ink))),
 		`<div class="token-sample" style="--token-surface: var(--bg); --token-ink: var(--text)">${stateInks

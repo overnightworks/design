@@ -19,19 +19,6 @@ The stage and glass tokens are the exception to the themes: `--stage`,
 both, because a video stage is dark in either. `HearingSwitch` and `EarMark`
 read them.
 
-The kit promises its palette at WCAG 2.2 AA in both themes, and the consumers' axe
-gate judges it on a page of one sample per pair:
-
-- Every neutral surface (`--bg`, `--bg-deep`, `--surface`, `--surface-hover`,
-  `--header-bg`, and `--card-bg` over `--bg`) carries `--text`, `--text-muted`,
-  `--ok`, `--busy` and `--fail`.
-- Each soft surface (`--ok-soft`, `--busy-soft`, `--fail-soft`) carries its own
-  state colour and `--text`; `--text-muted` on a soft surface is not promised.
-- `--on-stage` and `--on-stage-soft` sit on `--stage` and on `--glass` and
-  `--glass-dark` over it.
-- `--on-accent` sits on the consumers' own test accent only; an app's accent is
-  the app's to check.
-
 The same attribute on any other element marks a surface that is dark (or light) in
 either device mode, such as a game table or video stage. The nearest marked
 ancestor wins at any depth, under either device mode. The limits:
@@ -50,6 +37,19 @@ ancestor wins at any depth, under either device mode. The limits:
   unmarked root. A `@media (prefers-color-scheme: dark)` rule matches by the device
   alone, so on a dark device it styles content in every region, light or dark,
   whatever the root, and on a light device it styles none.
+
+The kit promises its palette at WCAG 2.2 AA in both themes, and the consumers' axe
+gate judges it on a page of one sample per pair:
+
+- Every neutral surface (`--bg`, `--bg-deep`, `--surface`, `--surface-hover`,
+  `--header-bg`, and `--card-bg` over `--bg`) carries `--text`, `--text-muted`,
+  `--ok`, `--busy` and `--fail`.
+- Each soft surface (`--ok-soft`, `--busy-soft`, `--fail-soft`) carries its own
+  state colour and `--text`; `--text-muted` on a soft surface is not promised.
+- `--on-stage` and `--on-stage-soft` sit on `--stage` and on `--glass` and
+  `--glass-dark` over it.
+- `--on-accent` sits on the consumers' own test accent only; an app's accent is
+  the app's to check.
 
 It also owns a heading rule and four classes. The rule sets `h1` and `h2` in the
 family display font (`--font-display`), spaced and uppercase, so text the app
