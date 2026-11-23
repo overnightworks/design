@@ -1,8 +1,6 @@
-import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test } from './coverage.ts';
+import { expectNoWcagViolations } from './axe.ts';
 import { colorSchemes, consumerNames, consumerTitle, useConsumer } from './build-consumer.ts';
-
-const wcagTags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 /** Every query variant the consumers render, by part. */
 const variantsByPart: Record<string, string[]> = {
@@ -65,14 +63,7 @@ for (const consumer of consumerNames) {
 						await open(page, variant);
 						// The consumer mounts its parts after top-level awaits; axe over a body still empty finds nothing.
 						await expect(page.locator('body > :not(script)').first()).toBeVisible();
-						const { violations, incomplete } = await new AxeBuilder({ page }).withTags(wcagTags).analyze();
-						expect(
-							violations.map(({ id, nodes }) => ({
-								id,
-								nodes: nodes.map(({ target, any }) => ({ target, data: any.map(({ data }) => data) }))
-							}))
-						).toEqual([]);
-						expect(incomplete.filter(({ id }) => id === 'color-contrast').map(({ nodes }) => nodes.map(({ target, any }) => [target, any.map(({ data }) => data)]))).toEqual([]);
+						await expectNoWcagViolations(page);
 					});
 				}
 			}
