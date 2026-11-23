@@ -1,7 +1,0 @@
-claim_id = "26b150915abf403c821c362e48616f83"
-agent = "Claude 9f880687-23ba-4791-a70f-b8a5af1e262b"
-role = "builder"
-base = "b44fb7c9f1ca915b9aa8abe2b51c62cdac8f70a2"
-branch = "docs/parts-page-picture"
-scope = ["docs/mockups/parts-page.html"]
-opened_commit = "d99e848be938b6b82c47d053d5b5f02e6a56374a"
