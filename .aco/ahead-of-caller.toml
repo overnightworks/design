@@ -1,0 +1,4 @@
+[[code]]
+path = "src/lib/index.ts"
+item = "overnightworks/skat#581"
+reason = "The TurnState and TurnStateProps root export is drawn by skat at the chair plate and the lobby's seat names, which #581 builds."
