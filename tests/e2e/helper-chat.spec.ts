@@ -351,6 +351,10 @@ for (const consumer of consumerNames) {
 			expect(tree.controls).toEqual([await listId(page)]);
 			expect(tree.activeOption).toEqual({ role: 'option', name: 'Anna', selected: true });
 			expect(await liesWithin(page.getByRole('option', { name: 'Anna' }), listbox(page))).toBe(true);
+			const text = (await resolveStyle(page, { 'outline-color': 'var(--text)' }, ['outline-color']))['outline-color'];
+			await expect(page.getByRole('option', { name: 'Anna' })).toHaveCSS('outline-style', 'solid');
+			await expect(page.getByRole('option', { name: 'Anna' })).toHaveCSS('outline-color', text);
+			await expect(page.getByRole('option', { name: 'Bach' })).toHaveCSS('outline-style', 'none');
 		});
 
 		test('scrolls the active option into view while the app moves it past the visible rows and the descendant follows', async ({ page }) => {
