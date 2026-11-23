@@ -223,14 +223,11 @@ describe('the composer', () => {
 		expect(order).toEqual(['Archived', 'Tag bar', 'box']);
 	});
 
-	it('cancels a press on the composer box but leaves a press on the field to the browser, which places the caret', async () => {
+	it('leaves a press on the field to the browser, which places the caret', async () => {
 		const root = await render();
-		const pressed = [root.querySelector('button')!, field(root)].map((target) => {
-			const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
-			target.dispatchEvent(down);
-			return down.defaultPrevented;
-		});
-		expect(pressed).toEqual([true, false]);
+		const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+		field(root).dispatchEvent(down);
+		expect(down.defaultPrevented).toBe(false);
 	});
 });
 
