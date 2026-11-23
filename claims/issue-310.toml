@@ -1,7 +1,0 @@
-claim_id = "f1b476bd182f4da5a619dad2550c1da0"
-agent = "Claude 9f880687-23ba-4791-a70f-b8a5af1e262b"
-role = "builder"
-base = "c6e92e3fc1e285b66759ea3f630f19abca741ba2"
-branch = "claude/issue-310-turnstate-root-export-ahead-of-caller"
-scope = [".aco/ahead-of-caller.toml"]
-opened_commit = "7d5b7299355ecb3353e99af37e08332e0c260517"
