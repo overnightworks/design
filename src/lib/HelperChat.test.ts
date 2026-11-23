@@ -355,6 +355,14 @@ describe('the pick list', () => {
 			expect(event.defaultPrevented).toBe(false);
 		});
 
+		it('cancels the default of an Escape that closes the open list and asks the app to close it once', async () => {
+			const onDismiss = vi.fn();
+			const root = await render({ composerPick: pickOf({ onDismiss }) });
+			const event = press(field(root), { key: 'Escape' });
+			expect(onDismiss).toHaveBeenCalledTimes(1);
+			expect(event.defaultPrevented).toBe(true);
+		});
+
 		it('asks nothing when the field loses focus while the list is closed', async () => {
 			const onDismiss = vi.fn();
 			const root = await render({ composerPick: pickOf({ onDismiss, open: false }) });
