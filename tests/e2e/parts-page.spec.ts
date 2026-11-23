@@ -1,8 +1,21 @@
 import { existsSync } from 'node:fs';
+import type { FrameLocator } from '@playwright/test';
 import { expect, test } from './coverage.ts';
 import { colorSchemes, languages, origin, routeTo } from './build-consumer.ts';
 import { frameAddress, partsPageDirectory } from './parts-page.ts';
-import { parts, variantsOf } from './variants.ts';
+import { parts, variantsOf, type Variant } from './variants.ts';
+
+type Language = (typeof languages)[number];
+type Theme = (typeof colorSchemes)[number];
+
+/** A frame shows the part its state belongs to, in its theme and language, with something rendered; a state that names its own words keeps them. */
+async function expectFrameRenders(frame: FrameLocator, variant: Variant, theme: Theme, language: Language): Promise<void> {
+	const html = frame.locator('html');
+	await expect(html).toHaveAttribute('data-part', variant.part.id);
+	await expect(html).toHaveAttribute('data-theme', theme);
+	await expect(html).toHaveAttribute('lang', new URLSearchParams(variant.query).get('words') ?? language);
+	await expect(frame.locator('body > *').first()).toBeAttached();
+}
 
 test.describe('the built parts page', () => {
 	test.beforeAll(() => {
@@ -18,9 +31,11 @@ test.describe('the built parts page', () => {
 				await expect(page.locator(`a.part[href="${part.id}.html"]`)).toContainText(part.name);
 				for (const theme of colorSchemes) {
 					const address = frameAddress(variantsOf(part)[0], theme, language);
-					await expect(page.frameLocator(`a.part[href="${part.id}.html"] iframe[src="${address}"]`).locator('html')).toHaveAttribute(
-						'data-theme',
-						theme
+					await expectFrameRenders(
+						page.frameLocator(`a.part[href="${part.id}.html"] iframe[src="${address}"]`),
+						variantsOf(part)[0],
+						theme,
+						language
 					);
 				}
 			}
@@ -32,7 +47,7 @@ test.describe('the built parts page', () => {
 				for (const variant of variantsOf(part)) {
 					for (const theme of colorSchemes) {
 						const address = frameAddress(variant, theme, language);
-						await expect(page.frameLocator(`iframe[src="${address}"]`).locator('html')).toHaveAttribute('data-theme', theme);
+						await expectFrameRenders(page.frameLocator(`iframe[src="${address}"]`), variant, theme, language);
 					}
 				}
 				await expect(page.locator('section.variant')).toHaveCount(variantsOf(part).length);

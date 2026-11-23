@@ -234,7 +234,11 @@ const pageThemes = ['light', 'dark'] as const satisfies readonly ThemeChoice[];
 const pageTheme = pageThemes.find((candidate) => candidate === query.get('theme'));
 if (pageTheme) document.documentElement.setAttribute('data-theme', pageTheme);
 
+/** Names the part this page renders, so a frame shows which state it landed in; the parts page's spec reads it. */
+const markPart = (part: string): void => document.documentElement.setAttribute('data-part', part);
+
 if (query.has('words')) {
+	markPart('kit-word');
 	const tag = query.get('words');
 	const language = pageLanguages.find((candidate) => candidate === tag) ?? pageLanguages[0];
 	document.documentElement.lang = language;
@@ -242,9 +246,11 @@ if (query.has('words')) {
 		document.body.innerHTML = `<p role="status">${words['account.logOut']}</p>`;
 	});
 } else if (query.has('typed')) {
+	markPart('typed-heading');
 	// A person typed the name; the app wrote the words around it.
 	document.body.innerHTML = '<main><h1>Source <span class="as-typed">talks</span></h1><h2>Second</h2></main>';
 } else if (query.has('tokens')) {
+	markPart('kit-tokens');
 	// One text sample per pair the kit promises at AA; a translucent surface sits on an opaque one.
 	const stateInks = ['--text', '--text-muted', '--ok', '--busy', '--fail'];
 	const neutralSurfaces = ['--bg', '--bg-deep', '--surface', '--surface-hover', '--header-bg'];
@@ -269,6 +275,7 @@ if (query.has('words')) {
 	];
 	document.body.innerHTML = `<main>${samples.join('')}</main>`;
 } else if (query.has('legal')) {
+	markPart('sign-in-card');
 	// The markup contract of a page that cannot render Svelte, beside the component's own row.
 	const words = await loadKitWords(pageLanguage);
 	document.body.innerHTML = `<div id="written"><nav class="legal" aria-label="${words['legalLinks.name']}">${legalLinks
@@ -279,6 +286,7 @@ if (query.has('words')) {
 		props: { links: legalLinks, words }
 	});
 } else if (query.has('sign-in-card')) {
+	markPart('sign-in-card');
 	// The markup contract of a page that cannot render Svelte, beside the component's own card: a card of wrapper
 	// elements, as a templated login page writes it, in a container wider than the component's card.
 	const words = await loadKitWords(pageLanguage);
@@ -303,24 +311,35 @@ if (query.has('words')) {
 		}
 	});
 } else if (query.has('marked')) {
+	markPart('marked');
 	mount(MarkedSentence, { target: document.body });
 } else if (query.has('helper')) {
+	markPart('helper-chat');
 	window.reports = [];
 	mount(HelperChatStub, {
 		target: document.body,
 		props: { variant: query.get('helper') ?? '', words: await loadKitWords(pageLanguage) }
 	});
 } else if (query.has('turn')) {
+	markPart('turn-state');
 	mountTurnState(query.get('turn') ?? '', await loadKitWords(pageLanguage));
 } else if (query.has('ear')) {
+	markPart('ear-mark');
 	mountEarMarks(query.get('ear') ?? '', await loadKitWords(pageLanguage));
 } else if (query.has('hearing')) {
+	markPart('hearing-switch');
 	mountHearingSwitches(query.get('hearing') ?? '', await loadKitWords(pageLanguage));
 } else if (query.has('agents')) {
+	markPart('agent-control');
 	mountAgentControl(query.get('agents') ?? '', await loadKitWords(pageLanguage));
 } else if (query.has('menu')) {
+	markPart('account-menu');
 	mountMenu(query.get('menu') ?? '', await loadKitWords(pageLanguage));
 } else {
+	const signInKeys = ['signing-in', 'window-blocked', 'unfinished', 'login-failed', 'no-access', 'on-sign-in'];
+	const unknown = [...query.keys()].filter((key) => !['lang', 'theme', ...signInKeys].includes(key));
+	if (unknown.length > 0) throw new Error(`The consumer renders no state for ?${unknown.join('&')}`);
+	markPart('sign-in-page');
 	window.reports = [];
 	const state: SignInState = query.has('signing-in')
 		? { page: 'signing-in', tabHref: '/app' }
