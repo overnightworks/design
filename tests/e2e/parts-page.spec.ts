@@ -24,6 +24,13 @@ test.describe('the built parts page', () => {
 	});
 	test.beforeEach(({ page }) => routeTo(page.context(), partsPageDirectory));
 
+	test('the front door opens the German index and keeps the English link on the language switch', async ({ page }) => {
+		await page.goto(`${origin}/index.html`);
+		await expect(page).toHaveURL(`${origin}/de/index.html`);
+		await expect(page.locator('nav.switch a[aria-current="true"]')).toHaveText('Deutsch');
+		await expect(page.locator('nav.switch a[href="../en/index.html"]')).toBeVisible();
+	});
+
 	for (const language of languages) {
 		test(`the index in ${language} links every part and shows its first state in light and dark`, async ({ page }) => {
 			await page.goto(`${origin}/${language}/index.html`);

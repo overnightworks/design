@@ -313,7 +313,7 @@ if (query.has('words')) {
 	// The markup contract of a page that cannot render Svelte, beside the component's own card: a card of wrapper
 	// elements, as a templated login page writes it, in a container wider than the component's card.
 	const words = await loadKitWords(pageLanguage);
-	const signedOut = query.get('sign-in-card') === 'signed-out';
+	const signedOut = knownVariants('sign-in card', ['signed-out', 'no-access'], query.get('sign-in-card') ?? '') === 'signed-out';
 	document.body.innerHTML = `<div id="written" style="width: 480px; max-width: 100%"><main class="sign-in-card">
 		<div><h1>${words['signIn.loggedOut']}</h1></div>
 		<div><form action="/login" method="post">
