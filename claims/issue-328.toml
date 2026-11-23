@@ -3,6 +3,6 @@ agent = "Claude 9f880687-23ba-4791-a70f-b8a5af1e262b"
 role = "builder"
 base = "c6e92e3fc1e285b66759ea3f630f19abca741ba2"
 branch = "claude/issue-328-parts-page-builds-from-variant-list"
-scope = [".github/workflows/ci.yml", "docs/ARCHITECTURE.md", "package.json", "scripts", "tests/e2e"]
+scope = [".github/workflows/ci.yml", ".gitignore", "AGENTS.md", "docs/ARCHITECTURE.md", "package.json", "scripts", "tests/e2e"]
 opened_commit = "557207ef9e1cbbff1b504373cd3dbd24a9bb0686"
 whole_reason = "The shared list, the page generator, the consumer's theme query, the spec over the built page and the CI step are one capability: the list without the page has no caller, and the page without the spec proves nothing."
