@@ -242,7 +242,7 @@ function mountTurnState(variant: string, words: KitWords): void {
 	}
 }
 
-const helperVariants = ['base', 'empty', 'scroll', 'running', 'problem', 'loading', 'failed', 'draft', 'archived'];
+const helperVariants = ['base', 'empty', 'scroll', 'running', 'problem', 'loading', 'failed', 'draft', 'archived', 'many', 'cancelsEscape'];
 
 /** The languages this page offers; the type check fails when the kit lacks one. */
 const pageLanguages = ['de', 'en'] as const satisfies readonly KitLanguage[];
