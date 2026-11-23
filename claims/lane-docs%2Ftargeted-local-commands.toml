@@ -1,7 +1,0 @@
-claim_id = "7e617fc8dcdf4589b3a5698083b2b552"
-agent = "Claude 9f880687-23ba-4791-a70f-b8a5af1e262b"
-role = "builder"
-base = "adcbae4b000942e3cc8453578cef0a1929487842"
-branch = "docs/targeted-local-commands"
-scope = ["AGENTS.md"]
-opened_commit = "59925df6ba4828cc2b296c8c36e5efe0ff317f8a"
