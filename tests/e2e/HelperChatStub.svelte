@@ -9,7 +9,12 @@
 
 	let { variant, words }: { variant: string; words: KitWords } = $props();
 
-	const people = ['Anna', 'Bach', 'Clara'];
+	const pickVariants = ['base', 'many', 'cancelsEscape'];
+	const people = $derived(
+		variant === 'many'
+			? ['Anna', 'Bach', 'Clara', 'Dvořák', 'Elgar', 'Fauré', 'Grieg', 'Haydn', 'Ives', 'Janáček', 'Kodály', 'Liszt']
+			: ['Anna', 'Bach', 'Clara']
+	);
 	const toolCalls = [
 		{ name: 'rewrite_section', input: { title: 'Verse 2', foreign: false } },
 		{ name: 'add_line', input: { title: 'Bridge of a long-named shared song that does not fit a narrow screen', foreign: true } }
@@ -46,11 +51,27 @@
 	let draft = $state(untrack(() => (variant === 'draft' ? 'A first line\nA second line' : '')));
 	let caret = $state(0);
 	let pickIndex = $state(0);
+	let dismissed = $state(false);
 	let tags: string[] = $state([]);
 	let list: HTMLElement | undefined = $state();
 
 	const mention = $derived(/@(\w*)$/.exec(draft.slice(0, caret)));
 	const candidates = $derived(mention ? people.filter((person) => person.startsWith(mention[1])) : []);
+	const pickOpen = $derived(mention !== null && !dismissed);
+
+	const pickOffer = $derived({
+		label: 'People',
+		open: pickOpen,
+		keys: candidates,
+		active: candidates[pickIndex],
+		option: personOption,
+		empty: 'No one matches',
+		onPick: pick,
+		onDismiss: () => {
+			dismissed = true;
+			report('dismiss');
+		}
+	});
 
 	function report(what: string): void {
 		window.reports.push(what);
@@ -64,7 +85,8 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent): void {
-		if (candidates.length === 0) return;
+		if (variant === 'cancelsEscape' && event.key === 'Escape') event.preventDefault();
+		if (!pickOpen || candidates.length === 0) return;
 		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
 			pickIndex = (pickIndex + (event.key === 'ArrowDown' ? 1 : candidates.length - 1)) % candidates.length;
 			event.preventDefault();
@@ -92,6 +114,7 @@
 			draft = text;
 			caret = position;
 			pickIndex = 0;
+			dismissed = false;
 		}}
 		onSend={(text) => {
 			report(`send:${text}`);
@@ -103,7 +126,7 @@
 		problemLine={problem}
 		toolCallTarget={target}
 		toolCallTitle={(call) => JSON.stringify(call.input)}
-		composerPopup={candidates.length > 0 ? pickList : undefined}
+		composerPick={pickVariants.includes(variant) ? pickOffer : undefined}
 		composerTop={tags.length > 0 ? tagBar : undefined}
 		bind:list
 		onListScroll={() => report(`scroll:${list!.scrollTop > 0}`)}
@@ -132,12 +155,8 @@
 	{#if call.input.foreign}<span class="foreign" title="Someone else's song">↗</span>{/if}
 {/snippet}
 
-{#snippet pickList()}
-	<div class="pick-list" role="listbox" aria-label="People">
-		{#each candidates as person, index (person)}
-			<button type="button" role="option" aria-selected={index === pickIndex} onclick={() => pick(person)}>{person}</button>
-		{/each}
-	</div>
+{#snippet personOption(person: string)}
+	<span>{person}</span>
 {/snippet}
 
 {#snippet tagBar()}
@@ -170,23 +189,6 @@
 		flex: 1 1 auto;
 		min-height: 0;
 		border: 1px solid var(--border);
-	}
-	.pick-list {
-		position: absolute;
-		right: 0;
-		bottom: 100%;
-		left: 0;
-		display: flex;
-		flex-direction: column;
-		border: 1px solid var(--border);
-		background: var(--surface);
-	}
-	.pick-list [role='option'] {
-		min-height: 24px;
-		padding: 4px 8px;
-	}
-	.pick-list [aria-selected='true'] {
-		background: var(--surface-hover);
 	}
 	.tag-bar {
 		display: flex;

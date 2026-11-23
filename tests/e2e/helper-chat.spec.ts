@@ -13,6 +13,37 @@ const reportsOf = (page: Page) => page.evaluate(() => window.reports);
 // the mark the element worded with the AI mark word, the tool row the parent of the line that names its tool.
 const bubbleOf = (page: Page, text: string) => page.getByRole('listitem').filter({ hasText: text }).locator(':scope > *').nth(1);
 const aiMarkIn = (scope: Locator) => scope.getByText(aiMarkWord, { exact: true });
+
+interface TreeNode {
+	readonly ignored?: boolean;
+	readonly backendDOMNodeId?: number;
+	readonly role?: { readonly value: string };
+	readonly name?: { readonly value: string };
+	readonly properties?: readonly { readonly name: string; readonly value: { readonly value?: unknown; readonly relatedNodes?: readonly { readonly backendDOMNodeId: number; readonly idref: string }[] } }[];
+}
+
+/** What Chromium's accessibility tree gives a screen reader for the composer's field: its list attributes, the elements it controls and the option it points at. */
+async function composerTree(page: Page, fieldName: string) {
+	const cdp = await page.context().newCDPSession(page);
+	const { nodes } = (await cdp.send('Accessibility.getFullAXTree')) as unknown as { nodes: TreeNode[] };
+	await cdp.detach();
+	const exposed = nodes.filter(({ ignored }) => !ignored);
+	const field = exposed.find((node) => node.role?.value === 'textbox' && node.name?.value === fieldName)!;
+	const property = (node: TreeNode, name: string) => node.properties?.find((candidate) => candidate.name === name)?.value;
+	const active = property(field, 'activedescendant')?.relatedNodes?.[0];
+	const activeNode = exposed.find(({ backendDOMNodeId }) => backendDOMNodeId === active?.backendDOMNodeId);
+	return {
+		autocomplete: property(field, 'autocomplete')?.value,
+		hasPopup: property(field, 'hasPopup')?.value,
+		controls: property(field, 'controls')?.relatedNodes?.map(({ idref }) => idref) ?? [],
+		focused: property(field, 'focused')?.value,
+		activeOption: activeNode && { role: activeNode.role?.value, name: activeNode.name?.value, selected: property(activeNode, 'selected')?.value },
+		hasActiveDescendant: active !== undefined,
+		listboxes: exposed.filter((node) => node.role?.value === 'listbox').map((node) => node.name?.value),
+		options: exposed.filter((node) => node.role?.value === 'option').map((node) => node.name?.value)
+	};
+}
+
 const rowOf = (page: Page, tool: string) => page.getByText(tool).first().locator('..');
 
 for (const consumer of consumerNames) {
@@ -285,6 +316,118 @@ for (const consumer of consumerNames) {
 			expect(await reportsOf(page)).toEqual(['pick:Bach', 'untag:Bach']);
 		});
 
+		const fieldName = () => wordsOf.en['helperChat.composerLabel']({ name: 'Mozart' });
+		const listbox = (page: Page) => page.getByRole('listbox', { name: 'People' });
+		const listId = (page: Page) => page.locator('[role="listbox"]').getAttribute('id');
+
+		test('offers no pick list and no list attributes without a pick list', async ({ page }) => {
+			await open(page, 'draft');
+			await fieldOf(page).pressSequentially('@');
+			const tree = await composerTree(page, fieldName());
+			expect([tree.autocomplete, tree.hasPopup, tree.controls, tree.hasActiveDescendant, tree.listboxes]).toEqual([undefined, undefined, [], false, []]);
+			await expect(page.locator('[role="listbox"]')).toHaveCount(0);
+		});
+
+		test('names the closed list from the field with the static list autocompletion and leaves the hidden list out of the tree', async ({ page }) => {
+			await open(page, 'base');
+			const tree = await composerTree(page, fieldName());
+			expect([tree.autocomplete, tree.hasPopup, tree.hasActiveDescendant, tree.listboxes, tree.options]).toEqual(['list', 'listbox', false, [], []]);
+			// Chromium exposes `controls` only for a target in the tree, so a hidden list shows only in the attribute.
+			expect(await fieldOf(page).getAttribute('aria-controls')).toBe(await listId(page));
+			await expect(page.locator('[role="listbox"]')).toBeHidden();
+		});
+
+		test('points the focused field at the active option, which lies inside the list’s visible box', async ({ page }) => {
+			await open(page, 'base');
+			await fieldOf(page).pressSequentially('@');
+			const tree = await composerTree(page, fieldName());
+			expect([tree.focused, tree.autocomplete, tree.hasPopup, tree.listboxes, tree.options]).toEqual([true, 'list', 'listbox', ['People'], ['Anna', 'Bach', 'Clara']]);
+			expect(tree.controls).toEqual([await listId(page)]);
+			expect(tree.activeOption).toEqual({ role: 'option', name: 'Anna', selected: true });
+			const [listBox, optionBox] = [await listbox(page).boundingBox(), await page.getByRole('option', { name: 'Anna' }).boundingBox()];
+			expect(optionBox!.y).toBeGreaterThanOrEqual(listBox!.y);
+			expect(optionBox!.y + optionBox!.height).toBeLessThanOrEqual(listBox!.y + listBox!.height);
+		});
+
+		test('scrolls the active option into view while the app moves it past the visible rows and the descendant follows', async ({ page }) => {
+			await open(page, 'many');
+			const field = fieldOf(page);
+			await field.pressSequentially('@');
+			for (let step = 0; step < 9; step += 1) await field.press('ArrowDown');
+			const tree = await composerTree(page, fieldName());
+			expect(tree.activeOption).toEqual({ role: 'option', name: 'Janáček', selected: true });
+			const [listBox, optionBox] = [await listbox(page).boundingBox(), await page.getByRole('option', { name: 'Janáček' }).boundingBox()];
+			expect(await listbox(page).evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+			expect(optionBox!.y).toBeGreaterThanOrEqual(listBox!.y);
+			expect(optionBox!.y + optionBox!.height).toBeLessThanOrEqual(listBox!.y + listBox!.height);
+		});
+
+		test('moves the descendant to the new active candidate while typing filters the list', async ({ page }) => {
+			await open(page, 'base');
+			const field = fieldOf(page);
+			await field.pressSequentially('@');
+			expect((await composerTree(page, fieldName())).activeOption?.name).toBe('Anna');
+			await field.pressSequentially('C');
+			const tree = await composerTree(page, fieldName());
+			expect([tree.options, tree.activeOption?.name]).toEqual([['Clara'], 'Clara']);
+		});
+
+		test('says the empty line in the status that stood there before while no candidate matches, with no list and no descendant', async ({ page }) => {
+			await open(page, 'base');
+			const field = fieldOf(page);
+			const line = field.locator('..').getByRole('status');
+			const before = await line.elementHandle();
+			await expect(line).toHaveText('');
+			await field.pressSequentially('@Z');
+			await expect(line).toHaveText('No one matches');
+			await expect(line).toBeVisible();
+			expect(await line.evaluate((node, original) => node === original, before)).toBe(true);
+			const tree = await composerTree(page, fieldName());
+			expect([tree.hasActiveDescendant, tree.listboxes, tree.options]).toEqual([false, [], []]);
+		});
+
+		test('closes the list on Escape through the app, keeping the focus, the value and the draft unsent', async ({ page }) => {
+			await open(page, 'base');
+			const field = fieldOf(page);
+			await field.pressSequentially('Hi @');
+			await field.press('Escape');
+			expect(await reportsOf(page)).toEqual(['dismiss']);
+			await expect(field).toBeFocused();
+			await expect(field).toHaveValue('Hi @');
+			await expect(listbox(page)).toHaveCount(0);
+			expect((await composerTree(page, fieldName())).hasActiveDescendant).toBe(false);
+		});
+
+		test('leaves the list open when the app cancels Escape', async ({ page }) => {
+			await open(page, 'cancelsEscape');
+			const field = fieldOf(page);
+			await field.pressSequentially('@');
+			await field.press('Escape');
+			expect(await reportsOf(page)).toEqual([]);
+			await expect(listbox(page)).toHaveCount(1);
+		});
+
+		test('closes the list once when Tab leaves the field', async ({ page }) => {
+			await open(page, 'base');
+			const field = fieldOf(page);
+			await field.pressSequentially('@');
+			await page.keyboard.press('Tab');
+			await expect(field).not.toBeFocused();
+			expect(await reportsOf(page)).toEqual(['dismiss']);
+			await expect(listbox(page)).toHaveCount(0);
+		});
+
+		test('keeps the focus and the list when the list is pressed outside any option', async ({ page }) => {
+			await open(page, 'base');
+			const field = fieldOf(page);
+			await field.pressSequentially('@');
+			const box = (await listbox(page).boundingBox())!;
+			await page.mouse.click(box.x + box.width / 2, box.y + 2);
+			await expect(field).toBeFocused();
+			expect(await reportsOf(page)).toEqual([]);
+			await expect(listbox(page)).toHaveCount(1);
+		});
+
 		test('places the pick list inside the composer box above the field and keeps the focus in the field when it is pressed', async ({
 			page
 		}) => {
@@ -343,11 +486,12 @@ for (const consumer of consumerNames) {
 		});
 
 		for (const colorScheme of colorSchemes) {
-			test(`has no WCAG 2.2 AA violation around the open mention picker in ${colorScheme}`, async ({ page }) => {
+			test(`has no WCAG 2.2 AA violation around the open mention picker with an active option in ${colorScheme}`, async ({ page }) => {
 				await page.emulateMedia({ colorScheme });
 				await open(page, 'base');
 				await fieldOf(page).pressSequentially('@');
 				await expect(page.getByRole('listbox', { name: 'People' }).getByRole('option')).toHaveCount(3);
+				expect((await composerTree(page, fieldName())).activeOption?.name).toBe('Anna');
 				await expectNoWcagViolations(page);
 			});
 		}
