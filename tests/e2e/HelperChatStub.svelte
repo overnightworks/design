@@ -129,7 +129,7 @@
 		composerPick={pickVariants.includes(variant) ? pickOffer : undefined}
 		composerTop={tags.length > 0 ? tagBar : undefined}
 		bind:list
-		onListScroll={() => report(`scroll:${list!.scrollTop > 0}`)}
+		onListScroll={() => variant === 'scroll' && report(`scroll:${list!.scrollTop > 0}`)}
 		{words}
 	/>
 	<div class="stub-controls">
