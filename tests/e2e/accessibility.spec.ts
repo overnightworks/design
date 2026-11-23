@@ -50,7 +50,8 @@ const variantsByPart: Record<string, string[]> = {
 	],
 	'the marked sentence': ['marked'],
 	'the typed heading': ['typed'],
-	'a kit word on its own': ['words=de', 'words=en']
+	'a kit word on its own': ['words=de', 'words=en'],
+	'the kit tokens': ['tokens']
 };
 
 for (const consumer of consumerNames) {
