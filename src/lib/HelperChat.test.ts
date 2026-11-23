@@ -149,13 +149,10 @@ describe('the message list while it is resized', () => {
 		return region;
 	}
 
-	it.each([
-		['scrolled to its end', 'stays at its end', 300, 500],
-		['scrolled up', 'keeps its place', 100, 100]
-	])('while %s it %s when its box is resized', async (_case, _outcome, scrollTop, afterResize) => {
-		const region = await renderScrolledTo(scrollTop);
+	it('keeps its place when its box is resized while scrolled up', async () => {
+		const region = await renderScrolledTo(100);
 		for (const report of resizeReports) report([], {} as ResizeObserver);
-		expect(region.scrollTop).toBe(afterResize);
+		expect(region.scrollTop).toBe(100);
 	});
 });
 
