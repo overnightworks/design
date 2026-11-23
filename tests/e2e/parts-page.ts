@@ -111,6 +111,23 @@ ${sections}`
 	);
 }
 
+/** The page opens in German, as the blessed picture shows; English is one switch away. */
+const openingLanguage: KitLanguage = 'de';
+
+function entryPage(): string {
+	const address = `${openingLanguage}/index.html`;
+	return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="refresh" content="0; url=${address}">
+<title>design parts</title>
+</head>
+<body><a href="${address}">${languageNames[openingLanguage]}</a></body>
+</html>
+`;
+}
+
 /**
  * Builds the parts page from the packed tarball: the `imported` consumer without counters and with a
  * relative base, then one index and one page per part in every kit language, each state a frame of
@@ -122,6 +139,7 @@ export async function buildPartsPage(): Promise<string> {
 	await buildConsumer('imported', { outDir: join(partsPageDirectory, consumerDirectory), counters: false, base: './' });
 	copyStylesheet(partsPageDirectory);
 	cpSync(join(here, 'parts-page.css'), join(partsPageDirectory, 'parts-page.css'));
+	writeFileSync(join(partsPageDirectory, 'index.html'), entryPage());
 	for (const language of languages) {
 		mkdirSync(join(partsPageDirectory, language), { recursive: true });
 		writeFileSync(join(partsPageDirectory, language, 'index.html'), indexPage(language, version));

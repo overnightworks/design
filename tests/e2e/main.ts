@@ -62,7 +62,17 @@ function themeHolder(takesChoice: boolean) {
 	};
 }
 
+const menuVariants = ['default', 'action', 'no-theme', 'ignore'];
+
+/** A variant the part does not render is a wrong entry in `variants.ts`, so it fails the page instead of showing a default state. */
+function knownVariants(part: string, known: readonly string[], variant: string): string {
+	const unknown = variant.split(',').filter((flag) => flag !== '' && !known.includes(flag));
+	if (unknown.length > 0) throw new Error(`The ${part} part renders no state for ${unknown.join(',')}`);
+	return variant;
+}
+
 function mountMenu(variant: string, words: KitWords): void {
+	knownVariants('account menu', menuVariants, variant);
 	window.reports = [];
 	const report = (what: string) => () => void window.reports.push(what);
 	const common = {
@@ -103,7 +113,13 @@ function refusalOfVariant(variant: string): AgentControlRefusal | undefined {
 	return variant === 'empty-place-full' || variant === 'full-place-full' ? 'place-full' : undefined;
 }
 
+const agentVariants = [
+	'default', 'full', 'full-place-full', 'refusal', 'empty', 'empty-full', 'empty-refusal', 'empty-place-full',
+	...Object.keys(endedVariants)
+];
+
 function mountAgentControl(variant: string, words: KitWords): void {
+	knownVariants('agent control', agentVariants, variant);
 	window.reports = [];
 	mount(AgentControl, {
 		target: document.body,
@@ -126,7 +142,10 @@ function mountAgentControl(variant: string, words: KitWords): void {
  * `reverse` flips the DOM order), `compact` shows every chip compact, and `row` sets them side by side with no
  * gap instead of stacked.
  */
+const hearingFlags = ['hear', 'listen', 'see', 'off', 'compact', 'narrow', 'row', 'reverse', 'ignore'];
+
 function mountHearingSwitches(variant: string, words: KitWords): void {
+	knownVariants('hearing switch', hearingFlags, variant);
 	window.reports = [];
 	const flags = new Set(variant.split(','));
 	const chosen = (['hear', 'listen', 'see'] as const).filter((kind) => flags.has(kind));
@@ -172,6 +191,7 @@ function mountHearingSwitches(variant: string, words: KitWords): void {
  * name does not fit.
  */
 function mountEarMarks(variant: string, words: KitWords): void {
+	knownVariants('ear mark', ['one', 'two', 'long'], variant);
 	const stage = document.createElement('div');
 	stage.className = 'ear-stage';
 	document.body.append(stage);
@@ -191,6 +211,7 @@ function mountEarMarks(variant: string, words: KitWords): void {
  * row of an agent control beside a short and a long agent name.
  */
 function mountTurnState(variant: string, words: KitWords): void {
+	knownVariants('turn state', ['alone', 'here'], variant);
 	const outcomes: (TurnOutcome | undefined)[] = ['not_enabled', 'busy', 'budget_spent', 'unavailable', undefined];
 	if (variant === 'here') {
 		const narrowStage = document.createElement('div');
@@ -220,6 +241,8 @@ function mountTurnState(variant: string, words: KitWords): void {
 		mount(TurnState, { target: row, props: { outcome, words } });
 	}
 }
+
+const helperVariants = ['base', 'empty', 'scroll', 'running', 'problem', 'loading', 'failed', 'draft', 'archived'];
 
 /** The languages this page offers; the type check fails when the kit lacks one. */
 const pageLanguages = ['de', 'en'] as const satisfies readonly KitLanguage[];
@@ -318,7 +341,7 @@ if (query.has('words')) {
 	window.reports = [];
 	mount(HelperChatStub, {
 		target: document.body,
-		props: { variant: query.get('helper') ?? '', words: await loadKitWords(pageLanguage) }
+		props: { variant: knownVariants('helper chat', helperVariants, query.get('helper') ?? ''), words: await loadKitWords(pageLanguage) }
 	});
 } else if (query.has('turn')) {
 	markPart('turn-state');
