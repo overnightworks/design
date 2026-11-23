@@ -5,6 +5,11 @@
 	--on-accent: #1a1a1a;
 }
 
+/* An app paints its own page: the kit sets no backdrop, and without one a checker reads white behind the dark theme's text. */
+body {
+	background: var(--bg);
+}
+
 /* A stand-in for the video the hearing switch sits on. */
 .hearing-stage {
 	display: flex;

@@ -28,7 +28,7 @@ const translated = {
     "agent.busy": "Busy right now",
     "agent.askToLeave": "Ask to leave",
     "agent.callLabel": (gaps: { readonly name: string }) => "Call " + gaps.name,
-    "agent.askToLeaveLabel": (gaps: { readonly name: string }) => "Ask " + gaps.name + " to leave",
+    "agent.askToLeaveLabel": (gaps: { readonly name: string }) => "Ask to leave: " + gaps.name,
     "agent.empty": "No agent is reachable right now.",
     "agent.notAllowed": "You may not call this agent.",
     "agent.ownerAbsent": "Its owner is not here.",

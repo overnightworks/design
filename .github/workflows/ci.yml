@@ -61,7 +61,7 @@ jobs:
         run: |
           uv run --frozen python scripts/generate_turn_outcome.py
           git diff --exit-code -- src/lib/turn-outcome.ts scripts/agents_vocabulary_pin.toml
-      - name: Prove production consumers of the tarball paint the sign-in page
+      - name: Prove production consumers of the tarball paint the parts and pass the accessibility check
         run: |
           pnpm exec playwright install chromium
           pnpm run test:consumer

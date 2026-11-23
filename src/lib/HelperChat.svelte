@@ -71,7 +71,16 @@
 	{:else if history.state === 'failed'}
 		<p class="failure" role="alert">{history.failure}</p>
 	{:else}
-		<div class="list" bind:this={list} onscroll={onListScroll}>
+		<!-- A scrolling list takes the keyboard focus, so a person without a pointer can scroll it. -->
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+		<div
+			class="list"
+			role="region"
+			aria-label={words['helperChat.listLabel']({ name: helperName })}
+			bind:this={list}
+			onscroll={onListScroll}
+			tabindex="0"
+		>
 			{#if messages.length === 0}
 				<p class="subtle">{emptyHint}</p>
 			{:else}
@@ -145,6 +154,10 @@
 		min-height: 0;
 		overflow-y: auto;
 		padding: 8px;
+	}
+	.list:focus-visible {
+		outline: 2.5px solid var(--accent);
+		outline-offset: -2.5px;
 	}
 	.subtle {
 		margin: 0;

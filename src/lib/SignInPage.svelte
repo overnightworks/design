@@ -114,10 +114,12 @@
 	.grid-bg {
 		position: absolute;
 		inset: 0;
-		background-image:
-			linear-gradient(var(--glow) 1px, transparent 1px),
-			linear-gradient(90deg, var(--glow) 1px, transparent 1px);
-		background-size: 40px 40px;
+		/* The lines are a mask over a plain colour, not a background image: a contrast check cannot read through an image. */
+		background: var(--glow);
+		mask-image:
+			linear-gradient(#000 1px, transparent 1px),
+			linear-gradient(90deg, #000 1px, transparent 1px);
+		mask-size: 40px 40px;
 	}
 	.glow {
 		position: absolute;

@@ -157,7 +157,7 @@ WORDS: Mapping[Language, Mapping[Key, str | Mapping[Category, str]]] = {
         'agent.busy': 'Busy right now',
         'agent.askToLeave': 'Ask to leave',
         'agent.callLabel': 'Call {name}',
-        'agent.askToLeaveLabel': 'Ask {name} to leave',
+        'agent.askToLeaveLabel': 'Ask to leave: {name}',
         'agent.empty': 'No agent is reachable right now.',
         'agent.notAllowed': 'You may not call this agent.',
         'agent.ownerAbsent': 'Its owner is not here.',

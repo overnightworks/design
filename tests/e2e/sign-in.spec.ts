@@ -21,7 +21,7 @@ for (const consumer of consumerNames) {
 				const layers = card.locator('xpath=preceding-sibling::*');
 				await expect(layers).toHaveCount(3);
 				const [grid, ...glows] = await layers.all();
-				await expect(grid).toHaveCSS('background-image', /gradient/);
+				await expect(grid).toHaveCSS('mask-image', /gradient/);
 				for (const glow of glows) {
 					await expect(glow).toBeVisible();
 					await expect(glow).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
