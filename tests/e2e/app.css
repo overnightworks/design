@@ -73,3 +73,11 @@ body {
 	gap: 8px;
 	margin: 8px;
 }
+
+/* One text sample of the token page: the ink and the surface it sits on, both named by the page. */
+.token-sample {
+	margin: 0;
+	padding: 4px 8px;
+	background: var(--token-surface);
+	color: var(--token-ink);
+}
