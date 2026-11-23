@@ -1,8 +1,0 @@
-claim_id = "246508c715d649c39596a18940c2740f"
-agent = "Claude 9f880687-23ba-4791-a70f-b8a5af1e262b"
-role = "builder"
-base = "e3feccf0cfff4bd558335d42c7441f4659a3f5b2"
-branch = "claude/issue-332-helperchat-field-names-pick-list"
-scope = ["docs/stylesheet.md", "src/lib/HelperChat.ssr.test.ts", "src/lib/HelperChat.svelte", "src/lib/HelperChat.test.ts", "src/lib/index.ts", "src/lib/types.ts", "tests/e2e", "tests/test_npm_package.py"]
-opened_commit = "756bfbb448f39442b2114faf0ffa90cc3387d9a6"
-whole_reason = "The pick contract, the field's attributes, the kit-drawn list, its stub and its drives are one public-contract change: any part alone leaves the field unannounced or the contract unproven."
