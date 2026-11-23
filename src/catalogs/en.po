@@ -105,7 +105,7 @@ msgstr "Call {name}"
 
 msgctxt "agent.askToLeaveLabel"
 msgid "{name} bitten zu gehen"
-msgstr "Ask to leave {name}"
+msgstr "Ask to leave: {name}"
 
 msgctxt "agent.empty"
 msgid "Gerade ist kein Agent erreichbar."
