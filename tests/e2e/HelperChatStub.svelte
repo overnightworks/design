@@ -9,7 +9,7 @@
 
 	let { variant, words }: { variant: string; words: KitWords } = $props();
 
-	const pickVariants = ['base', 'many', 'cancelsEscape'];
+	const pickVariants = ['base', 'many', 'cancelsEscape', 'pickAtEnd'];
 	const people = $derived(
 		variant === 'many'
 			? ['Anna', 'Bach', 'Clara', 'Dvořák', 'Elgar', 'Fauré', 'Grieg', 'Haydn', 'Ives', 'Janáček', 'Kodály', 'Liszt']
@@ -32,7 +32,7 @@
 
 	function startingMessages(): AppMessage[] {
 		if (variant === 'empty') return [];
-		if (variant === 'scroll') return longConversation;
+		if (variant === 'scroll' || variant === 'pickAtEnd') return longConversation;
 		if (variant === 'running') return [conversation[0], { role: 'assistant', text: '' }];
 		if (variant === 'problem') return [conversation[0], { role: 'assistant', text: 'I got as far as', failed: true }];
 		return conversation;
@@ -97,7 +97,7 @@
 	}
 
 	$effect(() => {
-		if (variant === 'scroll' && list) list.scrollTop = list.scrollHeight;
+		if ((variant === 'scroll' || variant === 'pickAtEnd') && list) list.scrollTop = list.scrollHeight;
 	});
 </script>
 

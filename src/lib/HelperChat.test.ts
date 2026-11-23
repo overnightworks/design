@@ -45,6 +45,27 @@ const aiMarks = (scope: Element) => [...scope.querySelectorAll('span')].filter((
 const toolRow = (root: HTMLElement, tool: string) =>
 	[...root.querySelectorAll('span')].find((candidate) => candidate.textContent === en['helperChat.ranTool']({ tool }))!.parentElement!;
 
+// jsdom has no layout, so a resize is reported by hand.
+const resizeReports: ResizeObserverCallback[] = [];
+
+beforeEach(() => {
+	vi.stubGlobal(
+		'ResizeObserver',
+		class {
+			constructor(report: ResizeObserverCallback) {
+				resizeReports.push(report);
+			}
+			observe(): void {}
+			disconnect(): void {}
+		}
+	);
+});
+
+afterEach(() => {
+	vi.unstubAllGlobals();
+	resizeReports.length = 0;
+});
+
 function press(target: HTMLElement, init: KeyboardEventInit): KeyboardEvent {
 	const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init });
 	target.dispatchEvent(event);
@@ -111,6 +132,30 @@ describe('the message list', () => {
 		};
 		const target = await mountInDocument((into) => mount(HelperChat<AppMessage>, { target: into, props }));
 		expect(target.querySelector('.problem')?.textContent).toBe('m-7');
+	});
+});
+
+describe('the message list while it is resized', () => {
+	async function renderScrolledTo(scrollTop: number): Promise<HTMLElement> {
+		const root = await render({ messages: [{ role: 'user', text: 'Hi' }] });
+		const region = root.querySelector<HTMLElement>('[role="region"]')!;
+		let top = scrollTop;
+		Object.defineProperties(region, {
+			scrollHeight: { value: 500 },
+			clientHeight: { value: 200 },
+			scrollTop: { get: () => top, set: (next: number) => (top = next) }
+		});
+		region.dispatchEvent(new Event('scroll'));
+		return region;
+	}
+
+	it.each([
+		['scrolled to its end', 'stays at its end', 300, 500],
+		['scrolled up', 'keeps its place', 100, 100]
+	])('while %s it %s when its box is resized', async (_case, _outcome, scrollTop, afterResize) => {
+		const region = await renderScrolledTo(scrollTop);
+		for (const report of resizeReports) report([], {} as ResizeObserver);
+		expect(region.scrollTop).toBe(afterResize);
 	});
 });
 

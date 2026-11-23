@@ -38,10 +38,11 @@
 		historyReady && running && lastMessage?.role === 'assistant' && lastMessage.text === ''
 	);
 	const thinkingWord = $derived(words['helperChat.thinking']({ name: helperName }));
-	const sendable = $derived(!running && readOnly === undefined && draft.trim() !== '');
+	const writable = $derived(readOnly === undefined);
+	const sendable = $derived(!running && writable && draft.trim() !== '');
 
 	// A read-only field is disabled and offers no list.
-	const pick = $derived(readOnly === undefined ? composerPick : undefined);
+	const pick = $derived(writable ? composerPick : undefined);
 	const pickOpen = $derived(pick?.open === true);
 	const activeKey = $derived(pickOpen && pick!.active !== undefined && pick!.keys.includes(pick!.active) ? pick!.active : undefined);
 	const pickShown = $derived(pickOpen && pick!.keys.length > 0);
@@ -75,8 +76,27 @@
 
 	// The field keeps the focus, so the browser never scrolls the active option into view; the part does.
 	$effect(() => {
-		void pick?.keys;
 		if (activeKey !== undefined) pickList!.children[pick!.keys.indexOf(activeKey)].scrollIntoView({ block: 'nearest' });
+	});
+
+	// While the conversation is scrolled to its end, the pick list opening, resizing and closing shrinks and grows it; the newest message stays in view.
+	$effect(() => {
+		const region = list;
+		if (!region) return;
+		const atEnd = (): boolean => region.scrollHeight - region.scrollTop - region.clientHeight <= 1;
+		let following = atEnd();
+		const keepEnd = (): void => {
+			following = atEnd();
+		};
+		const observer = new ResizeObserver(() => {
+			if (following) region.scrollTop = region.scrollHeight;
+		});
+		region.addEventListener('scroll', keepEnd);
+		observer.observe(region);
+		return () => {
+			region.removeEventListener('scroll', keepEnd);
+			observer.disconnect();
+		};
 	});
 
 	// Pressing anywhere in the composer's box but the field keeps the focus in the field: the keyboard stays open, a tap on Send lands and a press on the pick list does not close it.
@@ -169,7 +189,7 @@
 				aria-activedescendant={activeKey === undefined ? undefined : optionId(activeKey)}
 				aria-label={words['helperChat.composerLabel']({ name: helperName })}
 				{placeholder}
-				disabled={readOnly !== undefined}
+				disabled={!writable}
 				value={draft}
 				oninput={handleInput}
 				onkeydown={handleKeydown}
@@ -331,6 +351,8 @@
 	}
 	.pick-list [aria-selected='true'] {
 		background: var(--surface-hover);
+		outline: 2px solid var(--text);
+		outline-offset: -2px;
 	}
 	textarea {
 		flex: 1 1 0;

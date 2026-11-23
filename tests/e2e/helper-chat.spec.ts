@@ -44,6 +44,12 @@ async function composerTree(page: Page, fieldName: string) {
 	};
 }
 
+/** Whether the box of `inner` lies inside the box of `outer` from the top to the bottom. */
+async function liesWithin(inner: Locator, outer: Locator): Promise<boolean> {
+	const [innerBox, outerBox] = [(await inner.boundingBox())!, (await outer.boundingBox())!];
+	return innerBox.y >= outerBox.y && innerBox.y + innerBox.height <= outerBox.y + outerBox.height;
+}
+
 const rowOf = (page: Page, tool: string) => page.getByText(tool).first().locator('..');
 
 for (const consumer of consumerNames) {
@@ -344,9 +350,7 @@ for (const consumer of consumerNames) {
 			expect([tree.focused, tree.autocomplete, tree.hasPopup, tree.listboxes, tree.options]).toEqual([true, 'list', 'listbox', ['People'], ['Anna', 'Bach', 'Clara']]);
 			expect(tree.controls).toEqual([await listId(page)]);
 			expect(tree.activeOption).toEqual({ role: 'option', name: 'Anna', selected: true });
-			const [listBox, optionBox] = [await listbox(page).boundingBox(), await page.getByRole('option', { name: 'Anna' }).boundingBox()];
-			expect(optionBox!.y).toBeGreaterThanOrEqual(listBox!.y);
-			expect(optionBox!.y + optionBox!.height).toBeLessThanOrEqual(listBox!.y + listBox!.height);
+			expect(await liesWithin(page.getByRole('option', { name: 'Anna' }), listbox(page))).toBe(true);
 		});
 
 		test('scrolls the active option into view while the app moves it past the visible rows and the descendant follows', async ({ page }) => {
@@ -356,11 +360,31 @@ for (const consumer of consumerNames) {
 			for (let step = 0; step < 9; step += 1) await field.press('ArrowDown');
 			const tree = await composerTree(page, fieldName());
 			expect(tree.activeOption).toEqual({ role: 'option', name: 'Janáček', selected: true });
-			const [listBox, optionBox] = [await listbox(page).boundingBox(), await page.getByRole('option', { name: 'Janáček' }).boundingBox()];
 			expect(await listbox(page).evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
-			expect(optionBox!.y).toBeGreaterThanOrEqual(listBox!.y);
-			expect(optionBox!.y + optionBox!.height).toBeLessThanOrEqual(listBox!.y + listBox!.height);
+			expect(await liesWithin(page.getByRole('option', { name: 'Janáček' }), listbox(page))).toBe(true);
 		});
+
+		for (const width of widths) {
+			test(`keeps the newest message in view while the pick list opens, shrinks to its empty line and closes at ${width} px`, async ({ page }) => {
+				await page.setViewportSize({ width, height: 800 });
+				await open(page, 'pickAtEnd');
+				const field = fieldOf(page);
+				const conversation = page.getByRole('region', { name: wordsOf.en['helperChat.listLabel']({ name: 'Mozart' }), exact: true });
+				const newest = messageOf(page, 'Message number 30 of');
+				// The fonts settle after the app's first scroll, so the person scrolls to the end themselves.
+				await conversation.evaluate((node) => node.scrollTo({ top: node.scrollHeight }));
+				await expect.poll(() => liesWithin(newest, conversation)).toBe(true);
+				await field.pressSequentially('@');
+				await expect(listbox(page)).toBeVisible();
+				await expect.poll(() => liesWithin(newest, conversation)).toBe(true);
+				await field.pressSequentially('Z');
+				await expect(field.locator('..').getByRole('status')).toHaveText('No one matches');
+				await expect.poll(() => liesWithin(newest, conversation)).toBe(true);
+				await field.press('Escape');
+				await expect(listbox(page)).toHaveCount(0);
+				await expect.poll(() => liesWithin(newest, conversation)).toBe(true);
+			});
+		}
 
 		test('moves the descendant to the new active candidate while typing filters the list', async ({ page }) => {
 			await open(page, 'base');
