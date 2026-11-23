@@ -50,6 +50,39 @@ for (const consumer of consumerNames) {
 			await expect(page.getByRole('link')).toHaveCount(3);
 		});
 
+		// Each state's action: reached by the first Tab from the page start, drawn with the focus ring, started with Enter.
+		// It reports to the app, opens the app in a new tab, or goes to the path.
+		for (const [variant, key, outcome] of [
+			['on-sign-in', 'signIn.logIn', 'report'],
+			['unfinished', 'signIn.logIn', '/login'],
+			['login-failed', 'signIn.tryAgain', '/login'],
+			['signing-in', 'signIn.openInTab', 'tab'],
+			['window-blocked', 'signIn.openInTab', 'tab'],
+			['no-access', 'signIn.logOut', '/logout']
+		] as const) {
+			test(`reaches the ${variant} action by Tab, shows the focus ring and starts it with Enter`, async ({ page }) => {
+				await route(page.context());
+				await page.goto(`${origin}/?${variant}`);
+				const main = page.getByRole('main');
+				const action = main.getByRole('link').or(main.getByRole('button'));
+				await expect(action).toHaveText(en[key]);
+
+				await page.keyboard.press('Tab');
+				await expect(action).toBeFocused();
+				await expect(action).toHaveCSS('outline-style', 'solid');
+				await expect(action).not.toHaveCSS('outline-width', '0px');
+
+				if (outcome === 'tab') {
+					const [tab] = await Promise.all([page.context().waitForEvent('page'), page.keyboard.press('Enter')]);
+					await expect(tab).toHaveURL(`${origin}/app`);
+					return;
+				}
+				await page.keyboard.press('Enter');
+				if (outcome === 'report') expect(await page.evaluate(() => window.reports)).toEqual(['sign-in']);
+				else await expect(page).toHaveURL(`${origin}${outcome}`);
+			});
+		}
+
 		for (const [name, click, navigatesThisPage] of [
 			['a Ctrl-click', (link: Locator) => link.click({ modifiers: ['Control'] }), false],
 			['a Meta-click', (link: Locator) => link.click({ modifiers: ['Meta'] }), true],
