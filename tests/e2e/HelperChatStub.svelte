@@ -181,6 +181,10 @@
 		border: 1px solid var(--border);
 		background: var(--surface);
 	}
+	.pick-list [role='option'] {
+		min-height: 24px;
+		padding: 4px 8px;
+	}
 	.pick-list [aria-selected='true'] {
 		background: var(--surface-hover);
 	}
