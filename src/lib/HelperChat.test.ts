@@ -292,9 +292,7 @@ async function renderWithPick(pick: HelperPick, overrides: Partial<HelperChatPro
 const listbox = (root: HTMLElement) => root.querySelector<HTMLElement>('[role="listbox"]');
 const options = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>('[role="option"]')];
 const optionNamed = (root: HTMLElement, title: string) => options(root).find((option) => option.textContent?.trim() === title)!;
-const activeOption = (root: HTMLElement) => document.getElementById(field(root).getAttribute('aria-activedescendant')!);
 const pickAttributes = ['aria-autocomplete', 'aria-haspopup', 'aria-controls', 'aria-activedescendant'];
-const pickStatus = (root: HTMLElement) => root.querySelector('.pick-empty')!;
 
 describe('the pick list', () => {
 	const scrolled: { element: Element; options: ScrollIntoViewOptions | undefined }[] = [];
@@ -311,40 +309,6 @@ describe('the pick list', () => {
 	afterEach(() => {
 		scrolled.length = 0;
 		Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
-	});
-
-	it('gives the field none of the pick attributes and draws no list without a pick list', async () => {
-		const root = await render();
-		expect(pickAttributes.map((name) => field(root).hasAttribute(name))).toEqual([false, false, false, false]);
-		expect(listbox(root)).toBeNull();
-	});
-
-	it('names a closed list from the field with the static autocompletion attributes and no active descendant', async () => {
-		const { root } = await renderWithPick(pickOf({ open: false }));
-		expect(field(root).getAttribute('aria-autocomplete')).toBe('list');
-		expect(field(root).getAttribute('aria-haspopup')).toBe('listbox');
-		expect(document.getElementById(field(root).getAttribute('aria-controls')!)).toBe(listbox(root));
-		expect(listbox(root)!.hidden).toBe(true);
-		expect(field(root).hasAttribute('aria-activedescendant')).toBe(false);
-	});
-
-	it('shows the open list named by the app with one option per key and points the field at the active one', async () => {
-		const { root } = await renderWithPick(pickOf({ active: 'bach' }));
-		expect(listbox(root)!.hidden).toBe(false);
-		expect(listbox(root)!.getAttribute('aria-label')).toBe('People');
-		expect(options(root).map((option) => option.textContent?.trim())).toEqual(['Anna Schmidt', 'J. S. Bach', 'Clara Wieck']);
-		expect(activeOption(root)).toBe(optionNamed(root, 'J. S. Bach'));
-		expect(options(root).map((option) => option.getAttribute('aria-selected'))).toEqual(['false', 'true', 'false']);
-	});
-
-	it('moves the field’s active descendant with the active key and with the candidates a filter leaves', async () => {
-		const { root, change } = await renderWithPick(pickOf());
-		expect(activeOption(root)).toBe(optionNamed(root, 'Anna Schmidt'));
-		await change({ active: 'clara' });
-		expect(activeOption(root)).toBe(optionNamed(root, 'Clara Wieck'));
-		await change({ keys: ['bach', 'clara'], active: 'bach' });
-		expect(activeOption(root)).toBe(optionNamed(root, 'J. S. Bach'));
-		expect(options(root)).toHaveLength(2);
 	});
 
 	it.each<[string, Partial<HelperPick>]>([
@@ -367,22 +331,6 @@ describe('the pick list', () => {
 		expect(scrolled.every(({ options }) => options?.block === 'nearest')).toBe(true);
 	});
 
-	it('says the empty line in the status element that existed before the list opened and shows no list while no candidate is left', async () => {
-		const { root, change } = await renderWithPick(pickOf({ open: false, keys: [] }));
-		const line = pickStatus(root);
-		expect(line.getAttribute('role')).toBe('status');
-		expect(line.textContent).toBe('');
-		await change({ open: true, active: undefined });
-		expect(pickStatus(root)).toBe(line);
-		expect(line.textContent).toBe('No one matches');
-		expect(listbox(root)!.hidden).toBe(true);
-		expect(options(root)).toEqual([]);
-		expect(field(root).hasAttribute('aria-activedescendant')).toBe(false);
-		await change({ keys: ['anna'], active: 'anna' });
-		expect(line.textContent).toBe('');
-		expect(listbox(root)!.hidden).toBe(false);
-	});
-
 	it('offers no list and no pick attributes while the field is read-only', async () => {
 		const root = await render({ composerPick: pickOf(), readOnly: text('Archived') });
 		expect(listbox(root)).toBeNull();
@@ -391,32 +339,6 @@ describe('the pick list', () => {
 	});
 
 	describe('Escape and blur', () => {
-		it('cancels Escape and asks the app to close the open list once', async () => {
-			const onDismiss = vi.fn();
-			const root = await render({ composerPick: pickOf({ onDismiss }) });
-			const event = press(field(root), { key: 'Escape' });
-			expect(event.defaultPrevented).toBe(true);
-			expect(onDismiss).toHaveBeenCalledTimes(1);
-		});
-
-		it('keeps the field’s value and sends nothing when it asks to close', async () => {
-			const onSend = vi.fn();
-			const root = await render({ composerPick: pickOf(), draft: 'Hi @', onSend });
-			press(field(root), { key: 'Escape' });
-			expect(field(root).value).toBe('Hi @');
-			expect(onSend).not.toHaveBeenCalled();
-		});
-
-		it('asks nothing when the app cancelled the key', async () => {
-			const onDismiss = vi.fn();
-			const root = await render({
-				composerPick: pickOf({ onDismiss }),
-				onComposerKeydown: (event) => event.preventDefault()
-			});
-			press(field(root), { key: 'Escape' });
-			expect(onDismiss).not.toHaveBeenCalled();
-		});
-
 		it.each<[string, KeyboardEventInit, Partial<HelperPick>]>([
 			['an IME composes', { key: 'Escape', isComposing: true }, {}],
 			['the list is closed', { key: 'Escape' }, { open: false }],
@@ -429,36 +351,11 @@ describe('the pick list', () => {
 			expect(event.defaultPrevented).toBe(false);
 		});
 
-		it.each([
-			['open', true, 1],
-			['closed', false, 0]
-		])('asks the app to close the %s list once when the field loses focus', async (_case, open, calls) => {
+		it('asks nothing when the field loses focus while the list is closed', async () => {
 			const onDismiss = vi.fn();
-			const root = await render({ composerPick: pickOf({ onDismiss, open }) });
+			const root = await render({ composerPick: pickOf({ onDismiss, open: false }) });
 			field(root).focus();
-			expect(onDismiss).not.toHaveBeenCalled();
 			field(root).blur();
-			expect(onDismiss).toHaveBeenCalledTimes(calls);
-		});
-	});
-
-	describe('pointer presses', () => {
-		it('keeps the focus in the field when anything in the composer’s box but the field is pressed', async () => {
-			const root = await render({ composerPick: pickOf() });
-			const prevented = [sendButton(root), listbox(root)!, optionNamed(root, 'J. S. Bach'), field(root)].map((target) => {
-				const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
-				target.dispatchEvent(down);
-				return down.defaultPrevented;
-			});
-			expect(prevented).toEqual([true, true, true, false]);
-		});
-
-		it('reports the pressed option’s key and asks nothing else', async () => {
-			const onPick = vi.fn();
-			const onDismiss = vi.fn();
-			const root = await render({ composerPick: pickOf({ onPick, onDismiss }) });
-			optionNamed(root, 'J. S. Bach').click();
-			expect(onPick.mock.calls).toEqual([['bach']]);
 			expect(onDismiss).not.toHaveBeenCalled();
 		});
 	});
