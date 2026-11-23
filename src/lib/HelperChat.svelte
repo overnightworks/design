@@ -17,14 +17,20 @@
 		problemLine,
 		toolCallTarget,
 		toolCallTitle,
-		composerPopup,
+		composerPick,
 		composerTop,
 		list = $bindable(),
 		onListScroll,
 		words
 	}: HelperChatProps<Message> = $props();
 
+	const id = $props.id();
+	const listId = `${id}-pick`;
+	const optionId = (key: string): string => `${id}-pick-${encodeURIComponent(key)}`;
+
 	let composerBox: HTMLDivElement | undefined = $state();
+	let field: HTMLTextAreaElement | undefined = $state();
+	let pickList: HTMLDivElement | undefined = $state();
 
 	const lastMessage = $derived(messages.at(-1));
 	const historyReady = $derived(history.state === 'ready');
@@ -33,6 +39,12 @@
 	);
 	const thinkingWord = $derived(words['helperChat.thinking']({ name: helperName }));
 	const sendable = $derived(!running && readOnly === undefined && draft.trim() !== '');
+
+	// A read-only field is disabled and offers no list.
+	const pick = $derived(readOnly === undefined ? composerPick : undefined);
+	const pickOpen = $derived(pick?.open === true);
+	const activeKey = $derived(pickOpen && pick!.active !== undefined && pick!.keys.includes(pick!.active) ? pick!.active : undefined);
+	const pickShown = $derived(pickOpen && pick!.keys.length > 0);
 
 	const hasContent = (message: Message): boolean => message.text !== '' || (message.toolCalls?.length ?? 0) > 0;
 
@@ -46,7 +58,14 @@
 		if (event.key === 'Enter' && !event.shiftKey) {
 			event.preventDefault();
 			if (!cancelledByApp && !event.isComposing) send();
+		} else if (event.key === 'Escape' && !cancelledByApp && !event.isComposing && pickOpen) {
+			event.preventDefault();
+			pick!.onDismiss();
 		}
+	}
+
+	function handleBlur(): void {
+		if (pickOpen) pick!.onDismiss();
 	}
 
 	function handleInput(event: Event & { currentTarget: HTMLTextAreaElement }): void {
@@ -54,11 +73,17 @@
 		onDraft(field.value, field.selectionStart);
 	}
 
-	// Pressing a button in the composer keeps the focus in the field: the keyboard stays open and a tap on Send lands.
+	// The field keeps the focus, so the browser never scrolls the active option into view; the part does.
+	$effect(() => {
+		void pick?.keys;
+		if (activeKey !== undefined) pickList!.children[pick!.keys.indexOf(activeKey)].scrollIntoView({ block: 'nearest' });
+	});
+
+	// Pressing anywhere in the composer's box but the field keeps the focus in the field: the keyboard stays open, a tap on Send lands and a press on the pick list does not close it.
 	$effect(() => {
 		const box = composerBox!;
 		function keepFocusInField(event: MouseEvent): void {
-			if ((event.target as Element).closest('button')) event.preventDefault();
+			if (event.target !== field) event.preventDefault();
 		}
 		box.addEventListener('mousedown', keepFocusInField);
 		return () => box.removeEventListener('mousedown', keepFocusInField);
@@ -123,15 +148,32 @@
 		{/if}
 		{@render composerTop?.()}
 		<div class="composer-box" bind:this={composerBox}>
-			{@render composerPopup?.()}
+			{#if pick}
+				<div class="pick-list" role="listbox" id={listId} aria-label={pick.label} hidden={!pickShown} bind:this={pickList}>
+					{#each pick.keys as key (key)}
+						<!-- The field keeps the focus and takes the keys, so an option takes only the pointer. -->
+						<!-- svelte-ignore a11y_click_events_have_key_events, a11y_interactive_supports_focus -->
+						<div role="option" id={optionId(key)} aria-selected={key === activeKey} onclick={() => pick.onPick(key)}>
+							{@render pick.option(key)}
+						</div>
+					{/each}
+				</div>
+				<p class="pick-empty" role="status">{pickOpen && pick.keys.length === 0 ? pick.empty : ''}</p>
+			{/if}
 			<textarea
 				rows="1"
+				bind:this={field}
+				aria-autocomplete={pick ? 'list' : undefined}
+				aria-haspopup={pick ? 'listbox' : undefined}
+				aria-controls={pick ? listId : undefined}
+				aria-activedescendant={activeKey === undefined ? undefined : optionId(activeKey)}
 				aria-label={words['helperChat.composerLabel']({ name: helperName })}
 				{placeholder}
 				disabled={readOnly !== undefined}
 				value={draft}
 				oninput={handleInput}
 				onkeydown={handleKeydown}
+				onblur={handleBlur}
 			></textarea>
 			<button class="send" type="button" disabled={!sendable} onclick={send}>{words['helperChat.send']}</button>
 		</div>
@@ -257,6 +299,39 @@
 		display: flex;
 		align-items: flex-end;
 		gap: 8px;
+	}
+	.pick-list,
+	.pick-empty {
+		position: absolute;
+		right: 0;
+		bottom: 100%;
+		left: 0;
+		margin: 0 0 4px;
+	}
+	.pick-list,
+	.pick-empty:not(:empty) {
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--surface);
+		box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14);
+	}
+	.pick-list {
+		max-height: 10rem;
+		overflow-y: auto;
+	}
+	.pick-empty {
+		color: var(--text-muted);
+	}
+	.pick-empty:not(:empty),
+	.pick-list [role='option'] {
+		padding: 4px 12px;
+	}
+	.pick-list [role='option'] {
+		min-height: 24px;
+		cursor: pointer;
+	}
+	.pick-list [aria-selected='true'] {
+		background: var(--surface-hover);
 	}
 	textarea {
 		flex: 1 1 auto;

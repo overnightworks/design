@@ -270,6 +270,32 @@ export type HelperHistory =
 	| { readonly state: 'failed'; readonly failure: string };
 
 /**
+ * A pick list the composer's field offers, such as people to mention. Present means the field offers one;
+ * `open` says whether it shows. The part draws the list, its options and its empty line and gives the field
+ * `aria-autocomplete`, `aria-controls` and, while the list is open with an active key, `aria-activedescendant`.
+ * The app keeps the candidates, their order and content, the open state, the active key and the keys that
+ * move and pick, through `onComposerKeydown`. The part stores and closes nothing: a read-only field offers no list.
+ */
+export interface HelperPick {
+	/** The list's accessible name. */
+	readonly label: string;
+	/** Whether the list shows. */
+	readonly open: boolean;
+	/** The candidates in order; a key names a candidate, never its position, and is unique among them. */
+	readonly keys: readonly string[];
+	/** The key that Enter would pick: one of `keys`, or none. */
+	readonly active: string | undefined;
+	/** The content of the option with this key. */
+	readonly option: Snippet<[string]>;
+	/** The line shown while the list is open with no candidates. */
+	readonly empty: string;
+	/** A pointer press on the option with this key. */
+	readonly onPick: (key: string) => void;
+	/** Escape in the field, or the field losing focus, while the list is open: the app closes the list. */
+	readonly onDismiss: () => void;
+}
+
+/**
  * The conversation a person has with an app's helper agent, drawn from props alone: the messages with
  * the helper's tool-call rows, the answer as it grows, the thinking line and the composer. The part holds
  * no fetch, no store and no app data, rules or page layout. The app places its header and notice before it
@@ -278,7 +304,8 @@ export type HelperHistory =
  * The composer is controlled through `draft` and `onDraft`. Enter sends and Shift+Enter makes a new line;
  * a plain Enter is always cancelled, also while a turn runs, while the draft is empty and while the chat is
  * read-only, and nothing is sent during IME composition. `onComposerKeydown` runs first, and its
- * `preventDefault()` stops the send. The part's own colours come from `design.css` tokens and the app's
+ * `preventDefault()` stops the send. With `composerPick`, Escape (not cancelled by the app, not during IME
+ * composition) and the field's blur call `onDismiss` while the list is open. The part's own colours come from `design.css` tokens and the app's
  * `--accent` and `--on-accent`.
  */
 export interface HelperChatProps<Message extends HelperMessage> {
@@ -307,8 +334,8 @@ export interface HelperChatProps<Message extends HelperMessage> {
 	toolCallTarget?: Snippet<[{ readonly call: HelperToolCall; readonly message: Message }]>;
 	/** The title attribute of a tool-call row, such as the input as JSON. */
 	toolCallTitle?: (call: HelperToolCall) => string;
-	/** Inside the composer's box, above the field: a pick list. The box is `position: relative`. */
-	composerPopup?: Snippet;
+	/** The pick list the field offers, such as people to mention; the part draws it above the field. */
+	composerPick?: HelperPick;
 	/** Between the banner and the composer: a bar of tags. */
 	composerTop?: Snippet;
 	/** The message list's element, for the app's scroll memory. */

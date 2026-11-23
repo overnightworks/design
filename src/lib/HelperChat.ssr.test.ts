@@ -1,3 +1,4 @@
+import { createRawSnippet } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
 import HelperChat from './HelperChat.svelte';
@@ -57,5 +58,42 @@ describe.each(languages)('HelperChat server-rendered in the %s words', (language
 		});
 		expect(body).toContain(words['helperChat.loading']);
 		expect(body).not.toContain('Ask me anything');
+	});
+
+	it('renders the closed pick list hidden and the field with the static autocompletion attributes', async () => {
+		const words = await loadWords(language);
+		const { body } = render(HelperChat, {
+			props: {
+				messages: [],
+				running: false,
+				history: { state: 'ready' },
+				helperName: 'Mozart',
+				emptyHint: 'Ask me anything',
+				placeholder: '',
+				draft: '',
+				onDraft: () => {},
+				onSend: () => {},
+				composerPick: {
+					label: 'People',
+					open: false,
+					keys: ['anna'],
+					active: 'anna',
+					option: createRawSnippet(() => ({ render: () => '<span>Anna</span>' })),
+					empty: 'No one matches',
+					onPick: () => {},
+					onDismiss: () => {}
+				},
+				words
+			}
+		});
+		const listbox = /<div\b(?=[^>]*role="listbox")[^>]*>/.exec(body)![0];
+		expect(listbox).toMatch(/\shidden\b/);
+		expect(listbox).toContain('aria-label="People"');
+		const listId = /\sid="([^"]+)"/.exec(listbox)![1];
+		const field = /<textarea\b[^>]*>/.exec(body)![0];
+		expect(field).toContain('aria-autocomplete="list"');
+		expect(field).toContain('aria-haspopup="listbox"');
+		expect(field).toContain(`aria-controls="${listId}"`);
+		expect(field).not.toContain('aria-activedescendant');
 	});
 });
