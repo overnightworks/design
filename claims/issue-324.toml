@@ -1,8 +1,0 @@
-claim_id = "1c6d29ded33e475e87c94a2358992eba"
-agent = "Claude 9f880687-23ba-4791-a70f-b8a5af1e262b"
-role = "builder"
-base = "fa8951e0dd01a24e24b5ed9e48dcd665301073b4"
-branch = "claude/issue-324-the-kit-s-token-pairs-pass-the-axe-contr"
-scope = ["docs/ARCHITECTURE.md", "docs/stylesheet.md", "src/design/static/design.css", "tests/e2e"]
-opened_commit = "d3f2aba5fc5060ff06fc3862b5e3bdb549841440"
-whole_reason = "One gate entry and the values it forces: the token page, the token values it finds failing and the document naming the promise land together, or CI turns red."
