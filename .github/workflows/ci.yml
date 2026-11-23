@@ -73,7 +73,7 @@ jobs:
           uv run --frozen --extra catalogs design-catalogs --check
           uv run --frozen ruff check .
           uv run --frozen ruff format --check .
-          uv run --frozen --extra catalogs pytest -q -n auto --dist loadfile --cov --cov-branch --cov-fail-under=100 --cov-report=term --cov-report=xml:coverage/python.xml tests
+          uv run --frozen --extra catalogs pytest -n auto --dist loadfile --cov --cov-branch --cov-fail-under=100 --cov-report=term --cov-report=xml:coverage/python.xml tests
           uv build --wheel
       - name: Upload the merged component and Python coverage reports
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
@@ -92,7 +92,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: overnightworks/quality/.github/workflows/gate.yml@34c82adba7820c036634b18ed01486da78e00c73 # v0.23.0
+    uses: overnightworks/quality/.github/workflows/gate.yml@0cff5e74b3a9b106490723264468271a23d5579d # v0.24.0
     with:
       coverage-artifact: unit-coverage
     secrets:
