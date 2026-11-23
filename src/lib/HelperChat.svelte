@@ -83,20 +83,13 @@
 	$effect(() => {
 		const region = list;
 		if (!region) return;
-		const atEnd = (): boolean => region.scrollHeight - region.scrollTop - region.clientHeight <= 1;
-		let following = atEnd();
-		const keepEnd = (): void => {
-			following = atEnd();
-		};
+		let previousHeight = region.clientHeight;
 		const observer = new ResizeObserver(() => {
-			if (following) region.scrollTop = region.scrollHeight;
+			if (region.scrollHeight - region.scrollTop - previousHeight <= 1) region.scrollTop = region.scrollHeight;
+			previousHeight = region.clientHeight;
 		});
-		region.addEventListener('scroll', keepEnd);
 		observer.observe(region);
-		return () => {
-			region.removeEventListener('scroll', keepEnd);
-			observer.disconnect();
-		};
+		return () => observer.disconnect();
 	});
 
 	// Pressing anywhere in the composer's box but the field keeps the focus in the field: the keyboard stays open, a tap on Send lands and a press on the pick list does not close it.
