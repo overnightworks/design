@@ -390,6 +390,21 @@ for (const consumer of consumerNames) {
 			});
 		}
 
+		test('leaves a reader who no longer sees the end where they are while the pick list opens', async ({ page }) => {
+			await open(page, 'pickAtEnd');
+			const field = fieldOf(page);
+			const conversation = page.getByRole('region', { name: wordsOf.en['helperChat.listLabel']({ name: 'Mozart' }), exact: true });
+			await conversation.evaluate((node) => node.scrollTo({ top: node.scrollHeight }));
+			// The app's own message arrives below without a scroll, so the reader is no longer at the end.
+			await field.fill('Hello');
+			await field.press('Enter');
+			await expect(messageOf(page, 'Hello')).toBeAttached();
+			const readerAt = await conversation.evaluate((node) => node.scrollTop);
+			await field.pressSequentially('@');
+			await expect(listbox(page)).toBeVisible();
+			expect(await conversation.evaluate((node) => node.scrollTop)).toBe(readerAt);
+		});
+
 		test('moves the descendant to the new active candidate while typing filters the list', async ({ page }) => {
 			await open(page, 'base');
 			const field = fieldOf(page);
