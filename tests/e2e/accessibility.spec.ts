@@ -48,7 +48,9 @@ const variantsByPart: Record<string, string[]> = {
 		'helper=draft',
 		'helper=archived'
 	],
-	'the marked sentence': ['marked']
+	'the marked sentence': ['marked'],
+	'the typed heading': ['typed'],
+	'a kit word on its own': ['words=de', 'words=en']
 };
 
 for (const consumer of consumerNames) {
