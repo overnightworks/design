@@ -58,6 +58,8 @@ for (const consumer of consumerNames) {
 
 		const fieldOf = (page: Page, language: KitLanguage = 'en'): Locator =>
 			page.getByRole('textbox', { name: wordsOf[language]['helperChat.composerLabel']({ name: 'Mozart' }), exact: true });
+		const conversationOf = (page: Page): Locator =>
+			page.getByRole('region', { name: wordsOf.en['helperChat.listLabel']({ name: 'Mozart' }), exact: true });
 		const messageOf = (page: Page, text: string): Locator =>
 			page.getByRole('list', { name: wordsOf.en['helperChat.listLabel']({ name: 'Mozart' }), exact: true }).getByRole('listitem').filter({ hasText: text });
 		const sendOf = (page: Page, language: KitLanguage = 'en'): Locator =>
@@ -373,7 +375,7 @@ for (const consumer of consumerNames) {
 				await page.setViewportSize({ width, height: 800 });
 				await open(page, 'pickAtEnd');
 				const field = fieldOf(page);
-				const conversation = page.getByRole('region', { name: wordsOf.en['helperChat.listLabel']({ name: 'Mozart' }), exact: true });
+				const conversation = conversationOf(page);
 				const newest = messageOf(page, 'Message number 30 of');
 				// The fonts settle after the app's first scroll, so the person scrolls to the end themselves.
 				await conversation.evaluate((node) => node.scrollTo({ top: node.scrollHeight }));
@@ -393,7 +395,7 @@ for (const consumer of consumerNames) {
 		test('leaves a reader who no longer sees the end where they are while the pick list opens', async ({ page }) => {
 			await open(page, 'pickAtEnd');
 			const field = fieldOf(page);
-			const conversation = page.getByRole('region', { name: wordsOf.en['helperChat.listLabel']({ name: 'Mozart' }), exact: true });
+			const conversation = conversationOf(page);
 			await conversation.evaluate((node) => node.scrollTo({ top: node.scrollHeight }));
 			// The app's own message arrives below without a scroll, so the reader is no longer at the end.
 			await field.fill('Hello');
@@ -402,6 +404,8 @@ for (const consumer of consumerNames) {
 			const readerAt = await conversation.evaluate((node) => node.scrollTop);
 			await field.pressSequentially('@');
 			await expect(listbox(page)).toBeVisible();
+			// The resize observer reports in the next rendering step, so two frames pass before the position is judged.
+			await conversation.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 			expect(await conversation.evaluate((node) => node.scrollTop)).toBe(readerAt);
 		});
 
@@ -498,7 +502,7 @@ for (const consumer of consumerNames) {
 		test('walks the Tab order from the page start through the message region, the field and Send, and works Send by Enter', async ({ page }) => {
 			await open(page, 'draft');
 			await page.keyboard.press('Tab');
-			await expectFocusRing(page.getByRole('region', { name: wordsOf.en['helperChat.listLabel']({ name: 'Mozart' }), exact: true }));
+			await expectFocusRing(conversationOf(page));
 			await page.keyboard.press('Tab');
 			await expectFocusRing(fieldOf(page));
 			await page.keyboard.press('Tab');
@@ -519,7 +523,7 @@ for (const consumer of consumerNames) {
 			await open(page, 'archived');
 			const restore = page.getByRole('button', { name: 'Restore it' });
 			await page.keyboard.press('Tab');
-			await expectFocusRing(page.getByRole('region', { name: wordsOf.en['helperChat.listLabel']({ name: 'Mozart' }), exact: true }));
+			await expectFocusRing(conversationOf(page));
 			await page.keyboard.press('Tab');
 			await expect(restore).toBeFocused();
 
