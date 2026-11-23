@@ -152,10 +152,11 @@ Two Playwright consumers are built for production from the packed tarball and
 paint the page in a browser, and the same consumers gate accessibility: axe
 checks every variant of every part, and a token page of the colour pairs
 `docs/stylesheet.md` promises, in both themes against WCAG 2.2 AA with no rule
-disabled, so a part that fails it turns CI red. The components' branches are measured on the browser compile, over both
-layers: Vitest's `client` project counts them with Istanbul, and the consumer
-build the browser tests drive carries Istanbul counters that each spec collects.
-The `server` project proves the server render's behaviour and is not counted.
+disabled, so a part that fails it turns CI red. The components' branches are measured on
+the browser compile, over both layers: Vitest's `client` project counts them
+with Istanbul, and the consumer build the browser tests drive carries Istanbul
+counters that each spec collects. The `server` project proves the server
+render's behaviour and is not counted.
 `coverage:merge` remaps the browser counters onto `src/lib`, merges both reports
 with `nyc` into the `lcov.info` the quality gate reads and fails when the merged
 report holds less than 100 % of the branches (nyc's default 90 % line threshold
