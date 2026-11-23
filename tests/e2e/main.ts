@@ -62,11 +62,21 @@ function themeHolder(takesChoice: boolean) {
 	};
 }
 
+const menuVariants = ['default', 'action', 'no-theme', 'ignore'];
+
+/** A variant the part does not render is a wrong entry in `variants.ts`, so it fails the page instead of showing a default state. */
+function knownVariants(part: string, known: readonly string[], variant: string): string {
+	const unknown = variant.split(',').filter((flag) => flag !== '' && !known.includes(flag));
+	if (unknown.length > 0) throw new Error(`The ${part} part renders no state for ${unknown.join(',')}`);
+	return variant;
+}
+
 function mountMenu(variant: string, words: KitWords): void {
+	knownVariants('account menu', menuVariants, variant);
 	window.reports = [];
 	const report = (what: string) => () => void window.reports.push(what);
 	const common = {
-		name: 'Felix mcDonald',
+		name: 'Alex mcExample',
 		accountHref: '/account',
 		onAccountOpen: report('account'),
 		appRows: [{ label: 'Settings', onSelect: report('settings') }] as const,
@@ -103,7 +113,13 @@ function refusalOfVariant(variant: string): AgentControlRefusal | undefined {
 	return variant === 'empty-place-full' || variant === 'full-place-full' ? 'place-full' : undefined;
 }
 
+const agentVariants = [
+	'default', 'full', 'full-place-full', 'refusal', 'empty', 'empty-full', 'empty-refusal', 'empty-place-full',
+	...Object.keys(endedVariants)
+];
+
 function mountAgentControl(variant: string, words: KitWords): void {
+	knownVariants('agent control', agentVariants, variant);
 	window.reports = [];
 	mount(AgentControl, {
 		target: document.body,
@@ -126,7 +142,10 @@ function mountAgentControl(variant: string, words: KitWords): void {
  * `reverse` flips the DOM order), `compact` shows every chip compact, and `row` sets them side by side with no
  * gap instead of stacked.
  */
+const hearingFlags = ['hear', 'listen', 'see', 'off', 'compact', 'narrow', 'row', 'reverse', 'ignore'];
+
 function mountHearingSwitches(variant: string, words: KitWords): void {
+	knownVariants('hearing switch', hearingFlags, variant);
 	window.reports = [];
 	const flags = new Set(variant.split(','));
 	const chosen = (['hear', 'listen', 'see'] as const).filter((kind) => flags.has(kind));
@@ -172,6 +191,7 @@ function mountHearingSwitches(variant: string, words: KitWords): void {
  * name does not fit.
  */
 function mountEarMarks(variant: string, words: KitWords): void {
+	knownVariants('ear mark', ['one', 'two', 'long'], variant);
 	const stage = document.createElement('div');
 	stage.className = 'ear-stage';
 	document.body.append(stage);
@@ -191,6 +211,7 @@ function mountEarMarks(variant: string, words: KitWords): void {
  * row of an agent control beside a short and a long agent name.
  */
 function mountTurnState(variant: string, words: KitWords): void {
+	knownVariants('turn state', ['alone', 'here'], variant);
 	const outcomes: (TurnOutcome | undefined)[] = ['not_enabled', 'busy', 'budget_spent', 'unavailable', undefined];
 	if (variant === 'here') {
 		const narrowStage = document.createElement('div');
@@ -221,6 +242,8 @@ function mountTurnState(variant: string, words: KitWords): void {
 	}
 }
 
+const helperVariants = ['base', 'empty', 'scroll', 'running', 'problem', 'loading', 'failed', 'draft', 'archived'];
+
 /** The languages this page offers; the type check fails when the kit lacks one. */
 const pageLanguages = ['de', 'en'] as const satisfies readonly KitLanguage[];
 
@@ -229,7 +252,16 @@ const query = new URLSearchParams(location.search);
 const pageLanguage = pageLanguages.find((candidate) => candidate === query.get('lang')) ?? 'en';
 document.documentElement.lang = pageLanguage;
 
+/** The app's side of the theme at load: `?theme=` sets data-theme, as an app does once a person has chosen. */
+const pageThemes = ['light', 'dark'] as const satisfies readonly ThemeChoice[];
+const pageTheme = pageThemes.find((candidate) => candidate === query.get('theme'));
+if (pageTheme) document.documentElement.setAttribute('data-theme', pageTheme);
+
+/** Names the part this page renders, so a frame shows which state it landed in; the parts page's spec reads it. */
+const markPart = (part: string): void => document.documentElement.setAttribute('data-part', part);
+
 if (query.has('words')) {
+	markPart('kit-word');
 	const tag = query.get('words');
 	const language = pageLanguages.find((candidate) => candidate === tag) ?? pageLanguages[0];
 	document.documentElement.lang = language;
@@ -237,9 +269,11 @@ if (query.has('words')) {
 		document.body.innerHTML = `<p role="status">${words['account.logOut']}</p>`;
 	});
 } else if (query.has('typed')) {
+	markPart('typed-heading');
 	// A person typed the name; the app wrote the words around it.
 	document.body.innerHTML = '<main><h1>Source <span class="as-typed">talks</span></h1><h2>Second</h2></main>';
 } else if (query.has('tokens')) {
+	markPart('kit-tokens');
 	// One text sample per pair the kit promises at AA; a translucent surface sits on an opaque one.
 	const stateInks = ['--text', '--text-muted', '--ok', '--busy', '--fail'];
 	const neutralSurfaces = ['--bg', '--bg-deep', '--surface', '--surface-hover', '--header-bg'];
@@ -264,6 +298,7 @@ if (query.has('words')) {
 	];
 	document.body.innerHTML = `<main>${samples.join('')}</main>`;
 } else if (query.has('legal')) {
+	markPart('sign-in-card');
 	// The markup contract of a page that cannot render Svelte, beside the component's own row.
 	const words = await loadKitWords(pageLanguage);
 	document.body.innerHTML = `<div id="written"><nav class="legal" aria-label="${words['legalLinks.name']}">${legalLinks
@@ -274,10 +309,11 @@ if (query.has('words')) {
 		props: { links: legalLinks, words }
 	});
 } else if (query.has('sign-in-card')) {
+	markPart('sign-in-card');
 	// The markup contract of a page that cannot render Svelte, beside the component's own card: a card of wrapper
 	// elements, as a templated login page writes it, in a container wider than the component's card.
 	const words = await loadKitWords(pageLanguage);
-	const signedOut = query.get('sign-in-card') === 'signed-out';
+	const signedOut = knownVariants('sign-in card', ['signed-out', 'no-access'], query.get('sign-in-card') ?? '') === 'signed-out';
 	document.body.innerHTML = `<div id="written" style="width: 480px; max-width: 100%"><main class="sign-in-card">
 		<div><h1>${words['signIn.loggedOut']}</h1></div>
 		<div><form action="/login" method="post">
@@ -298,24 +334,35 @@ if (query.has('words')) {
 		}
 	});
 } else if (query.has('marked')) {
+	markPart('marked');
 	mount(MarkedSentence, { target: document.body });
 } else if (query.has('helper')) {
+	markPart('helper-chat');
 	window.reports = [];
 	mount(HelperChatStub, {
 		target: document.body,
-		props: { variant: query.get('helper') ?? '', words: await loadKitWords(pageLanguage) }
+		props: { variant: knownVariants('helper chat', helperVariants, query.get('helper') ?? ''), words: await loadKitWords(pageLanguage) }
 	});
 } else if (query.has('turn')) {
+	markPart('turn-state');
 	mountTurnState(query.get('turn') ?? '', await loadKitWords(pageLanguage));
 } else if (query.has('ear')) {
+	markPart('ear-mark');
 	mountEarMarks(query.get('ear') ?? '', await loadKitWords(pageLanguage));
 } else if (query.has('hearing')) {
+	markPart('hearing-switch');
 	mountHearingSwitches(query.get('hearing') ?? '', await loadKitWords(pageLanguage));
 } else if (query.has('agents')) {
+	markPart('agent-control');
 	mountAgentControl(query.get('agents') ?? '', await loadKitWords(pageLanguage));
 } else if (query.has('menu')) {
+	markPart('account-menu');
 	mountMenu(query.get('menu') ?? '', await loadKitWords(pageLanguage));
 } else {
+	const signInKeys = ['signing-in', 'window-blocked', 'unfinished', 'login-failed', 'no-access', 'on-sign-in'];
+	const unknown = [...query.keys()].filter((key) => !['lang', 'theme', ...signInKeys].includes(key));
+	if (unknown.length > 0) throw new Error(`The consumer renders no state for ?${unknown.join('&')}`);
+	markPart('sign-in-page');
 	window.reports = [];
 	const state: SignInState = query.has('signing-in')
 		? { page: 'signing-in', tabHref: '/app' }

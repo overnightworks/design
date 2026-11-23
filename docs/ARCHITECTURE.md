@@ -171,11 +171,23 @@ fewer covered branches, than the client report, or when the lockfile holds two
 source-map remappers. It compares numbers and cannot see one arm traded for
 another at equal counts. An `{#if}` whose test is a bare prop or derived value
 has no client entry in any report, because the compiler's source map has no
-segment for it. Only the consumer's copy of the kit
-carries counters; the tarball and the wheel are built without them. A `.ts`
-module of `src/lib` is measured by Vitest alone, because the tarball ships it
-transpiled without a source map; none has a branch today. The shared quality gate adds the secret scan, the
-workflow-security scan and SonarCloud for CSS, HTML, Python and TypeScript.
+segment for it. Only the consumer's copy of the kit carries counters; the
+tarball and the wheel are built without them. A `.ts` module of `src/lib` is
+measured by Vitest alone, because the tarball ships it transpiled without a
+source map; none has a branch today. The shared quality gate adds the secret
+scan, the workflow-security scan and SonarCloud for CSS, HTML, Python and
+TypeScript.
+
+**The parts page.** `tests/e2e/variants.ts` is the one list of the states the
+consumers render; the accessibility check and the page read it, so a new state
+is added there once. `pnpm run build:parts-page` builds the `imported` consumer
+from the packed tarball, without counters and with a relative base, and writes
+an index and one page per part and kit language beside it in
+`tests/e2e/.parts-page/`. Each state is the live consumer page in a frame, once
+per theme, which the consumer's `theme=` query sets as an app does. The page is
+static and runs nothing but the parts; a consumer spec over the built directory
+proves every state appears in both themes and every language, and CI builds the
+page before it runs the consumers.
 
 ## 6. Constraints and reasons
 
