@@ -1,8 +1,0 @@
-claim_id = "320b61e707fd4be2b0e935d538a9e83e"
-agent = "Claude 9f880687-23ba-4791-a70f-b8a5af1e262b"
-role = "builder"
-base = "c1d5d93009d00d4612cea39488e11d8a561c36bb"
-branch = "claude/issue-321-design-pins-quality-v0-24-0"
-scope = [".github/workflows/ci.yml", ".github/workflows/code-scanning.yml", ".github/workflows/release.yml", "pyproject.toml", "uv.lock"]
-opened_commit = "1e4be23766321b4d0780cb77f0bf674bfd5d5040"
-whole_reason = "One pin move: the pins and the fixes the new rule demands land together, or quality / verdict turns red."
