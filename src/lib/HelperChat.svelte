@@ -151,9 +151,9 @@
 			{#if pick}
 				<div class="pick-list" role="listbox" id={listId} aria-label={pick.label} hidden={!pickShown} bind:this={pickList}>
 					{#each pick.keys as key (key)}
-						<!-- The field keeps the focus and takes the keys, so an option takes only the pointer. -->
-						<!-- svelte-ignore a11y_click_events_have_key_events, a11y_interactive_supports_focus -->
-						<div role="option" id={optionId(key)} aria-selected={key === activeKey} onclick={() => pick.onPick(key)}>
+						<!-- The field keeps the focus and takes the keys, so an option takes only the pointer. A scrolling list needs a focusable option for axe's scrollable-region-focusable; the field's keys scroll it. -->
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<div role="option" tabindex="-1" id={optionId(key)} aria-selected={key === activeKey} onclick={() => pick.onPick(key)}>
 							{@render pick.option(key)}
 						</div>
 					{/each}
@@ -295,25 +295,23 @@
 		color: var(--text);
 	}
 	.composer-box {
-		position: relative;
 		display: flex;
+		flex-wrap: wrap;
 		align-items: flex-end;
-		gap: 8px;
+		gap: 0 8px;
 	}
 	.pick-list,
 	.pick-empty {
-		position: absolute;
-		right: 0;
-		bottom: 100%;
-		left: 0;
-		margin: 0 0 4px;
+		flex: 0 0 100%;
+		box-sizing: border-box;
+		margin: 0;
 	}
 	.pick-list,
 	.pick-empty:not(:empty) {
+		margin-bottom: 4px;
 		border: 1px solid var(--border);
 		border-radius: 8px;
 		background: var(--surface);
-		box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14);
 	}
 	.pick-list {
 		padding: 4px 0;
@@ -335,7 +333,7 @@
 		background: var(--surface-hover);
 	}
 	textarea {
-		flex: 1 1 auto;
+		flex: 1 1 0;
 		box-sizing: border-box;
 		min-width: 0;
 		min-height: 44px;

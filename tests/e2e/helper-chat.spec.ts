@@ -485,15 +485,21 @@ for (const consumer of consumerNames) {
 			expect(await reportsOf(page)).toEqual(['restore', 'restore']);
 		});
 
-		for (const colorScheme of colorSchemes) {
-			test(`has no WCAG 2.2 AA violation around the open mention picker with an active option in ${colorScheme}`, async ({ page }) => {
-				await page.emulateMedia({ colorScheme });
-				await open(page, 'base');
-				await fieldOf(page).pressSequentially('@');
-				await expect(page.getByRole('listbox', { name: 'People' }).getByRole('option')).toHaveCount(3);
-				expect((await composerTree(page, fieldName())).activeOption?.name).toBe('Anna');
-				await expectNoWcagViolations(page);
-			});
+		const pickLists = [
+			{ variant: 'base', options: 3, label: 'with an active option' },
+			{ variant: 'many', options: 12, label: 'that scrolls' }
+		];
+		for (const { variant, options, label } of pickLists) {
+			for (const colorScheme of colorSchemes) {
+				test(`has no WCAG 2.2 AA violation around the open mention picker ${label} in ${colorScheme}`, async ({ page }) => {
+					await page.emulateMedia({ colorScheme });
+					await open(page, variant);
+					await fieldOf(page).pressSequentially('@');
+					await expect(page.getByRole('listbox', { name: 'People' }).getByRole('option')).toHaveCount(options);
+					expect((await composerTree(page, fieldName())).activeOption?.name).toBe('Anna');
+					await expectNoWcagViolations(page);
+				});
+			}
 		}
 	});
 }
