@@ -1,0 +1,8 @@
+claim_id = "041127cec50c4077a4fd9a852006eb90"
+agent = "Claude 9f880687-23ba-4791-a70f-b8a5af1e262b"
+role = "builder"
+base = "4eb1c501abf83a6f32055423774142789d2cfe05"
+branch = "claude/issue-335-design-pins-quality-v0-25-0"
+scope = [".github/workflows/ci.yml", ".github/workflows/code-scanning.yml", ".github/workflows/release.yml", "vitest.config.ts"]
+opened_commit = "109ed8ce02c17fd2c5ab37547cbec82e360f97aa"
+whole_reason = "One quality release: its four pins move together with the one config fix the release enforces."
