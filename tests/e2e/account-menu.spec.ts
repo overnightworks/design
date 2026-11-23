@@ -5,7 +5,7 @@ import { colorSchemes, consumerNames, consumerTitle, languages, origin, useConsu
 import { resolveStyle } from './probe.ts';
 
 const legalNames = ['Impressum', 'Datenschutz', 'Nutzungsbedingungen'];
-const typedName = 'Felix mcDonald';
+const typedName = 'Alex mcExample';
 const touchRowFloor = 44;
 const legalLinkFloor = 24;
 

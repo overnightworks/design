@@ -9,12 +9,14 @@ import type { KitLanguage, KitWords } from 'overnightworks-design/words';
 import { createInstrumenter } from 'istanbul-lib-instrument';
 import { build } from 'vite';
 import istanbul from 'vite-plugin-istanbul';
+import { languages } from '../../src/lib/words/index.ts';
 import { test } from './coverage.ts';
 
 const consumersRoot = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(consumersRoot, '../..');
 const packDirectory = join(consumersRoot, '.pack');
 
+/** The origin the routed pages answer to. */
 export const origin = 'http://consumer.test';
 
 export type ConsumerName = 'imported' | 'linked';
@@ -22,7 +24,7 @@ export type ConsumerName = 'imported' | 'linked';
 let tarballPath: string | undefined;
 
 /** The tarball a consumer installs: the working tree packed by pnpm. */
-function tarball(): string {
+export function tarball(): string {
 	if (!tarballPath) {
 		rmSync(packDirectory, { recursive: true, force: true });
 		mkdirSync(packDirectory, { recursive: true });
@@ -84,36 +86,50 @@ function kitInstrumenter() {
 	};
 }
 
+/** Copies the kit's stylesheet and fonts into a directory, untouched, bypassing the bundler, as a page that links it holds them. */
+export function copyStylesheet(directory: string): void {
+	const stylesheet = createRequire(join(consumersRoot, 'package.json')).resolve('overnightworks-design/design.css');
+	cpSync(stylesheet, join(directory, 'design.css'));
+	cpSync(join(dirname(stylesheet), 'fonts'), join(directory, 'fonts'), { recursive: true });
+}
+
+/** Where a consumer is built and how: the specs measure it, the parts page does not. */
+export interface ConsumerBuild {
+	outDir?: string;
+	/** Istanbul counters in the kit's components and a source map; the tarball itself never carries them. */
+	counters?: boolean;
+	/** The base the built page's assets are addressed from; `./` lets a directory be served anywhere. */
+	base?: string;
+}
+
 /** Builds the consumer for production and returns its output directory. */
-export async function buildConsumer(name: ConsumerName): Promise<string> {
-	const consumerDirectory = join(consumersRoot, name);
-	const outDir = join(consumerDirectory, 'dist');
+export async function buildConsumer(
+	name: ConsumerName,
+	{ outDir = join(consumersRoot, name, 'dist'), counters = true, base = '/' }: ConsumerBuild = {}
+): Promise<string> {
 	installPackage();
 	await build({
-		root: consumerDirectory,
+		root: join(consumersRoot, name),
 		configFile: false,
 		logLevel: 'warn',
-		// The counters live only in this build: the tarball above is what the release path packs.
+		base,
 		plugins: [
 			svelte(),
-			istanbul({
-				cwd: kitDirectory,
-				include: ['svelte-dist/**'],
-				extension: ['.svelte'],
-				forceBuildInstrument: true,
-				instrumenter: kitInstrumenter()
-			})
+			...(counters
+				? [
+						istanbul({
+							cwd: kitDirectory,
+							include: ['svelte-dist/**'],
+							extension: ['.svelte'],
+							forceBuildInstrument: true,
+							instrumenter: kitInstrumenter()
+						})
+					]
+				: [])
 		],
-		build: { outDir, emptyOutDir: true, sourcemap: true }
+		build: { outDir, emptyOutDir: true, sourcemap: counters }
 	});
-	if (name === 'linked') {
-		// A linked stylesheet is copied into the page's origin untouched, bypassing the bundler.
-		const stylesheet = createRequire(join(consumersRoot, 'package.json')).resolve(
-			'overnightworks-design/design.css'
-		);
-		cpSync(stylesheet, join(outDir, 'design.css'));
-		cpSync(join(dirname(stylesheet), 'fonts'), join(outDir, 'fonts'), { recursive: true });
-	}
+	if (name === 'linked') copyStylesheet(outDir);
 	return outDir;
 }
 
@@ -138,7 +154,8 @@ export async function loadKitWordsUnderNode(language: KitLanguage): Promise<KitW
 
 export const colorSchemes = ['light', 'dark'] as const;
 export const widths = [390, 1280] as const;
-export const languages = ['de', 'en'] as const satisfies readonly KitLanguage[];
+/** Every language the kit ships words in, from the generated list. */
+export { languages };
 export const consumerNames = ['imported', 'linked'] as const satisfies readonly ConsumerName[];
 
 /** The describe title every spec gives to one of its consumers. */

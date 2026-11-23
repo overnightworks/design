@@ -66,7 +66,7 @@ function mountMenu(variant: string, words: KitWords): void {
 	window.reports = [];
 	const report = (what: string) => () => void window.reports.push(what);
 	const common = {
-		name: 'Felix mcDonald',
+		name: 'Alex mcExample',
 		accountHref: '/account',
 		onAccountOpen: report('account'),
 		appRows: [{ label: 'Settings', onSelect: report('settings') }] as const,
@@ -228,6 +228,11 @@ const query = new URLSearchParams(location.search);
 /** The app's side of the kit's words: the loader called with the language the page names, `?lang=`, or en. */
 const pageLanguage = pageLanguages.find((candidate) => candidate === query.get('lang')) ?? 'en';
 document.documentElement.lang = pageLanguage;
+
+/** The app's side of the theme at load: `?theme=` sets data-theme, as an app does once a person has chosen. */
+const pageThemes = ['light', 'dark'] as const satisfies readonly ThemeChoice[];
+const pageTheme = pageThemes.find((candidate) => candidate === query.get('theme'));
+if (pageTheme) document.documentElement.setAttribute('data-theme', pageTheme);
 
 if (query.has('words')) {
 	const tag = query.get('words');
