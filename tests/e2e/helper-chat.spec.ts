@@ -3,7 +3,7 @@ import type { Locator, Page } from '@playwright/test';
 import type { KitLanguage } from 'overnightworks-design';
 import { expectNoWcagViolations } from './axe.ts';
 import { colorSchemes, consumerNames, consumerTitle, languages, useConsumer, widths } from './build-consumer.ts';
-import { numberOf, resolveStyle } from './probe.ts';
+import { expectFocusRing, numberOf, resolveStyle } from './probe.ts';
 
 // AiMark.svelte holds the word as a constant for every language, so no catalog key exists (gap named on #276).
 const aiMarkWord = 'AI';
@@ -308,12 +308,6 @@ for (const consumer of consumerNames) {
 			await expect(fieldOf(page)).toBeFocused();
 			expect(await reportsOf(page)).toEqual(['send:A first line\nA second line']);
 		});
-
-		const expectFocusRing = async (element: Locator) => {
-			await expect(element).toBeFocused();
-			await expect(element).not.toHaveCSS('outline-style', 'none');
-			await expect(element).not.toHaveCSS('outline-width', '0px');
-		};
 
 		test('walks the Tab order from the page start through the message region, the field and Send, and works Send by Enter', async ({ page }) => {
 			await open(page, 'draft');

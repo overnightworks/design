@@ -1,7 +1,7 @@
 import { expect, test } from './coverage.ts';
 import type { Locator } from '@playwright/test';
 import { colorSchemes, consumerNames, consumerTitle, languages, origin, useConsumer, widths } from './build-consumer.ts';
-import { resolveStyle } from './probe.ts';
+import { expectFocusRing, resolveStyle } from './probe.ts';
 
 for (const consumer of consumerNames) {
 	test.describe(consumerTitle('the sign-in page', consumer), () => {
@@ -68,9 +68,7 @@ for (const consumer of consumerNames) {
 				await expect(action).toHaveText(en[key]);
 
 				await page.keyboard.press('Tab');
-				await expect(action).toBeFocused();
-				await expect(action).toHaveCSS('outline-style', 'solid');
-				await expect(action).not.toHaveCSS('outline-width', '0px');
+				await expectFocusRing(action);
 
 				if (outcome === 'tab') {
 					const [tab] = await Promise.all([page.context().waitForEvent('page'), page.keyboard.press('Enter')]);
