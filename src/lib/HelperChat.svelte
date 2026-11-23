@@ -17,14 +17,20 @@
 		problemLine,
 		toolCallTarget,
 		toolCallTitle,
-		composerPopup,
+		composerPick,
 		composerTop,
 		list = $bindable(),
 		onListScroll,
 		words
 	}: HelperChatProps<Message> = $props();
 
+	const id = $props.id();
+	const listId = `${id}-pick`;
+	const optionId = (key: string): string => `${id}-pick-${encodeURIComponent(key)}`;
+
 	let composerBox: HTMLDivElement | undefined = $state();
+	let field: HTMLTextAreaElement | undefined = $state();
+	let pickList: HTMLDivElement | undefined = $state();
 
 	const lastMessage = $derived(messages.at(-1));
 	const historyReady = $derived(history.state === 'ready');
@@ -32,7 +38,14 @@
 		historyReady && running && lastMessage?.role === 'assistant' && lastMessage.text === ''
 	);
 	const thinkingWord = $derived(words['helperChat.thinking']({ name: helperName }));
-	const sendable = $derived(!running && readOnly === undefined && draft.trim() !== '');
+	const writable = $derived(readOnly === undefined);
+	const sendable = $derived(!running && writable && draft.trim() !== '');
+
+	// A read-only field is disabled and offers no list.
+	const pick = $derived(writable ? composerPick : undefined);
+	const pickOpen = $derived(pick?.open === true);
+	const activeKey = $derived(pickOpen && pick!.active !== undefined && pick!.keys.includes(pick!.active) ? pick!.active : undefined);
+	const pickShown = $derived(pickOpen && pick!.keys.length > 0);
 
 	const hasContent = (message: Message): boolean => message.text !== '' || (message.toolCalls?.length ?? 0) > 0;
 
@@ -46,7 +59,14 @@
 		if (event.key === 'Enter' && !event.shiftKey) {
 			event.preventDefault();
 			if (!cancelledByApp && !event.isComposing) send();
+		} else if (event.key === 'Escape' && !cancelledByApp && !event.isComposing && pickOpen) {
+			event.preventDefault();
+			pick!.onDismiss();
 		}
+	}
+
+	function handleBlur(): void {
+		if (pickOpen) pick!.onDismiss();
 	}
 
 	function handleInput(event: Event & { currentTarget: HTMLTextAreaElement }): void {
@@ -54,11 +74,29 @@
 		onDraft(field.value, field.selectionStart);
 	}
 
-	// Pressing a button in the composer keeps the focus in the field: the keyboard stays open and a tap on Send lands.
+	// The field keeps the focus, so the browser never scrolls the active option into view; the part does.
+	$effect(() => {
+		if (activeKey !== undefined) pickList!.children[pick!.keys.indexOf(activeKey)].scrollIntoView({ block: 'nearest' });
+	});
+
+	// While the conversation is scrolled to its end, the pick list opening, resizing and closing shrinks and grows it; the newest message stays in view.
+	$effect(() => {
+		const region = list;
+		if (!region) return;
+		let previousHeight = region.clientHeight;
+		const observer = new ResizeObserver(() => {
+			if (region.scrollHeight - region.scrollTop - previousHeight <= 1) region.scrollTop = region.scrollHeight;
+			previousHeight = region.clientHeight;
+		});
+		observer.observe(region);
+		return () => observer.disconnect();
+	});
+
+	// Pressing anywhere in the composer's box but the field keeps the focus in the field: the keyboard stays open, a tap on Send lands and a press on the pick list does not close it.
 	$effect(() => {
 		const box = composerBox!;
 		function keepFocusInField(event: MouseEvent): void {
-			if ((event.target as Element).closest('button')) event.preventDefault();
+			if (event.target !== field) event.preventDefault();
 		}
 		box.addEventListener('mousedown', keepFocusInField);
 		return () => box.removeEventListener('mousedown', keepFocusInField);
@@ -123,15 +161,32 @@
 		{/if}
 		{@render composerTop?.()}
 		<div class="composer-box" bind:this={composerBox}>
-			{@render composerPopup?.()}
+			{#if pick}
+				<div class="pick-list" role="listbox" id={listId} aria-label={pick.label} hidden={!pickShown} bind:this={pickList}>
+					{#each pick.keys as key (key)}
+						<!-- The field keeps the focus and takes the keys, so an option takes only the pointer. A scrolling list needs a focusable option for axe's scrollable-region-focusable; the field's keys scroll it. -->
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<div role="option" tabindex="-1" id={optionId(key)} aria-selected={key === activeKey} onclick={() => pick.onPick(key)}>
+							{@render pick.option(key)}
+						</div>
+					{/each}
+				</div>
+				<p class="pick-empty" role="status">{pickOpen && pick.keys.length === 0 ? pick.empty : ''}</p>
+			{/if}
 			<textarea
 				rows="1"
+				bind:this={field}
+				aria-autocomplete={pick ? 'list' : undefined}
+				aria-haspopup={pick ? 'listbox' : undefined}
+				aria-controls={pick ? listId : undefined}
+				aria-activedescendant={activeKey === undefined ? undefined : optionId(activeKey)}
 				aria-label={words['helperChat.composerLabel']({ name: helperName })}
 				{placeholder}
-				disabled={readOnly !== undefined}
+				disabled={!writable}
 				value={draft}
 				oninput={handleInput}
 				onkeydown={handleKeydown}
+				onblur={handleBlur}
 			></textarea>
 			<button class="send" type="button" disabled={!sendable} onclick={send}>{words['helperChat.send']}</button>
 		</div>
@@ -253,13 +308,47 @@
 		color: var(--text);
 	}
 	.composer-box {
-		position: relative;
 		display: flex;
+		flex-wrap: wrap;
 		align-items: flex-end;
-		gap: 8px;
+		gap: 0 8px;
+	}
+	.pick-list,
+	.pick-empty {
+		flex: 0 0 100%;
+		box-sizing: border-box;
+		margin: 0;
+	}
+	.pick-list,
+	.pick-empty:not(:empty) {
+		margin-bottom: 4px;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--surface);
+	}
+	.pick-list {
+		padding: 4px 0;
+		max-height: 10rem;
+		overflow-y: auto;
+	}
+	.pick-empty {
+		color: var(--text-muted);
+	}
+	.pick-empty:not(:empty),
+	.pick-list [role='option'] {
+		padding: 4px 12px;
+	}
+	.pick-list [role='option'] {
+		min-height: 24px;
+		cursor: pointer;
+	}
+	.pick-list [aria-selected='true'] {
+		background: var(--surface-hover);
+		outline: 2px solid var(--text);
+		outline-offset: -2px;
 	}
 	textarea {
-		flex: 1 1 auto;
+		flex: 1 1 0;
 		box-sizing: border-box;
 		min-width: 0;
 		min-height: 44px;

@@ -468,6 +468,27 @@ def test_a_consumer_extends_the_helper_message_and_gives_a_failed_history_its_fa
     )
 
 
+def test_a_consumer_offers_a_pick_list_through_the_exported_pick_contract_and_the_old_slot_is_gone(consumer):
+    consumer.check(
+        f"import type {{ HelperChatProps, HelperMessage, HelperPick, KitWords }} from '{consumer.name}';\n"
+        "import type { Snippet } from 'svelte';\n"
+        "declare const words: KitWords;\n"
+        "declare const option: Snippet<[string]>;\n"
+        "const chat = { messages: [], running: false, history: { state: 'ready' }, helperName: 'M', emptyHint: '', "
+        "placeholder: '', draft: '', onDraft: (draft: string, caret: number) => void caret, "
+        "onSend: (text: string) => void text, words } as const;\n"
+        "const pick: HelperPick = { label: 'People', open: true, keys: ['a'], active: undefined, option, "
+        "empty: 'None', onPick: (key: string) => void key, onDismiss: () => {} };\n"
+        "export const offering: HelperChatProps<HelperMessage> = { ...chat, composerPick: pick };\n"
+        "// @ts-expect-error a pick list names its dismissal\n"
+        "export const keepsOpen: HelperPick = { ...pick, onDismiss: undefined };\n"
+        "// @ts-expect-error the active key is a key, never a position\n"
+        "export const byPosition: HelperPick = { ...pick, active: 0 };\n"
+        "// @ts-expect-error the render slot is replaced by the pick contract\n"
+        "export const oldSlot: HelperChatProps<HelperMessage> = { ...chat, composerPopup: option };\n"
+    )
+
+
 def test_a_consumer_cannot_loosen_what_the_agent_components_require_of_it(consumer):
     consumer.check(
         f"import type {{ AgentControlProps, EarMarkProps, HearingSwitchProps, HelperChatProps, HelperMessage, "

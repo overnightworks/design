@@ -23,6 +23,7 @@ export type {
 	HelperChatProps,
 	HelperHistory,
 	HelperMessage,
+	HelperPick,
 	HelperRole,
 	HelperToolCall,
 	LegalLink,

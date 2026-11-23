@@ -1,16 +1,15 @@
 import { createRawSnippet, mount, tick } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import HelperChat from './HelperChat.svelte';
 import { mountInDocument } from './mountInDocument.test.helper.ts';
-import type { HelperChatProps, HelperMessage } from './types.ts';
+import type { HelperChatProps, HelperMessage, HelperPick } from './types.ts';
 import { loadWords } from './words/index.ts';
 
 const en = await loadWords('en');
 const de = await loadWords('de');
 
 const text = (content: string) => createRawSnippet(() => ({ render: () => `<span>${content}</span>` }));
-const button = (content: string) => createRawSnippet(() => ({ render: () => `<button type="button">${content}</button>` }));
 
 function baseProps(overrides: Partial<HelperChatProps<HelperMessage>> = {}): HelperChatProps<HelperMessage> {
 	return {
@@ -33,9 +32,6 @@ function render(overrides: Partial<HelperChatProps<HelperMessage>> = {}): Promis
 }
 
 const field = (root: HTMLElement) => root.querySelector('textarea')!;
-const buttonWorded = (root: HTMLElement, word: string) =>
-	[...root.querySelectorAll('button')].find((candidate) => candidate.textContent?.trim() === word)!;
-const sendButton = (root: HTMLElement, words: typeof en = en) => buttonWorded(root, words['helperChat.send']);
 const status = (root: HTMLElement) => root.querySelector('[role="status"]');
 const visibleLine = (root: HTMLElement) => root.querySelector('ol [aria-hidden="true"]');
 
@@ -48,6 +44,27 @@ const bubbles = (root: HTMLElement) => [...root.querySelectorAll('li')].map(bubb
 const aiMarks = (scope: Element) => [...scope.querySelectorAll('span')].filter((candidate) => candidate.textContent === aiMarkWord && candidate.children.length === 0);
 const toolRow = (root: HTMLElement, tool: string) =>
 	[...root.querySelectorAll('span')].find((candidate) => candidate.textContent === en['helperChat.ranTool']({ tool }))!.parentElement!;
+
+// jsdom has no layout, so a resize is reported by hand.
+const resizeReports: ResizeObserverCallback[] = [];
+
+beforeEach(() => {
+	vi.stubGlobal(
+		'ResizeObserver',
+		class {
+			constructor(report: ResizeObserverCallback) {
+				resizeReports.push(report);
+			}
+			observe(): void {}
+			disconnect(): void {}
+		}
+	);
+});
+
+afterEach(() => {
+	vi.unstubAllGlobals();
+	resizeReports.length = 0;
+});
 
 function press(target: HTMLElement, init: KeyboardEventInit): KeyboardEvent {
 	const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init });
@@ -115,6 +132,27 @@ describe('the message list', () => {
 		};
 		const target = await mountInDocument((into) => mount(HelperChat<AppMessage>, { target: into, props }));
 		expect(target.querySelector('.problem')?.textContent).toBe('m-7');
+	});
+});
+
+describe('the message list while it is resized', () => {
+	async function renderScrolledTo(scrollTop: number): Promise<HTMLElement> {
+		const root = await render({ messages: [{ role: 'user', text: 'Hi' }] });
+		const region = root.querySelector<HTMLElement>('[role="region"]')!;
+		let top = scrollTop;
+		Object.defineProperties(region, {
+			scrollHeight: { value: 500 },
+			clientHeight: { value: 200 },
+			scrollTop: { get: () => top, set: (next: number) => (top = next) }
+		});
+		region.dispatchEvent(new Event('scroll'));
+		return region;
+	}
+
+	it('keeps its place when its box is resized while scrolled up', async () => {
+		const region = await renderScrolledTo(100);
+		for (const report of resizeReports) report([], {} as ResizeObserver);
+		expect(region.scrollTop).toBe(100);
 	});
 });
 
@@ -227,15 +265,11 @@ describe('the composer', () => {
 		expect(order).toEqual(['Archived', 'Tag bar', 'box']);
 	});
 
-	it('keeps focus in the composer when a button inside its box is pressed', async () => {
-		const root = await render({ composerPopup: button('Pick') });
-		const own = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
-		sendButton(root).dispatchEvent(own);
-		const app = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
-		buttonWorded(root, 'Pick').dispatchEvent(app);
-		const inField = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
-		field(root).dispatchEvent(inField);
-		expect([own.defaultPrevented, app.defaultPrevented, inField.defaultPrevented]).toEqual([true, true, false]);
+	it('leaves a press on the field to the browser, which places the caret', async () => {
+		const root = await render();
+		const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+		field(root).dispatchEvent(down);
+		expect(down.defaultPrevented).toBe(false);
 	});
 });
 
@@ -267,5 +301,116 @@ describe('read-only', () => {
 		const root = await render();
 		expect(field(root).parentElement!.parentElement!.textContent?.trim()).toBe(en['helperChat.send']);
 		expect(field(root).disabled).toBe(false);
+	});
+});
+
+const titles: Record<string, string> = { anna: 'Anna Schmidt', bach: 'J. S. Bach', clara: 'Clara Wieck' };
+const titleSnippet = createRawSnippet((key: () => string) => ({ render: () => `<span>${titles[key()]}</span>` }));
+
+function pickOf(overrides: Partial<HelperPick> = {}): HelperPick {
+	return {
+		label: 'People',
+		open: true,
+		keys: ['anna', 'bach', 'clara'],
+		active: 'anna',
+		option: titleSnippet,
+		empty: 'No one matches',
+		onPick: () => {},
+		onDismiss: () => {},
+		...overrides
+	};
+}
+
+/** Mounts the part with a pick list the test can replace afterwards. */
+async function renderWithPick(pick: HelperPick, overrides: Partial<HelperChatProps<HelperMessage>> = {}) {
+	const held = new SvelteMap<string, HelperPick>([['pick', pick]]);
+	const props = Object.defineProperties(baseProps(overrides), { composerPick: { enumerable: true, get: () => held.get('pick') } });
+	const root = await mountInDocument((into) => mount(HelperChat, { target: into, props }));
+	return {
+		root,
+		async change(changes: Partial<HelperPick>): Promise<void> {
+			held.set('pick', { ...held.get('pick')!, ...changes });
+			await tick();
+		}
+	};
+}
+
+const listbox = (root: HTMLElement) => root.querySelector<HTMLElement>('[role="listbox"]');
+const options = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>('[role="option"]')];
+const optionNamed = (root: HTMLElement, title: string) => options(root).find((option) => option.textContent?.trim() === title)!;
+const pickAttributes = ['aria-autocomplete', 'aria-haspopup', 'aria-controls', 'aria-activedescendant'];
+
+describe('the pick list', () => {
+	const scrolled: { element: Element; options: ScrollIntoViewOptions | undefined }[] = [];
+
+	beforeEach(() => {
+		Object.defineProperty(Element.prototype, 'scrollIntoView', {
+			configurable: true,
+			value(this: Element, options?: ScrollIntoViewOptions) {
+				scrolled.push({ element: this, options });
+			}
+		});
+	});
+
+	afterEach(() => {
+		scrolled.length = 0;
+		Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+	});
+
+	it.each<[string, Partial<HelperPick>]>([
+		['no key is active', { active: undefined }],
+		['the active key is not among the keys', { active: 'zorro' }],
+		['the list is closed', { open: false }]
+	])('gives the field no active descendant while %s', async (_case, overrides) => {
+		const { root } = await renderWithPick(pickOf(overrides));
+		expect(field(root).hasAttribute('aria-activedescendant')).toBe(false);
+	});
+
+	it('scrolls the active option into view when the active key or the candidates change and when the list opens', async () => {
+		const { root, change } = await renderWithPick(pickOf({ open: false }));
+		expect(scrolled).toEqual([]);
+		await change({ open: true });
+		expect(scrolled.map(({ element }) => element)).toEqual([optionNamed(root, 'Anna Schmidt')]);
+		await change({ active: 'clara' });
+		await change({ keys: ['bach', 'clara'] });
+		expect(scrolled.map(({ element }) => element.textContent?.trim())).toEqual(['Anna Schmidt', 'Clara Wieck', 'Clara Wieck']);
+		expect(scrolled.every(({ options }) => options?.block === 'nearest')).toBe(true);
+	});
+
+	it('offers no list and no pick attributes while the field is read-only', async () => {
+		const root = await render({ composerPick: pickOf(), readOnly: text('Archived') });
+		expect(listbox(root)).toBeNull();
+		expect(pickAttributes.map((name) => field(root).hasAttribute(name))).toEqual([false, false, false, false]);
+		expect(root.querySelectorAll('[role="status"]')).toHaveLength(1);
+	});
+
+	describe('Escape and blur', () => {
+		it.each<[string, KeyboardEventInit, Partial<HelperPick>]>([
+			['an IME composes', { key: 'Escape', isComposing: true }, {}],
+			['the list is closed', { key: 'Escape' }, { open: false }],
+			['another key is pressed', { key: 'ArrowDown' }, {}]
+		])('asks nothing when %s', async (_case, keyInit, pickOverrides) => {
+			const onDismiss = vi.fn();
+			const root = await render({ composerPick: pickOf({ onDismiss, ...pickOverrides }) });
+			const event = press(field(root), keyInit);
+			expect(onDismiss).not.toHaveBeenCalled();
+			expect(event.defaultPrevented).toBe(false);
+		});
+
+		it('cancels the default of an Escape that closes the open list and asks the app to close it once', async () => {
+			const onDismiss = vi.fn();
+			const root = await render({ composerPick: pickOf({ onDismiss }) });
+			const event = press(field(root), { key: 'Escape' });
+			expect(onDismiss).toHaveBeenCalledTimes(1);
+			expect(event.defaultPrevented).toBe(true);
+		});
+
+		it('asks nothing when the field loses focus while the list is closed', async () => {
+			const onDismiss = vi.fn();
+			const root = await render({ composerPick: pickOf({ onDismiss, open: false }) });
+			field(root).focus();
+			field(root).blur();
+			expect(onDismiss).not.toHaveBeenCalled();
+		});
 	});
 });
