@@ -1,0 +1,170 @@
+<title>design parts page</title>
+<link rel="stylesheet" href="../../src/design/static/design.css">
+<style>
+  /* The app colour slot, as the consumers' app.css sets it. */
+  :root { --primary: #0b7285; --accent: #f08c00; --on-accent: #1a1a1a; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+  .page { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-direction: column; gap: 28px; }
+  header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+  header.top h1 { margin: 0; font-size: 28px; }
+  header.top p { margin: 4px 0 0; color: var(--text-muted); max-width: 46em; }
+  .switch { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+  .switch a { padding: 6px 14px; color: var(--text); text-decoration: none; font-size: 13px; font-weight: 600; }
+  .switch a[aria-current] { background: var(--text); color: var(--bg); }
+  .facts { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--text-muted); font-size: 13px; margin: 0; padding: 0; list-style: none; }
+  .parts { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .part { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; color: inherit; text-decoration: none; }
+  .part:hover { border-color: var(--text-muted); }
+  .thumb { display: grid; grid-template-columns: 1fr 1fr; height: 92px; border-bottom: 1px solid var(--border); }
+  .thumb > div { display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--bg); color: var(--text); overflow: hidden; }
+  .part .label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 10px 14px; }
+  .part h2 { margin: 0; font-size: 15px; }
+  .count { color: var(--text-muted); font-size: 13px; white-space: nowrap; }
+  .divider { border: 0; border-top: 2px dashed var(--border); margin: 24px 0 0; }
+  .screen-note { color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin: 0; }
+  nav.crumbs { font-size: 13px; } nav.crumbs a { color: var(--text-muted); }
+  .variant { display: flex; flex-direction: column; gap: 8px; }
+  .variant h3 { margin: 0; font-size: 15px; font-weight: 600; }
+  .variant h3 code { color: var(--text-muted); font-weight: 400; font-size: 12px; margin-left: 6px; }
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+  .frame { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .frame .bar { display: flex; justify-content: space-between; padding: 4px 10px; font-size: 12px; color: var(--text-muted); background: var(--header-bg); border-bottom: 1px solid var(--border); }
+  .frame .bar a { color: inherit; }
+  .canvas { background: var(--bg); color: var(--text); padding: 14px; min-height: 120px; }
+  .panel { max-width: 340px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding-top: 4px; }
+  /* A drawn stand-in for the AgentControl rows: in the real page each frame is the live consumer page. */
+  .row { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 8px 0 14px; font-size: 14px; }
+  .ai { font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 999px; border: 1px solid var(--text-muted); color: var(--text-muted); }
+  .name { flex: 1; min-width: 5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .act { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px 0 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .pending { margin-left: auto; color: var(--text-muted); font-size: 13px; white-space: nowrap; padding-right: 6px; }
+  .banner { margin: 6px 14px 4px; padding: 8px 10px; border-radius: 4px; background: var(--fail-soft); color: var(--fail); font-size: 13px; }
+  .empty { margin: 0; padding: 10px 14px 12px; color: var(--text-muted); font-size: 13.5px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--glass-dark); color: var(--on-stage); font-size: 12px; }
+  .stage { background: var(--stage) !important; }
+  .legal-stand-in { display: flex; gap: 16px; font-size: 12px; color: var(--text-muted); }
+  .legal-stand-in span { border-bottom: 1px solid var(--border); }
+  .facts a { color: var(--text-muted); }
+  footer { color: var(--text-muted); font-size: 13px; }
+</style>
+<div class="page">
+
+  <p class="screen-note">Screen 1: the first screen</p>
+  <header class="top">
+    <div>
+      <h1>design 0.41.0</h1>
+      <p>Every shared part in each of its states, light and dark, as release v0.41.0 ships it: built from the very tarball the apps install.</p>
+    </div>
+    <nav class="switch" aria-label="Language of the parts"><a href="#" aria-current="true">Deutsch</a><a href="#">English</a></nav>
+  </header>
+  <ul class="facts"><li>9 parts</li><li>51 states</li><li>2 themes</li><li>2 languages</li><li>Released 2026-12-01</li><li><a href="#">Release notes</a></li></ul>
+
+  <section class="parts" aria-label="Parts">
+    <a class="part" href="#agent-control">
+      <div class="thumb"><div data-theme="light"><span class="act">+ Rufen</span></div><div data-theme="dark"><span class="act">+ Rufen</span></div></div>
+      <div class="label"><h2>AgentControl</h2><span class="count">11 states</span></div>
+    </a>
+    <a class="part" href="#">
+      <div class="thumb"><div data-theme="light"><b style="font-family:var(--font-display);letter-spacing:.06em">ANMELDEN</b></div><div data-theme="dark"><b style="font-family:var(--font-display);letter-spacing:.06em">ANMELDEN</b></div></div>
+      <div class="label"><h2>SignInPage</h2><span class="count">7 states</span></div>
+    </a>
+    <a class="part" href="#">
+      <div class="thumb"><div data-theme="light">Alex · Konto</div><div data-theme="dark">Alex · Konto</div></div>
+      <div class="label"><h2>AccountMenu</h2><span class="count">4 states</span></div>
+    </a>
+    <a class="part" href="#">
+      <div class="thumb"><div class="stage"><span class="chip">● Hört zu</span></div><div class="stage"><span class="chip">○ Hört nicht</span></div></div>
+      <div class="label"><h2>HearingSwitch</h2><span class="count">11 states</span></div>
+    </a>
+    <a class="part" href="#">
+      <div class="thumb"><div data-theme="light">Wie kann ich helfen?</div><div data-theme="dark">Wie kann ich helfen?</div></div>
+      <div class="label"><h2>HelperChat</h2><span class="count">9 states</span></div>
+    </a>
+    <a class="part" href="#">
+      <div class="thumb"><div class="stage"><span class="chip">👂 Mozart</span></div><div class="stage"><span class="chip">👂 Bach</span></div></div>
+      <div class="label"><h2>EarMark</h2><span class="count">3 states</span></div>
+    </a>
+    <a class="part" href="#">
+      <div class="thumb"><div data-theme="light"><span class="pending">Gerade beschäftigt</span></div><div data-theme="dark"><span class="pending">Gerade beschäftigt</span></div></div>
+      <div class="label"><h2>TurnState</h2><span class="count">2 states</span></div>
+    </a>
+    <a class="part" href="#">
+      <div class="thumb"><div data-theme="light"><span class="legal-stand-in"><span>Impressum</span><span>Datenschutz</span></span></div><div data-theme="dark"><span class="legal-stand-in"><span>Impressum</span><span>Datenschutz</span></span></div></div>
+      <div class="label"><h2>Card and legal row (CSS)</h2><span class="count">3 states</span></div>
+    </a>
+    <a class="part" href="#">
+      <div class="thumb"><div data-theme="light">3 Einträge <b>&nbsp;archivieren</b></div><div data-theme="dark">3 Einträge <b>&nbsp;archivieren</b></div></div>
+      <div class="label"><h2>Marked</h2><span class="count">1 state</span></div>
+    </a>
+  </section>
+
+  <hr class="divider" id="agent-control">
+  <p class="screen-note">Screen 2: one part's view</p>
+
+  <nav class="crumbs"><a href="#">All parts</a> / AgentControl</nav>
+  <header class="top">
+    <div>
+      <h1>AgentControl</h1>
+      <p>The panel with which a person calls an agent into a place and asks it to leave. Each state light and dark; open a frame alone to try it by keyboard.</p>
+    </div>
+    <nav class="switch" aria-label="Language of the parts"><a href="#" aria-current="true">Deutsch</a><a href="#">English</a></nav>
+  </header>
+
+  <section class="variant">
+    <h3>Three agents: available, calling, here <code>agents=default</code></h3>
+    <div class="pair">
+      <div class="frame" data-theme="light"><div class="bar"><span>Light</span><a href="#">open alone ↗</a></div><div class="canvas"><div class="panel">
+        <div class="row"><span class="ai">AI</span><span class="name">Mozart</span><span class="act">+ Rufen</span></div>
+        <div class="row"><span class="ai">AI</span><span class="name">Bach</span><span class="pending">··· Wird gerufen…</span></div>
+        <div class="row"><span class="ai">AI</span><span class="name">Leonardo da Vinci, the long-named painter and inventor</span><span class="act">→ Bitten zu gehen</span></div>
+      </div></div></div>
+      <div class="frame" data-theme="dark"><div class="bar"><span>Dark</span><a href="#">open alone ↗</a></div><div class="canvas"><div class="panel">
+        <div class="row"><span class="ai">AI</span><span class="name">Mozart</span><span class="act">+ Rufen</span></div>
+        <div class="row"><span class="ai">AI</span><span class="name">Bach</span><span class="pending">··· Wird gerufen…</span></div>
+        <div class="row"><span class="ai">AI</span><span class="name">Leonardo da Vinci, the long-named painter and inventor</span><span class="act">→ Bitten zu gehen</span></div>
+      </div></div></div>
+    </div>
+  </section>
+
+  <section class="variant">
+    <h3>A call ended: no answer <code>agents=ended-no-answer</code></h3>
+    <div class="pair">
+      <div class="frame" data-theme="light"><div class="bar"><span>Light</span><a href="#">open alone ↗</a></div><div class="canvas"><div class="panel">
+        <div class="row"><span class="ai">AI</span><span class="name">Mozart</span><span class="pending">◷ Keine Antwort</span></div>
+      </div></div></div>
+      <div class="frame" data-theme="dark"><div class="bar"><span>Dark</span><a href="#">open alone ↗</a></div><div class="canvas"><div class="panel">
+        <div class="row"><span class="ai">AI</span><span class="name">Mozart</span><span class="pending">◷ Keine Antwort</span></div>
+      </div></div></div>
+    </div>
+  </section>
+
+  <section class="variant">
+    <h3>Refused: its owner is not here <code>agents=refusal</code></h3>
+    <div class="pair">
+      <div class="frame" data-theme="light"><div class="bar"><span>Light</span><a href="#">open alone ↗</a></div><div class="canvas"><div class="panel">
+        <div class="banner">Sein Besitzer ist nicht hier.</div>
+        <div class="row"><span class="ai">AI</span><span class="name">Mozart</span><span class="act">+ Rufen</span></div>
+      </div></div></div>
+      <div class="frame" data-theme="dark"><div class="bar"><span>Dark</span><a href="#">open alone ↗</a></div><div class="canvas"><div class="panel">
+        <div class="banner">Sein Besitzer ist nicht hier.</div>
+        <div class="row"><span class="ai">AI</span><span class="name">Mozart</span><span class="act">+ Rufen</span></div>
+      </div></div></div>
+    </div>
+  </section>
+
+  <section class="variant">
+    <h3>No agent, place full <code>agents=empty-place-full</code></h3>
+    <div class="pair">
+      <div class="frame" data-theme="light"><div class="bar"><span>Light</span><a href="#">open alone ↗</a></div><div class="canvas"><div class="panel">
+        <div class="banner">Hier ist kein Platz für einen weiteren Agenten.</div>
+      </div></div></div>
+      <div class="frame" data-theme="dark"><div class="bar"><span>Dark</span><a href="#">open alone ↗</a></div><div class="canvas"><div class="panel">
+        <div class="banner">Hier ist kein Platz für einen weiteren Agenten.</div>
+      </div></div></div>
+    </div>
+  </section>
+
+  <p class="empty" style="padding:0">… 7 more states of the 11, each a row like these.</p>
+  <footer>Built by release.yml from overnightworks-design-0.41.0.tgz. The page is static and runs nothing.</footer>
+</div>
