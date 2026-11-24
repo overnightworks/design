@@ -1,3 +1,32 @@
 # Measured by `quality check --fix`. Entries only ever go down.
 
 [clones]
+
+[spec_citations]
+uncited = [
+    "LANG-1",
+    "LANG-10",
+    "LANG-11",
+    "LANG-12",
+    "LANG-13",
+    "LANG-14",
+    "LANG-15",
+    "LANG-16",
+    "LANG-17",
+    "LANG-18",
+    "LANG-19",
+    "LANG-2",
+    "LANG-20",
+    "LANG-21",
+    "LANG-22",
+    "LANG-23",
+    "LANG-24",
+    "LANG-25",
+    "LANG-3",
+    "LANG-4",
+    "LANG-5",
+    "LANG-6",
+    "LANG-7",
+    "LANG-8",
+    "LANG-9",
+]

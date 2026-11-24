@@ -41,32 +41,32 @@ flowchart LR
 
 ### Ruled
 
-- **LANG-1** Each language has one gettext catalog. A generated, typed message
+- LANG-1: Each language has one gettext catalog. A generated, typed message
   module is the only way a page reads a text. The server sends message tokens. Checks hold
   all of it.
-- **LANG-2** A person's language is the account's locale at the identity provider,
+- LANG-2: A person's language is the account's locale at the identity provider,
   else the browser's. The sign-in wiring hands it to the app. No app stores a person's
   language or offers its own language switch; the person changes it at the identity
   provider's account.
-- **LANG-3** The kit ships its components' words in every language, the sign-in
+- LANG-3: The kit ships its components' words in every language, the sign-in
   page, the no-access page and the account menu's log-out included.
-- **LANG-4** The German version of a legal text binds. Each further language gets a
+- LANG-4: The German version of a legal text binds. Each further language gets a
   reading version that says so. The approach is checked legally once before the first reading version ships. The
   reading versions are translated by a model like every other text (LANG-6), with no human
   review as a condition.
-- **LANG-5** An agent answers and speaks in the language the person wrote or asked
+- LANG-5: An agent answers and speaks in the language the person wrote or asked
   in. No app fixes a language for its agents.
-- **LANG-6** A model writes each translation once from
+- LANG-6: A model writes each translation once from
   the German source, to the best of its knowledge. No human review is a condition, and no
   check blocks a build for a missing sign-off. A correction comes later as an ordinary
   change. A check fails when a translation is older than its source.
-- **LANG-7** Behaviour tests run in one language and find elements by
+- LANG-7: Behaviour tests run in one language and find elements by
   catalog key. A further language costs a static catalog check and one render pass per
   surface.
 
 ### Proposed: catalogs and texts
 
-- **LANG-8** What is used as is: Babel reads the `.po` files and gives the CLDR plural
+- LANG-8: What is used as is: Babel reads the `.po` files and gives the CLDR plural
   categories per language; the browser's `Intl` formats numbers, dates, lists and plurals.
   What is built: one thin generator (several languages, typed named gaps, plural families, a
   TypeScript and a Python module, `--check`) and webauth's small resolver (LANG-16). No
@@ -86,7 +86,7 @@ flowchart LR
 
   The generator with its catalog checks ships from design; the language resolver lives in
   webauth; the markup scan and the rule that requires the checks live in quality.
-- **LANG-9** A catalog key is a neutral identifier that names what the text is for, never the
+- LANG-9: A catalog key is a neutral identifier that names what the text is for, never the
   sentence: one namespace level, the surface, then a camelCase name (`table.seatFree`). A
   text on two surfaces gets two keys: that means words that merely coincide in the source
   language. A destination's own name (a settings section, a room) is one text owned by the
@@ -99,9 +99,9 @@ flowchart LR
   the sentence (LANG-25). An entry of a plural family adds a dot and
   its CLDR plural category (`table.seats.one`); a family's key is its entries' `msgctxt`
   without the category, and a plain key equal to a family's key fails the check.
-- **LANG-10** A language is whole or absent. A key missing from a catalog fails the check;
+- LANG-10: A language is whole or absent. A key missing from a catalog fails the check;
   no text falls back to another language one by one.
-- **LANG-11** Numbers, dates, lists and plural forms go through the browser's `Intl` with the
+- LANG-11: Numbers, dates, lists and plural forms go through the browser's `Intl` with the
   page's language. A page without script holds no number, date or list. Its plural families
   are chosen by a plural function that the generator writes into the Python module at build
   time from Babel's CLDR rules, for whole-number counts, so no server needs Babel at runtime.
@@ -146,7 +146,7 @@ flowchart LR
   CLDR release and the browser's differ for some smaller languages, so a family is checked
   against Babel's categories; where the page's `Intl.PluralRules` gives such a language a
   category the family lacks, the sentence falls to `other`.
-- **LANG-12** The server sends tokens (a catalog key and named values) and data, never a
+- LANG-12: The server sends tokens (a catalog key and named values) and data, never a
   sentence for a person. A response may carry a sentence for agents beside the token; the
   page never shows it. The token has one shape in every app: a field `message` holding `key`
   and `values`, beside the field that carries the sentence for agents where the response has
@@ -158,9 +158,9 @@ flowchart LR
   text. Rejected: a token nested inside each agent field, which changes the shape agents
   already read, and a list of tokens, where the page could no longer tell which text is
   which. Tool descriptions for agents and log lines are not interface text.
-- **LANG-13** A text that is stored, such as a failure message in a database, stores its
+- LANG-13: A text that is stored, such as a failure message in a database, stores its
   token and data, never the sentence; the page renders it in the reader's language.
-- **LANG-14** A shipped unit has one catalog per language, read by both sides. The generator emits
+- LANG-14: A shipped unit has one catalog per language, read by both sides. The generator emits
   one TypeScript module per language, whose key type comes from the source module, and a
   Python module where the server sends tokens, serves a script-less page (LANG-17) or a
   Python test reads texts. It also writes a loader, `index.ts`, beside the language modules:
@@ -173,11 +173,11 @@ flowchart LR
 
 ### Proposed: the person's language
 
-- **LANG-15** The sign-in wiring hands the app the account's tag as the identity provider
+- LANG-15: The sign-in wiring hands the app the account's tag as the identity provider
   issued it (its `locale` claim), or a named absence, and does not interpret it; the tag is
   read at sign-in, so a change at the identity provider takes effect at the latest at the next
   sign-in.
-- **LANG-16** One pure function in webauth owns the order: the account's tag or none, the
+- LANG-16: One pure function in webauth owns the order: the account's tag or none, the
   browser's `Accept-Language` header and the app's languages give one of the app's languages.
   It matches by RFC 4647 Lookup (section 3.4) over the account's tag, then the browser's
   weighted list (RFC 9110, section 12.5.4), then the app's default, which is the source
@@ -189,31 +189,31 @@ flowchart LR
   `ui_locales`. Rejected: a fleet list of languages, which makes each new language a change to
   every app; a copy per app, which parses a weighted header four times; design's wheel
   (LANG-8).
-- **LANG-17** The server writes the resolved language into `<html lang>` before any script
+- LANG-17: The server writes the resolved language into `<html lang>` before any script
   runs. A page that needs no script is served once per language from the same catalog.
-- **LANG-18** At sign-in start the app names its resolved language to the issuer as
+- LANG-18: At sign-in start the app names its resolved language to the issuer as
   `ui_locales` (OpenID Connect Core 1.0, section 3.1.2.1), so the identity provider's own
   pages follow it. Those pages differ from the app's language only when that language is not
   among the realm's supported locales; adding a language adds it there (platform).
 
 ### Proposed: kit, content, source and freshness
 
-- **LANG-19** The kit ships its components' words per language as the generator's modules and
+- LANG-19: The kit ships its components' words per language as the generator's modules and
   loader. The app loads them with `loadKitWords` for the page's language, as it loads its own,
   and passes them to every kit component; a component reads no language itself. The app passes
   its generated `Language`, never a literal or a cast, and an app-owned module outside the
   generated words directory carries the statement `void (languages satisfies readonly KitLanguage[]);`, so
   the app's type check fails when it offers a language the kit lacks.
-- **LANG-20** Content never follows the interface language: lyrics, slides, chat messages
+- LANG-20: Content never follows the interface language: lyrics, slides, chat messages
   and names. Where an app needs content's own language (for example to mark a span with
   `lang`), the content carries a tag of its own. An agent's reply follows the message that
   caused it (LANG-5); where no message did, such as a click, the app passes the person's
   interface language to the agent. That is no language rule inside the agent's prompt.
-- **LANG-21** German is the source language (LANG-6). An app whose texts are English today
+- LANG-21: German is the source language (LANG-6). An app whose texts are English today
   converts to a German source or asks for a deviation (see Deviations). Wherever this
   document says "the German catalog" or "the source", an app with a ruled deviation reads its
   own source catalog.
-- **LANG-22** A catalog entry is gettext's standard shape, keyed in `msgctxt`. The source
+- LANG-22: A catalog entry is gettext's standard shape, keyed in `msgctxt`. The source
   language's file holds each key with its text in `msgid` and an empty `msgstr`. A
   translation's file holds the same `msgctxt`, the source text it was translated from as
   `msgid`, and the translation in `msgstr`. Every catalog, the source's included, carries a
@@ -237,16 +237,16 @@ flowchart LR
   needs a network, key or provider, and the committed catalog is the build's input. The
   remaining risk: clearing a mark without translating defeats the check, which is an aid for
   cooperative agents.
-- **LANG-23** Catalogs live at `frontend/src/lib/catalogs/<tag>.po` and
+- LANG-23: Catalogs live at `frontend/src/lib/catalogs/<tag>.po` and
   generated modules beside the code that imports them, in the unit's directory, unless the
   unit's declaration, which the generator and quality's rule read, names other paths. The
   declaration is the optional table `[tool.design-catalogs]` in the `pyproject.toml` of the
   unit's directory (see Using the generator). A file in the module directory that no catalog
   produces is a stray, which `--check` fails; a dotfile (`.gitkeep`) is no stray.
-- **LANG-24** The rule for new text: no new literal sentence in markup, no sentence from the
+- LANG-24: The rule for new text: no new literal sentence in markup, no sentence from the
   server. Literal strings in script (toasts, confirm dialogs) are bound by it too, but no
   machine catches them; the scheduled audit finds them.
-- **LANG-25** A sentence with a part the page sets apart (emphasis, code, a link) stays one
+- LANG-25: A sentence with a part the page sets apart (emphasis, code, a link) stays one
   text and marks that part as `{#name}…{/name}`, the markup placeholder of Unicode
   MessageFormat 2, only the open and close pair. The name is a plain identifier the app
   chooses (`strong`, `code`, `terms`); the page alone decides the element, its attributes and
