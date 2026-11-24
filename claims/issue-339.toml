@@ -1,0 +1,8 @@
+claim_id = "188468480ba14c45b6736a72d2e66732"
+agent = "Claude 287ff704-d451-489e-b6ba-47dff9a7c71f"
+role = "builder"
+base = "87d1e6ee84dd888da1d49db2a95f27f874b94d89"
+branch = "claude/issue-339-design-pins-quality-v0-26-0"
+scope = [".github/workflows/ci.yml", ".github/workflows/code-scanning.yml", ".github/workflows/release.yml", "docs", "quality/baseline.toml", "quality/config.toml", "tests"]
+opened_commit = "cb40a066982f2933885d64ec9fa7985094ffa1c0"
+whole_reason = "the pin does not move before the list is recorded, so the pin, the conversion of documents and citations and the recorded list move in one pull request."
