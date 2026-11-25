@@ -166,8 +166,9 @@ export async function servePartsPage(): Promise<{ address: string; close: () => 
 		configFile: false,
 		logLevel: 'warn',
 		build: { outDir: partsPageDirectory },
+		appType: 'mpa',
 		preview: { host: '127.0.0.1', port: 0 }
 	});
-	const { port } = server.httpServer.address() as AddressInfo;
-	return { address: `http://127.0.0.1:${port}`, close: () => server.close() };
+	const { address: host, port } = server.httpServer.address() as AddressInfo;
+	return { address: `http://${host}:${port}`, close: () => server.close() };
 }

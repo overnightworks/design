@@ -69,13 +69,16 @@ test.describe('the built parts page', () => {
 	}
 });
 
-test('the served page answers on loopback only, with the index and a part page', async ({ request }) => {
+test('the served page answers on loopback only, with the index and a part page, and not for a missing page', async ({ request }) => {
 	const server = await servePartsPage();
 	try {
 		expect(new URL(server.address).hostname).toBe('127.0.0.1');
-		for (const path of [`de/index.html`, `en/${parts[0].id}.html`]) {
-			expect((await request.get(`${server.address}/${path}`)).ok()).toBe(true);
-		}
+		const [part] = parts;
+		const index = await request.get(`${server.address}/de/index.html`);
+		expect(await index.text()).toContain(`design ${checkoutVersion()}`);
+		const partPage = await request.get(`${server.address}/en/${part.id}.html`);
+		expect(await partPage.text()).toContain(`<h1>${part.name}</h1>`);
+		expect((await request.get(`${server.address}/en/nonexistent.html`)).status()).toBe(404);
 	} finally {
 		await server.close();
 	}
