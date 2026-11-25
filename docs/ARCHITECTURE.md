@@ -187,7 +187,10 @@ an index and one page per part and kit language beside it in
 per theme, which the consumer's `theme=` query sets as an app does. The page is
 static and runs nothing but the parts; a consumer spec over the built directory
 proves every state appears in both themes and every language, and CI builds the
-page before it runs the consumers.
+page before it runs the consumers. The page is published nowhere: it is built on
+demand, and its header names the checkout's version and that it was built from a
+tarball packed from it. `pnpm run open:parts-page` builds it and serves it on
+loopback only, because its frames load module scripts a file address cannot.
 
 ## 6. Constraints and reasons
 

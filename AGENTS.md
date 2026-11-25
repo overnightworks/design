@@ -10,6 +10,7 @@
 - `uv run --frozen ruff check .` and `uv run --frozen ruff format --check .`: Python lint; both must pass.
 - `quality check`: the shared static check. Run it at the release `.github/workflows/ci.yml` pins.
 - `pnpm run build:parts-page`: builds the parts page, one page per part and kit language, from the packed tarball into `tests/e2e/.parts-page`. `pnpm run test:consumer` reads it and fails without it, so run this first.
+- `pnpm run open:parts-page`: builds the parts page from a tarball packed from the checkout, serves it on `127.0.0.1` and prints the link; runs until interrupted.
 - `pnpm run test:consumer <spec>`: the named Playwright consumer specs of `tests/e2e`, a probe stack. Run it only through `probe-run`, as the global contract's section "Machine load and local runs" says; the consumers serve a routed origin and bind no host port, so lanes may drive in parallel.
 - `pnpm run test:coverage`, the whole consumer suite and `pnpm run coverage:merge` run in CI on the pushed branch, not locally; `docs/ARCHITECTURE.md` says what the merge fails on.
 - `gh workflow run release.yml -R overnightworks/design -f version=X.Y.Z`: the release dispatch, an agent's step once the version pull request has landed with its review and CI green. `main` must carry X.Y.Z in `pyproject.toml` and `package.json`.
