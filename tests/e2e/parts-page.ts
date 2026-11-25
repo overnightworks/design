@@ -1,7 +1,9 @@
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { AddressInfo } from 'node:net';
 import type { KitLanguage } from 'overnightworks-design/words';
+import { preview } from 'vite';
 import { buildConsumer, colorSchemes, copyStylesheet, languages, tarball } from './build-consumer.ts';
 import { parts, variants, variantsOf, type Part, type Variant } from './variants.ts';
 
@@ -61,6 +63,10 @@ ${body}
 `;
 }
 
+/** What the index says it was built from: the checkout's version, on demand, from a tarball packed from it. */
+export const builtOnDemandSentence = (version: string): string =>
+	`Every shared part in each of its states, light and dark. Built on demand from a tarball packed from this checkout, version ${version}: the very tarball the apps install.`;
+
 const stateCount = (count: number): string => `${count} ${count === 1 ? 'state' : 'states'}`;
 
 function indexPage(language: KitLanguage, version: string): string {
@@ -76,7 +82,7 @@ function indexPage(language: KitLanguage, version: string): string {
 	return pageDocument(
 		`design ${version}`,
 		`<header class="top">
-<div><h1>design ${escape(version)}</h1><p>Every shared part in each of its states, light and dark, as release v${escape(version)} ships it: built from the very tarball the apps install.</p></div>
+<div><h1>design ${escape(version)}</h1><p>${escape(builtOnDemandSentence(version))}</p></div>
 ${languageSwitch(language, 'index.html')}
 </header>
 <ul class="facts"><li>${parts.length} parts</li><li>${variants.length} states</li><li>${colorSchemes.length} themes</li><li>${languages.length} languages</li></ul>
@@ -92,7 +98,7 @@ function partPage(language: KitLanguage, part: Part): string {
 			const pair = colorSchemes
 				.map((theme) => {
 					const address = escape(frameAddress(variant, theme, language));
-					return `<div class="frame" data-theme="${theme}"><div class="bar"><span>${themeNames[theme]}</span><a href="${address}" target="_blank" rel="noopener">open alone</a></div>${frame(variant, theme, language, `height: ${part.frameHeight}px`)}</div>`;
+					return `<div class="frame" data-theme="${theme}"><div class="bar"><span>${themeNames[theme]}</span><a href="${address}" target="_blank" rel="noopener">open alone ↗</a></div>${frame(variant, theme, language, `height: ${part.frameHeight}px`)}</div>`;
 				})
 				.join('\n');
 			return `<section class="variant"><h3>${escape(variant.label)} <code>${escape(variant.query || 'default')}</code></h3><div class="pair">
@@ -111,8 +117,12 @@ ${sections}`
 	);
 }
 
+/** The version of the checkout the page is built from. */
+export const checkoutVersion = (): string =>
+	(JSON.parse(readFileSync(join(here, '../../package.json'), 'utf8')) as { version: string }).version;
+
 /** The page opens in German, as the blessed picture shows; English is one switch away. */
-const openingLanguage: KitLanguage = 'de';
+export const openingLanguage: KitLanguage = 'de';
 
 function entryPage(): string {
 	const address = `${openingLanguage}/index.html`;
@@ -134,7 +144,7 @@ function entryPage(): string {
  * that consumer in each theme.
  */
 export async function buildPartsPage(): Promise<string> {
-	const version = (JSON.parse(readFileSync(join(here, '../../package.json'), 'utf8')) as { version: string }).version;
+	const version = checkoutVersion();
 	rmSync(partsPageDirectory, { recursive: true, force: true });
 	await buildConsumer('imported', { outDir: join(partsPageDirectory, consumerDirectory), counters: false, base: './' });
 	copyStylesheet(partsPageDirectory);
@@ -148,4 +158,17 @@ export async function buildPartsPage(): Promise<string> {
 		}
 	}
 	return partsPageDirectory;
+}
+
+/** Serves the built page on loopback only, because its frames load module scripts a file address cannot; `close` ends the server. */
+export async function servePartsPage(): Promise<{ address: string; close: () => Promise<void> }> {
+	const server = await preview({
+		configFile: false,
+		logLevel: 'warn',
+		build: { outDir: partsPageDirectory },
+		appType: 'mpa',
+		preview: { host: '127.0.0.1', port: 0 }
+	});
+	const { address: host, port } = server.httpServer.address() as AddressInfo;
+	return { address: `http://${host}:${port}`, close: () => server.close() };
 }

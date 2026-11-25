@@ -27,8 +27,8 @@ familiar.
 - Keep a person's choice of light or dark with their account, like their
   language, so it holds in every app after sign-in; before sign-in every page
   follows the device.
-- Let anyone open one page and see every shared part in each of its states,
-  both themes and every language, as the newest release ships it.
+- Show every shared part in each of its states, both themes and every language,
+  on one page built on demand.
 - Make every shared part work by keyboard and screen reader and stay readable
   in both themes.
 - Carry one change to every app: an app takes the new version when its builders
