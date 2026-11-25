@@ -1,0 +1,8 @@
+claim_id = "ffb291ef4f454bf895691512db6ffa28"
+agent = "Claude 19230e8f-9a26-4de7-af40-2a732c3df65d"
+role = "builder"
+base = "1be9118e1c6ba8b395ed2afce7087d86b1f98e1e"
+branch = "claude/issue-343-one-command-builds-and-opens-the-page-of"
+scope = ["AGENTS.md", "README.md", "docs/ARCHITECTURE.md", "docs/VISION.md", "docs/mockups", "package.json", "tests/e2e/build-parts-page.ts", "tests/e2e/open-parts-page.ts", "tests/e2e/parts-page.css", "tests/e2e/parts-page.spec.ts", "tests/e2e/parts-page.ts"]
+opened_commit = "7f6b8116caafabc0506242388c5c564ac1cff002"
+whole_reason = "One command and the page's own words with their spec, the single frozen picture the scope's one directory exists to delete, and the four documents that say what the page is."
