@@ -248,6 +248,24 @@ describe('refusal', () => {
 		const list = control.querySelector('ul')!;
 		expect(alert.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 	});
+
+	it('draws the not-allowed sentence above a here row the app refused to send away, and the row stays', async () => {
+		const hereRows: AgentControlProps['rows'] = [{ key: 'k1', name: 'Mozart', state: 'here' }];
+		const state = new SvelteMap<'refusal', AgentControlRefusal | undefined>();
+		const onSendAway = vi.fn(() => state.set('refusal', 'not-allowed'));
+		const props = {
+			...baseProps({ rows: hereRows, onSendAway }),
+			get refusal() {
+				return state.get('refusal');
+			}
+		};
+		const control = await mountInDocument((into) => mount(AgentControl, { target: into, props }));
+		buttonsOf(control)[0].click();
+		await tick();
+		expect(onSendAway).toHaveBeenCalledOnce();
+		expect(control.querySelector('[role="alert"]')?.textContent?.trim()).toBe(en['agent.notAllowed']);
+		expect(rowsOf(control)).toHaveLength(1);
+	});
 });
 
 describe('empty face', () => {

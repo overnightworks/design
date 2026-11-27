@@ -30,7 +30,7 @@ const translated = {
     "agent.callLabel": (gaps: { readonly name: string }) => "Call " + gaps.name,
     "agent.askToLeaveLabel": (gaps: { readonly name: string }) => "Ask to leave: " + gaps.name,
     "agent.empty": "No agent is reachable right now.",
-    "agent.notAllowed": "You may not call this agent.",
+    "agent.notAllowed": "You may not do that with this agent.",
     "agent.ownerAbsent": "Its owner is not here.",
     "agent.placeFull": "There is no room here for another agent.",
     "agent.agentUnavailable": "The agent is not reachable right now.",

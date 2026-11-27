@@ -112,7 +112,7 @@ msgid "Gerade ist kein Agent erreichbar."
 msgstr ""
 
 msgctxt "agent.notAllowed"
-msgid "Du darfst diesen Agenten nicht rufen."
+msgid "Das darfst du bei diesem Agenten nicht."
 msgstr ""
 
 msgctxt "agent.ownerAbsent"
