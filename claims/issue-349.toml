@@ -1,8 +1,0 @@
-claim_id = "7074382d363c4b9a88b653b7db0d4484"
-agent = "Claude 0d07d75e-a6d2-4473-a773-86b91be82d52"
-role = "builder"
-base = "cbe374723e0579b482d705b604fc331792f6d97c"
-branch = "claude/issue-349-design-pins-quality-v0-28-0"
-scope = [".github/workflows/ci.yml", ".github/workflows/code-scanning.yml", ".github/workflows/release.yml", "AGENTS.md", "quality/config.toml", "sonar-project.properties", "src/design/catalogs/command.py", "src/design/static/fonts", "src/lib", "src/support", "tests", "tsconfig.json"]
-opened_commit = "500e5ca7924ee229687cb4e14f1cea0c534c9e4f"
-whole_reason = "One conformance change to quality v0.28.0: the pins and the config that every one of its entries edits, and the moves and renames that end those entries; split, each part would write the same config twice."
