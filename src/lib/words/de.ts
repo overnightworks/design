@@ -84,7 +84,7 @@ export const words: Words = {
     "agent.callLabel": (gaps: { readonly name: string }) => gaps.name + " rufen",
     "agent.askToLeaveLabel": (gaps: { readonly name: string }) => gaps.name + " bitten zu gehen",
     "agent.empty": "Gerade ist kein Agent erreichbar.",
-    "agent.notAllowed": "Du darfst diesen Agenten nicht rufen.",
+    "agent.notAllowed": "Das darfst du bei diesem Agenten nicht.",
     "agent.ownerAbsent": "Sein Besitzer ist nicht hier.",
     "agent.placeFull": "Hier ist kein Platz für einen weiteren Agenten.",
     "agent.agentUnavailable": "Der Agent ist gerade nicht erreichbar.",
