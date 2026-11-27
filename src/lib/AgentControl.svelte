@@ -26,20 +26,25 @@
 		'owner-absent': 'agent.ownerAbsent'
 	} satisfies Record<AgentControlOutcome, keyof KitWords>;
 
-	let { rows, full, onCall, onSendAway, refusal, words }: AgentControlProps = $props();
+	let { rows, full, onCall, onSendAway, onOutcomeEnd, refusal, words }: AgentControlProps = $props();
 
 	// Keys of the ended rows whose outcome has run out; a row leaves the set when the app changes it.
 	const lapsed = new SvelteSet<string>();
 
 	// Runs for each row: an ended state starts the timer, any change of it or the row's removal
 	// stops the timer and takes the row out of `lapsed`. The same state passed again changes nothing.
+	// At the lapse the app hears of it and may change or drop the row, which then leaves `lapsed`.
 	function outcomeTimer(_row: HTMLElement, first: { key: string; outcome: AgentControlOutcome | undefined }) {
 		const { key } = first;
 		let outcome: AgentControlOutcome | undefined;
 		let timer: ReturnType<typeof setTimeout> | undefined;
 		function show(next: AgentControlOutcome | undefined) {
 			outcome = next;
-			if (next) timer = setTimeout(() => lapsed.add(key), outcomeMilliseconds);
+			if (next) timer = setTimeout(end, outcomeMilliseconds);
+		}
+		function end() {
+			lapsed.add(key);
+			onOutcomeEnd?.(key);
 		}
 		function stop() {
 			clearTimeout(timer);

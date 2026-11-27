@@ -126,7 +126,8 @@ export type AgentControlOutcome = 'no-answer' | 'busy' | 'owner-absent';
 /**
  * One row of the agent control. `inviting` is a call under way, `here` an agent in the place and
  * `ended` a call that ended without a seat: the row shows its `outcome` in place of the waiting
- * text for a few seconds, then draws like an `available` row until the app changes it.
+ * text for a few seconds, then draws like an `available` row until the app changes it; `onOutcomeEnd`
+ * tells the app when that moment comes.
  */
 export type AgentRow = {
 	/** Opaque and minted by the app; the kit hands it back to `onCall` and `onSendAway`. */
@@ -178,6 +179,13 @@ export interface AgentControlProps {
 	 * name and no action, as an `inviting` row shows no button.
 	 */
 	onSendAway?: (key: string) => void;
+	/**
+	 * Called once with the row's key when an `ended` row's outcome has shown for its duration, as the
+	 * row would draw its call key. Inside the call the app may drop the row or change its state, and
+	 * the control then draws what the app passes. Absent, or while the app keeps the row `ended`, the
+	 * row draws like an `available` row.
+	 */
+	onOutcomeEnd?: (key: string) => void;
 	/** Its sentence shows above the rows as an alert until the app clears it. */
 	refusal?: AgentControlRefusal;
 	/** The kit's words in the page's language, from `loadKitWords`. */
