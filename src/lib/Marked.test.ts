@@ -1,7 +1,7 @@
 import { mount } from 'svelte';
 import { describe, expect, it } from 'vitest';
 import Page, { sentences } from './Marked.test.svelte';
-import { mountInDocument } from './mountInDocument.test.helper.ts';
+import { mountInDocument } from '../support/mountInDocument.ts';
 
 async function render(parts: (typeof sentences)[number]['parts']): Promise<HTMLElement> {
 	const target = await mountInDocument((into) => mount(Page, { target: into, props: { parts } }));

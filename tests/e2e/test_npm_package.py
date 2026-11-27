@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-REPOSITORY = Path(__file__).resolve().parent.parent
+REPOSITORY = Path(__file__).resolve().parent.parent.parent
 STATIC = "src/design/static"
 INSTALL_SCRIPTS = {"preinstall", "install", "postinstall", "prepare"}
 STORAGE_AND_NETWORK = (

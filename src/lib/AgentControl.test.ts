@@ -2,7 +2,7 @@ import { mount, tick } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import AgentControl, { outcomeMilliseconds } from './AgentControl.svelte';
-import { mountInDocument, unmountMounted } from './mountInDocument.test.helper.ts';
+import { mountInDocument, unmountMounted } from '../support/mountInDocument.ts';
 import type { AgentControlOutcome, AgentControlProps, AgentControlRefusal } from './types.ts';
 import { loadWords } from './words/index.ts';
 

@@ -2,7 +2,7 @@ import { createRawSnippet, mount, tick } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import HelperChat from './HelperChat.svelte';
-import { mountInDocument } from './mountInDocument.test.helper.ts';
+import { mountInDocument } from '../support/mountInDocument.ts';
 import type { HelperChatProps, HelperMessage, HelperPick } from './types.ts';
 import { loadWords } from './words/index.ts';
 

@@ -2,7 +2,7 @@ import { mount, tick, unmount } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
 import { describe, expect, it, vi } from 'vitest';
 import AccountMenu from './AccountMenu.svelte';
-import { mountInDocument } from './mountInDocument.test.helper.ts';
+import { mountInDocument } from '../support/mountInDocument.ts';
 import type { AccountMenuProps } from './types.ts';
 import { loadWords } from './words/index.ts';
 

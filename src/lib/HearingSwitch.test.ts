@@ -1,7 +1,7 @@
 import { mount } from 'svelte';
 import { describe, expect, it } from 'vitest';
 import HearingSwitch from './HearingSwitch.svelte';
-import { mountInDocument } from './mountInDocument.test.helper.ts';
+import { mountInDocument } from '../support/mountInDocument.ts';
 import type { HearingKind, HearingSwitchProps } from './types.ts';
 import { loadWords } from './words/index.ts';
 

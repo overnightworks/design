@@ -191,7 +191,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
     options = parser.parse_args(arguments)
     try:
         from design.catalogs.po_file import list_files
-    except ModuleNotFoundError as error:  # pragma: no cover - run in a subprocess without Babel (tests/test_wheel.py)
+    except ModuleNotFoundError as error:  # pragma: no cover - subprocess without Babel (tests/e2e/test_wheel.py)
         if not (error.name or "").startswith("babel"):
             raise
         return fail(MISSING_EXTRA)
