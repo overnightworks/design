@@ -200,19 +200,12 @@ describe('ended rows', () => {
 		expect(onOutcomeEnd).toHaveBeenCalledOnce();
 	});
 
-	it('shows no call key for a row the app drops in onOutcomeEnd', async () => {
+	it.each([
+		['drops the row', [] as AgentControlProps['rows']],
+		['turns it inviting', [{ key: 'k1', name: 'Mozart', state: 'inviting' }] as AgentControlProps['rows']],
+	])('shows no call key for a row the app changes in onOutcomeEnd: %s', async (_name, nextRows) => {
 		let setRows: (rows: AgentControlProps['rows']) => Promise<void> = async () => {};
-		const onOutcomeEnd = () => void setRows([]);
-		const rendered = await renderChangingRows([ended('owner-absent')], { onOutcomeEnd });
-		setRows = rendered.setRows;
-		await vi.advanceTimersByTimeAsync(outcomeMilliseconds);
-		expect(rowsOf(rendered.control)).toHaveLength(0);
-		expect(buttonsOf(rendered.control)).toHaveLength(0);
-	});
-
-	it('shows no call key for a row the app changes to another state in onOutcomeEnd', async () => {
-		let setRows: (rows: AgentControlProps['rows']) => Promise<void> = async () => {};
-		const onOutcomeEnd = () => void setRows([{ key: 'k1', name: 'Mozart', state: 'inviting' }]);
+		const onOutcomeEnd = () => void setRows(nextRows);
 		const rendered = await renderChangingRows([ended('busy')], { onOutcomeEnd });
 		setRows = rendered.setRows;
 		await vi.advanceTimersByTimeAsync(outcomeMilliseconds);
