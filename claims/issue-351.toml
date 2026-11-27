@@ -1,8 +1,0 @@
-claim_id = "011aa8571da64efeb903d1f5f22d2e05"
-agent = "Claude 0d07d75e-a6d2-4473-a773-86b91be82d52"
-role = "builder"
-base = "cbe374723e0579b482d705b604fc331792f6d97c"
-branch = "claude/issue-351-agentcontrol-shows-no-call-key-for-a-lap"
-scope = ["docs/stylesheet.md", "src/lib/AgentControl.svelte", "src/lib/AgentControl.test.ts", "src/lib/types.ts"]
-opened_commit = "8d80475bacc896deaedaf72034f04aa007f0c020"
-whole_reason = "One optional prop of one component: its code, its type and docstring, its tests and its one documented fact."
