@@ -1,8 +1,0 @@
-claim_id = "86037bc56fb2489c85e727c67c917e6e"
-agent = "Claude 0d07d75e-a6d2-4473-a773-86b91be82d52"
-role = "builder"
-base = "32c3fa56dd7e512c15d437b4fd13051d2e4866ce"
-branch = "claude/issue-354-not-allowed-refusal-for-send-away"
-scope = ["docs/stylesheet.md", "src/catalogs", "src/design/words.py", "src/lib/AgentControl.test.ts", "src/lib/words"]
-opened_commit = "29ae3f14df24ec2b9df973432dfc68d1a59539f3"
-whole_reason = "One sentence: its two catalog entries, the three files generated from them and the test of the sentence a send-away refusal shows change together, because the generator's check fails on any one alone."
