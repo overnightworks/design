@@ -17,7 +17,7 @@ import pytest
 from design.catalogs.command import MISSING_EXTRA
 from design.catalogs.po_file import read_catalog
 
-REPOSITORY = Path(__file__).resolve().parent.parent
+REPOSITORY = Path(__file__).resolve().parent.parent.parent
 
 
 @pytest.fixture(scope="module")

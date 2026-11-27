@@ -1,7 +1,7 @@
 import { mount } from 'svelte';
 import { describe, expect, it } from 'vitest';
 import LegalLinks from './LegalLinks.svelte';
-import { mountInDocument } from './mountInDocument.test.helper.ts';
+import { mountInDocument } from '../support/mountInDocument.ts';
 import type { LegalLink } from './types.ts';
 import { loadWords, type Language } from './words/index.ts';
 

@@ -1,7 +1,7 @@
 import { mount } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SignInPage from './SignInPage.svelte';
-import { mountInDocument } from './mountInDocument.test.helper.ts';
+import { mountInDocument } from '../support/mountInDocument.ts';
 import type { SignInPageProps } from './types.ts';
 import { loadWords } from './words/index.ts';
 

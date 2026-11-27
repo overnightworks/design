@@ -15,7 +15,7 @@ def font_files():
 
 @pytest.fixture(scope="session")
 def licences():
-    return {"oswald-LICENSE", "open-sans-LICENSE"}
+    return {"oswald-LICENSE.txt", "open-sans-LICENSE.txt"}
 
 
 @pytest.fixture(scope="session")

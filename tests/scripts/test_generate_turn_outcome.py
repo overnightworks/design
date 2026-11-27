@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from contextlib import AbstractContextManager
     from types import ModuleType
 
-SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "generate_turn_outcome.py"
+SCRIPT = Path(__file__).resolve().parent.parent.parent / "scripts" / "generate_turn_outcome.py"
 RELEASE_URL = "https://releases.example/agents-1.0.0-py3-none-any.whl"
 OUTCOMES = ["alpha_one", "beta", "gamma_3"]
 

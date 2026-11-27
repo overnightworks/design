@@ -1,7 +1,7 @@
 import { mount } from 'svelte';
 import { describe, expect, it } from 'vitest';
 import AiMark from './AiMark.svelte';
-import { mountInDocument } from './mountInDocument.test.helper.ts';
+import { mountInDocument } from '../support/mountInDocument.ts';
 
 async function render(props: Record<string, string> = {}, place?: HTMLElement): Promise<HTMLElement> {
 	return mountInDocument((into) => mount(AiMark, { target: into, props }), place);
