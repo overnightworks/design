@@ -107,11 +107,11 @@ describe('ended rows', () => {
 		return render(overrides);
 	}
 
-	async function renderChangingRows(initial: AgentControlProps['rows']) {
+	async function renderChangingRows(initial: AgentControlProps['rows'], overrides: Partial<AgentControlProps> = {}) {
 		vi.useFakeTimers();
 		const state = new SvelteMap([['rows', initial]]);
 		const props = {
-			...baseProps(),
+			...baseProps(overrides),
 			get rows() {
 				return state.get('rows')!;
 			}
@@ -186,6 +186,46 @@ describe('ended rows', () => {
 		await setRows([ended('busy')]);
 		await vi.advanceTimersByTimeAsync(1);
 		expect(statusOf(control)).toBeNull();
+	});
+
+	it('calls onOutcomeEnd once with the key when the outcome has shown for its duration, not before', async () => {
+		const onOutcomeEnd = vi.fn();
+		const { setRows } = await renderChangingRows([ended('busy')], { onOutcomeEnd });
+		await vi.advanceTimersByTimeAsync(outcomeMilliseconds - 1);
+		expect(onOutcomeEnd).not.toHaveBeenCalled();
+		await vi.advanceTimersByTimeAsync(1);
+		expect(onOutcomeEnd.mock.calls).toEqual([['k1']]);
+		await setRows([ended('busy')]);
+		await vi.advanceTimersByTimeAsync(outcomeMilliseconds * 5);
+		expect(onOutcomeEnd).toHaveBeenCalledOnce();
+	});
+
+	it('shows no call key for a row the app drops in onOutcomeEnd', async () => {
+		let setRows: (rows: AgentControlProps['rows']) => Promise<void> = async () => {};
+		const onOutcomeEnd = () => void setRows([]);
+		const rendered = await renderChangingRows([ended('owner-absent')], { onOutcomeEnd });
+		setRows = rendered.setRows;
+		await vi.advanceTimersByTimeAsync(outcomeMilliseconds);
+		expect(rowsOf(rendered.control)).toHaveLength(0);
+		expect(buttonsOf(rendered.control)).toHaveLength(0);
+	});
+
+	it('shows no call key for a row the app changes to another state in onOutcomeEnd', async () => {
+		let setRows: (rows: AgentControlProps['rows']) => Promise<void> = async () => {};
+		const onOutcomeEnd = () => void setRows([{ key: 'k1', name: 'Mozart', state: 'inviting' }]);
+		const rendered = await renderChangingRows([ended('busy')], { onOutcomeEnd });
+		setRows = rendered.setRows;
+		await vi.advanceTimersByTimeAsync(outcomeMilliseconds);
+		expect(buttonsOf(rendered.control)).toHaveLength(0);
+	});
+
+	it('gives no onOutcomeEnd call for a row that changes or leaves before the lapse', async () => {
+		const onOutcomeEnd = vi.fn();
+		const { setRows } = await renderChangingRows([ended('busy'), { ...ended('busy'), key: 'k2' }], { onOutcomeEnd });
+		await vi.advanceTimersByTimeAsync(outcomeMilliseconds - 1);
+		await setRows([{ key: 'k1', name: 'Mozart', state: 'here' }]);
+		await vi.advanceTimersByTimeAsync(outcomeMilliseconds * 5);
+		expect(onOutcomeEnd).not.toHaveBeenCalled();
 	});
 
 	it('clears its timer when the row changes or the control unmounts', async () => {
